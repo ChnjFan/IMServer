@@ -12,3 +12,6 @@ include_directories(./ ../../third_party/poco/include)
 link_directories(./ ../../third_party/poco/lib)
 
 add_executable(route_server ${SRC_LIST})
+
+find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
+target_link_libraries(route_server PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON)

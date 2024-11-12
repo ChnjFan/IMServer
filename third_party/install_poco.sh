@@ -80,10 +80,11 @@ build_poco(){
     sudo apt-get install build-essential libssl-dev
     mkdir poco
     cd poco
-    download $POCO.tar.gz $POCO_PATH
+#    download $POCO.tar.gz $POCO_PATH
     tar -xf $POCO.tar.gz
     cd $POCO
     ./configure --prefix=$CUR_DIR/poco
+    cmake -DCMAKE_INSTALL_PREFIX=$CUR_DIR/poco
     make -j12
     make install
 }
