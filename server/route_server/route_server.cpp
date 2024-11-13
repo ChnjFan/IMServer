@@ -12,20 +12,6 @@
 
 class RouteServer : public Poco::Util::ServerApplication {
 protected:
-    void readConfig(const char *file) {
-        Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig(new Poco::Util::IniFileConfiguration("route_server_config.ini"));
-
-        listenIP = pConfig->getString("server.listen_ip");
-        if (listenIP.empty()) {
-            listenIP = "0.0.0.0";
-        }
-
-        listenPort = pConfig->getInt("server.listen_port");
-        if (0 == listenPort) {
-            listenPort = DEFAULT_PORT;
-        }
-    }
-
     int main(const std::vector<std::string>& args) override {
         try {
             readConfig("route_server_config.ini");
@@ -54,6 +40,22 @@ protected:
             return Application::EXIT_SOFTWARE;
         }
     }
+
+private:
+    void readConfig(const char *file) {
+        Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig(new Poco::Util::IniFileConfiguration(file));
+
+        listenIP = pConfig->getString("server.listen_ip");
+        if (listenIP.empty()) {
+            listenIP = "0.0.0.0";
+        }
+
+        listenPort = pConfig->getInt("server.listen_port");
+        if (0 == listenPort) {
+            listenPort = DEFAULT_PORT;
+        }
+    }
+
 private:
     const int DEFAULT_MAX_CONN = 100;
     const int DEFAULT_THREAD_NUM = 16;
