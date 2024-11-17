@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package IM.login;
+import "IM.BaseType.proto";
+option optimize_for = LITE_RUNTIME;
+
+message ImMsgLoginReq {
+    string user_name = 1;
+    string password = 2;
+    IM.BaseType.UserState user_state = 3;
+}
+
+message ImMsgLoginRes {
+    uint32 server_time = 1;
+    IM.BaseType.ResultType ret_code = 2;
+}

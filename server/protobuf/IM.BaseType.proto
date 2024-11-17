@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package IM.BaseType;
+option optimize_for = LITE_RUNTIME;
+
+enum MsgType {
+    MSG_TYPE_LOGIN = 0;
+}
+
+enum UserState {
+    USER_STATE_ONLINE = 0;
+    USER_STATE_OFFLINE = 1;
+}
+
+enum ResultType {
+    RESULT_TYPE_NONE = 0;
+    RESULT_TYPE_NO_SERVER = 1;
+}
