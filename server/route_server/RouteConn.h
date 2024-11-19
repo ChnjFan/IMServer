@@ -12,6 +12,7 @@
 #include "Poco/Net/TCPServerParams.h"
 #include "Poco/Net/TCPServerConnectionFactory.h"
 #include "Poco/Net/StreamSocket.h"
+#include "Poco/Net/SocketNotification.h"
 #include "Poco/Timer.h"
 #include "IMPdu.h"
 #include "ByteStream.h"
@@ -25,12 +26,15 @@ public:
     void run() override;
 
 private:
+    void onReadable(Poco::Net::ReadableNotification *pNotification);
+    void onWritable(Poco::Net::WritableNotification *pNotification);
+    void onError(Poco::Net::ErrorNotification *pNotification);
     void recvMsgHandler();
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
     ByteStream recvMsgBuf;
-
+    ByteStream sendMsgBuf;
 };
 
 class RouteConnFactory : public Poco::Net::TCPServerConnectionFactory {

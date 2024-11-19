@@ -17,10 +17,14 @@ void ByteStream::write(ByteStream &data, uint32_t size) {
     std::copy(tmp.begin(), tmp.end(), std::back_inserter(buffer));
 }
 
+const char *ByteStream::data() {
+    return buffer.data();
+}
+
 std::vector<char> ByteStream::read(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
-        data.insert(buffer.end(), buffer.begin(), buffer.begin() + size);
+        data.insert(data.end(), buffer.begin(), buffer.begin() + size);
         buffer.erase(buffer.begin(), buffer.begin() + size);
     }
     return data;
@@ -29,7 +33,7 @@ std::vector<char> ByteStream::read(uint32_t size) {
 std::vector<char> ByteStream::peek(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
-        data.insert(buffer.end(), buffer.begin(), buffer.begin() + size);
+        data.insert(data.end(), buffer.begin(), buffer.begin() + size);
     }
     return data;
 }
@@ -54,6 +58,14 @@ uint32_t ByteStream::readUint32() {
     return data;
 }
 
-uint32_t ByteStream::size() {
+int ByteStream::size() {
     return buffer.size();
+}
+
+bool ByteStream::empty() {
+    return buffer.empty();
+}
+
+void ByteStream::clear() {
+    buffer.clear();
 }

@@ -29,8 +29,7 @@ protected:
             std::cout << "Server started listen on " << listenIP << ":" << listenPort << std::endl;
 
             // Wait for termination request
-            std::cout << "Press Enter to exit..." << std::endl;
-            std::cin.get();
+            waitForTerminationRequest();
 
             server.stop();
 

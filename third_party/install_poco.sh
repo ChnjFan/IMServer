@@ -87,6 +87,7 @@ build_poco(){
     cmake -DCMAKE_INSTALL_PREFIX=$CUR_DIR/poco
     make -j12
     make install
+    export LD_LIBRARY_PATH=$CUR_DIR/poco/lib:$LD_LIBRARY_PATH
 }
 
 check_user
