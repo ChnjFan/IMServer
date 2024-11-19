@@ -8,6 +8,7 @@
 #include "RouteConn.h"
 #include "HeartBeat.h"
 
+
 RouteConn::RouteConn(const Poco::Net::StreamSocket &socket) : Poco::Net::TCPServerConnection(socket),
                                                                 recvMsgBuf(SOCKET_BUFFER_LEN),
                                                                 sendMsgBuf(SOCKET_BUFFER_LEN) { }
