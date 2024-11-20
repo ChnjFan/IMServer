@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(route_server)
 
-include_directories(. ../protobuf/protocol)
+include_directories(. ../protobuf/protocol ../common)
 
 aux_source_directory(./ SRC_LIST)
 
@@ -11,4 +11,4 @@ set_target_properties(route_server PROPERTIES
 )
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
-target_link_libraries(route_server PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol)
+target_link_libraries(route_server PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol common)

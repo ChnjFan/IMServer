@@ -22,6 +22,10 @@ std::shared_ptr<IMPdu> IMPdu::readPdu(ByteStream &data) {
     return pImPdu;
 }
 
+uint32_t IMPdu::getMsgType() const {
+    return header.getMsgType();
+}
+
 void IMPdu::readHeader(ByteStream &data) {
     uint32_t len = data.readUint32();
     uint32_t type = data.readUint32();
@@ -35,3 +39,4 @@ void IMPdu::readHeader(ByteStream &data) {
 void IMPdu::readBody(ByteStream &data, uint32_t size) {
     body.write(data, size);
 }
+

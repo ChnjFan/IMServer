@@ -10,6 +10,7 @@ add_definitions( -g -W -Wall -lpthread)
 include_directories(./ third_party/poco/include third_party/protobuf/include)
 link_directories(./ third_party/poco/lib/ third_party/protobuf/lib/)
 
+add_subdirectory(server/common)
 add_subdirectory(server/protobuf)
 add_subdirectory(server/route_server)
 add_subdirectory(server/test)

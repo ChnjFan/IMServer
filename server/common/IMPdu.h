@@ -14,6 +14,8 @@ public:
 
     static std::shared_ptr<IMPdu> readPdu(ByteStream &data);
 
+    uint32_t getMsgType() const;
+
 private:
     void readHeader(ByteStream &data);
     void readBody(ByteStream &data, uint32_t size);
