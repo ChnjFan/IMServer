@@ -38,18 +38,16 @@ void MsgHandlerCallbackMap::registerCallback(uint32_t msgType, MsgHandlerCallbac
 
 void MsgHandlerCallbackMap::handleHeartBeatMsg(RouteConn &conn, IMPdu &imPdu) {
     //TODO: 收到客户端心跳消息后要回复，并记录收到心跳的 time_tick
-
+    conn.sendPdu(imPdu);
+    conn.updateLsgTimeStamp();
 }
 
 void MsgHandlerCallbackMap::handleLoginMsg(RouteConn &conn, IMPdu &imPdu) {
 
 }
 
-MsgHandler::MsgHandler(RouteConn &conn, std::shared_ptr<IMPdu> &pImPdu) : conn(conn), pImPdu(pImPdu) {
 
-}
-
-void MsgHandler::exec() {
+void MsgHandler::exec(RouteConn &conn, std::shared_ptr<IMPdu> &pImPdu) {
     return MsgHandlerCallbackMap::getInstance()->invokeCallback(pImPdu->getMsgType(), conn, *pImPdu);
 }
 

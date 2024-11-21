@@ -14,7 +14,11 @@ public:
 
     static std::shared_ptr<IMPdu> readPdu(ByteStream &data);
 
+    uint32_t serialize(char* buf, uint32_t bufSize);
+
     uint32_t getMsgType() const;
+
+    uint32_t size();
 
 private:
     void readHeader(ByteStream &data);

@@ -7,9 +7,15 @@
 
 #include <cstdint>
 
+typedef struct {
+    uint32_t length;
+    uint32_t msgType;
+    uint32_t msgSeq;
+}PDU_HEADER_DATA;
+
 class PduHeader {
 public:
-    PduHeader(uint32_t len, uint32_t type, uint32_t seq) : length(len), msgType(type), msgSeq(seq) { }
+    explicit PduHeader(PDU_HEADER_DATA& data);
 
     PduHeader();
 
@@ -27,10 +33,10 @@ public:
 
     static uint32_t getPduHeaderLen();
 
+    uint32_t serialize(char *buf, uint32_t bufSize);
+
 private:
-    uint32_t length;
-    uint32_t msgType;
-    uint32_t msgSeq;
+    PDU_HEADER_DATA data;
 };
 
 #endif //IMSERVER_PDUHEADER_H

@@ -58,7 +58,7 @@ uint32_t ByteStream::readUint32() {
     return data;
 }
 
-int ByteStream::size() {
+uint32_t ByteStream::size() {
     return buffer.size();
 }
 

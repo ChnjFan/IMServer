@@ -18,14 +18,16 @@ using Poco::Util::IniFileConfiguration;
 
 int main (int argc, const char * argv[])
 {
-    AutoPtr<IniFileConfiguration> pConfig(new IniFileConfiguration("../route_server/bin/route_server_config.ini"));
+    AutoPtr<IniFileConfiguration> pConfig(new IniFileConfiguration("route_server_config.ini"));
 
-    std::string serverIP = pConfig->getString("server.listen_ip");
+    std::string serverIP = "127.0.0.1";
     int serverPort = pConfig->getInt("server.listen_port");
 
     SocketAddress address(serverIP, serverPort);
     StreamSocket socket(address);
-    char buffer[BUFFER_SIZE];
+    char buffer[BUFFER_SIZE] = {0};
+    int sendlen = socket.sendBytes(buffer, 12);
+    std::cout << "send size: " << sendlen << std::endl;
     // 循环接收数据
     while (true)
     {
@@ -37,7 +39,7 @@ int main (int argc, const char * argv[])
             // 确保接收到的数据是字符串形式
             buffer[len] = '\0';
             // 输出接收到的数据
-            std::cout << "" << buffer << std::endl;
+            std::cout << "recv: " << buffer << std::endl;
         }
     }
     return 0;

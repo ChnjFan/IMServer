@@ -11,7 +11,7 @@ void HeartBeatTask::run() {
 }
 
 HeartBeat::HeartBeat(long startInterval, long periodicInterval)
-                        : heartBeatTask(), timer() {
+                        : heartBeatTask(new HeartBeatTask()), timer() {
     timer.schedule(heartBeatTask, startInterval, periodicInterval);
 }
 

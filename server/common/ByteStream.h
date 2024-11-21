@@ -23,7 +23,7 @@ public:
     uint32_t peekUint32();
     uint32_t readUint32();
 
-    int size();
+    uint32_t size();
 
     bool empty();
     void clear();

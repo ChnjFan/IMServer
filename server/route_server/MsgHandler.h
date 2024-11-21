@@ -40,13 +40,8 @@ private:
  */
 class MsgHandler {
 public:
-    explicit MsgHandler(RouteConn &conn, std::shared_ptr<IMPdu> &pImPdu);
+    static void exec(RouteConn &conn, std::shared_ptr<IMPdu> &pImPdu);
 
-    void exec();
-
-private:
-    RouteConn &conn;
-    std::shared_ptr<IMPdu> &pImPdu;
 };
 
 

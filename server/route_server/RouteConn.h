@@ -29,7 +29,11 @@ public:
     void run() override;
     void close();
 
+    void send(char* msg, uint32_t len);
+    void sendPdu(IMPdu &imPdu);
+
     const Poco::Timestamp getLstTimeStamp() const;
+    void updateLsgTimeStamp();
 
 private:
     void onReadable(Poco::Net::ReadableNotification *pNotification);
@@ -50,23 +54,6 @@ public:
     Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket) override {
         return new RouteConn(socket);
     }
-};
-
-class RouteConnManager {
-public:
-    static RouteConnManager* getInstance();
-    static void destroyInstance();
-
-    void addConn(RouteConn *pRouteConn);
-    void closeConn(RouteConn *pRouteConn);
-
-    void checkTimeStamp();
-
-private:
-    RouteConnManager() = default;
-
-    static RouteConnManager *instance;
-    std::set<RouteConn*> routeConnSet;
 };
 
 #endif //ROUTE_SERVER_ROUTECONN_H

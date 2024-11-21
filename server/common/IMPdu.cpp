@@ -3,9 +3,10 @@
 //
 
 #include <memory>
+#include <cstring>
 #include "IMPdu.h"
 
-IMPdu::IMPdu(): header(0, 0, 0), body(DEFAULT_BODY_LEN) {
+IMPdu::IMPdu(): header(), body(DEFAULT_BODY_LEN) {
 
 }
 
@@ -22,21 +23,35 @@ std::shared_ptr<IMPdu> IMPdu::readPdu(ByteStream &data) {
     return pImPdu;
 }
 
+uint32_t IMPdu::serialize(char *buf, uint32_t bufSize) {
+    if (header.getLength() != body.size())//帧头设置的长度与消息体长度不一致
+        return 0;
+
+    uint32_t len = header.serialize(buf, bufSize);
+
+    if (len + body.size() <= bufSize) {
+        memcpy(buf+len, body.data(), body.size());
+        len += body.size();
+    }
+
+    return len;
+}
+
 uint32_t IMPdu::getMsgType() const {
     return header.getMsgType();
 }
 
 void IMPdu::readHeader(ByteStream &data) {
-    uint32_t len = data.readUint32();
-    uint32_t type = data.readUint32();
-    uint32_t seq = data.readUint32();
-
-    header.setLength(len);
-    header.setMsgType(type);
-    header.setMsgSeq(seq);
+    header.setLength(data.readUint32());
+    header.setMsgType(data.readUint32());
+    header.setMsgSeq(data.readUint32());
 }
 
 void IMPdu::readBody(ByteStream &data, uint32_t size) {
     body.write(data, size);
+}
+
+uint32_t IMPdu::size() {
+    return PduHeader::getPduHeaderLen() + body.size();
 }
 

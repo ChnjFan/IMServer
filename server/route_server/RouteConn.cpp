@@ -2,12 +2,14 @@
 // Created by fan on 24-11-11.
 //
 
+#include <memory>
 #include "Poco/Net/SocketReactor.h"
 #include "Poco/Runnable.h"
 #include "Poco/Timer.h"
 #include "RouteConn.h"
 #include "HeartBeat.h"
 #include "MsgHandler.h"
+#include "RouteConnManager.h"
 
 RouteConn::RouteConn(const Poco::Net::StreamSocket &socket) : Poco::Net::TCPServerConnection(socket),
                                                                 recvMsgBuf(SOCKET_BUFFER_LEN),
@@ -46,6 +48,17 @@ void RouteConn::close() {
     connSocket.close();
 }
 
+void RouteConn::send(char *msg, uint32_t len) {
+    sendMsgBuf.write(msg, len);
+}
+
+void RouteConn::sendPdu(IMPdu &imPdu) {
+    char *msg = new char[imPdu.size()];
+    uint32_t len = imPdu.serialize(msg, imPdu.size());
+    send(msg, len);
+    delete[] msg;
+}
+
 void RouteConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
     Poco::Net::StreamSocket socket = pNotification->socket();
 
@@ -68,14 +81,12 @@ void RouteConn::onWritable(Poco::Net::WritableNotification *pNotification) {
         return;
 
     socket.sendBytes(sendMsgBuf.data(), sendMsgBuf.size());
+    sendMsgBuf.clear();
 }
 
 void RouteConn::onError(Poco::Net::ErrorNotification *pNotification) {
-    Poco::Net::StreamSocket socket = pNotification->socket();
-
     std::cout << "RouteConn error" << std::endl;
-
-    socket.close();
+    RouteConnManager::getInstance()->closeConn(this);
 }
 
 void RouteConn::recvMsgHandler() {
@@ -84,8 +95,7 @@ void RouteConn::recvMsgHandler() {
         if (pImPdu == nullptr)
             return;
 
-        MsgHandler handler(*this, pImPdu);
-        handler.exec();
+        MsgHandler::exec(*this, pImPdu);
     }
 }
 
@@ -93,43 +103,8 @@ const Poco::Timestamp RouteConn::getLstTimeStamp() const {
     return lstTimeStamp;
 }
 
-/**
- * 连接管理实例
- */
-RouteConnManager *RouteConnManager::instance = nullptr;
-
-RouteConnManager *RouteConnManager::getInstance() {
-    if (instance == nullptr)
-        instance = new RouteConnManager();
-    return instance;
-}
-
-void RouteConnManager::destroyInstance() {
-    delete instance;
-    instance = nullptr;
-}
-
-void RouteConnManager::addConn(RouteConn *pRouteConn) {
-    routeConnSet.insert(pRouteConn);
-}
-
-void RouteConnManager::closeConn(RouteConn *pRouteConn) {
-    auto it = routeConnSet.find(pRouteConn);
-    if (it == routeConnSet.end())
-        return;
-    pRouteConn->close();
-    routeConnSet.erase(pRouteConn);
-}
-
-void RouteConnManager::checkTimeStamp() {
-    for (auto it = routeConnSet.rbegin(); it != routeConnSet.rend(); ) {
-        Poco::Timestamp timestamp;
-        RouteConn *conn = *it;
-        if (timestamp - conn->getLstTimeStamp() > HeartBeat::HEARTBEAT_CHECK_TIME) {
-            conn->close();
-            //TODO:删除容器元素
-        }
-    }
+void RouteConn::updateLsgTimeStamp() {
+    lstTimeStamp.update();
 }
 
 
