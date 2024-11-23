@@ -3,11 +3,9 @@
 //
 
 #include <memory>
-#include "Poco/Net/SocketReactor.h"
 #include "Poco/Runnable.h"
 #include "Poco/Timer.h"
 #include "RouteConn.h"
-#include "HeartBeat.h"
 #include "MsgHandler.h"
 #include "RouteConnManager.h"
 
@@ -15,15 +13,20 @@ RouteConn::RouteConn(const Poco::Net::StreamSocket &socket) : Poco::Net::TCPServ
                                                                 recvMsgBuf(SOCKET_BUFFER_LEN),
                                                                 sendMsgBuf(SOCKET_BUFFER_LEN),
                                                                 connSocket(),
-                                                                lstTimeStamp() { }
+                                                                reactor(),
+                                                                lstTimeStamp(),
+                                                                sessionUID(),
+                                                                state(ROUTE_CONN_STATE::CONN_IDLE) { }
 
 void RouteConn::run() {
     try {
-        //TODO:保存连接
-        connSocket = socket();
+        generateSessionUID();
         RouteConnManager::getInstance()->addConn(this);
-        Poco::Net::SocketReactor reactor;
+
+        std::cout << "Session " << sessionUID.toString() << " conn" << std::endl;
+
         // 注册poll事件
+        connSocket = socket();
         reactor.addEventHandler(connSocket,
                                 Poco::Observer<Poco::Runnable, Poco::Net::ReadableNotification>(
                                         *this, reinterpret_cast<void (Runnable::*)(
@@ -37,15 +40,19 @@ void RouteConn::run() {
                                         *this, reinterpret_cast<void (Runnable::*)(
                                                 Poco::Net::ErrorNotification *)>(&RouteConn::onError)));
         reactor.run();
+        std::cout << "Session " << sessionUID.toString() << " close" << std::endl;
+
     } catch (Poco::Exception& e) {
         std::cerr << "Error: " << e.displayText() << std::endl;
     }
 }
 
 void RouteConn::close() {
-    // TODO: 关闭连接
-    std::cout << "Session close" << std::endl;
+    std::cout << "Session " << sessionUID.toString() << " close" << std::endl;
+
+    connSocket.shutdown();
     connSocket.close();
+    reactor.stop();
 }
 
 void RouteConn::send(char *msg, uint32_t len) {
@@ -89,6 +96,18 @@ void RouteConn::onError(Poco::Net::ErrorNotification *pNotification) {
     RouteConnManager::getInstance()->closeConn(this);
 }
 
+std::string RouteConn::getSessionUID() const {
+    return sessionUID.toString();
+}
+
+bool RouteConn::isConnIdle() {
+    return state == ROUTE_CONN_STATE::CONN_IDLE;
+}
+
+void RouteConn::setState(ROUTE_CONN_STATE state) {
+    this->state = state;
+}
+
 void RouteConn::recvMsgHandler() {
     while (true) {
         std::shared_ptr<IMPdu> pImPdu = IMPdu::readPdu(recvMsgBuf);
@@ -106,5 +125,11 @@ const Poco::Timestamp RouteConn::getLstTimeStamp() const {
 void RouteConn::updateLsgTimeStamp() {
     lstTimeStamp.update();
 }
+
+void RouteConn::generateSessionUID() {
+    Poco::UUIDGenerator uuidGen;
+    sessionUID = uuidGen.create();
+}
+
 
 

@@ -3,12 +3,12 @@
  * @brief 路由服务器
  */
 
+#include "Poco/AutoPtr.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
-#include "Poco/AutoPtr.h"
 #include "RouteConn.h"
-#include "HeartBeat.h"
 #include "MsgHandler.h"
+#include "ClientHeartBeatHandler.h"
 #include <vector>
 #include <string>
 
@@ -21,7 +21,9 @@ protected:
             // 注册消息处理回调
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
-            HeartBeat checkHeartBeat;
+            ClientHeartBeatHandler heartBeatTask;
+            Poco::Util::Timer timer;
+            timer.schedule(&heartBeatTask, 0, 5000);
 
             runServer();
 

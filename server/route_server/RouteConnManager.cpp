@@ -2,9 +2,8 @@
 // Created by fan on 24-11-21.
 //
 
-#include "HeartBeat.h"
 #include "RouteConnManager.h"
-
+#include "ClientHeartBeatHandler.h"
 
 /**
  * 连接管理实例
@@ -39,7 +38,8 @@ void RouteConnManager::checkTimeStamp() {
         Poco::Timestamp timestamp;
         RouteConn *conn = *it;
 
-        if (timestamp - conn->getLstTimeStamp() > HeartBeat::HEARTBEAT_CHECK_TIME) {
+        if (timestamp - conn->getLstTimeStamp() > ClientHeartBeatHandler::HEARTBEAT_CHECK_TIME) {
+            std::cout << "Session " << conn->getSessionUID() << " timeout" << std::endl;
             conn->close();
             it = routeConnSet.erase(it);
         }

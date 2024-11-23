@@ -5,6 +5,7 @@
 #ifndef IMSERVER_IMPDU_H
 #define IMSERVER_IMPDU_H
 
+#include <memory>
 #include "PduHeader.h"
 #include "ByteStream.h"
 

@@ -11,16 +11,25 @@
 #include <string>
 #include <set>
 #include "Poco/Timestamp.h"
+#include "Poco/UUID.h"
+#include "Poco/UUIDGenerator.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Net/TCPServer.h"
 #include "Poco/Net/TCPServerParams.h"
 #include "Poco/Net/TCPServerConnectionFactory.h"
+#include "Poco/Net/SocketReactor.h"
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/SocketNotification.h"
 #include "Poco/Timer.h"
 #include "IMPdu.h"
 #include "ByteStream.h"
 
+typedef enum {
+    CONN_IDLE = 0,
+    CONN_VERIFY = 1,
+    CONN_ONLINE = 2,
+    CONN_OFFLINE = 3,
+}ROUTE_CONN_STATE;
 
 class RouteConn : public Poco::Net::TCPServerConnection {
 public:
@@ -35,18 +44,28 @@ public:
     const Poco::Timestamp getLstTimeStamp() const;
     void updateLsgTimeStamp();
 
+    std::string getSessionUID() const;
+
+    bool isConnIdle();
+    void setState(ROUTE_CONN_STATE state);
+
 private:
     void onReadable(Poco::Net::ReadableNotification *pNotification);
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onError(Poco::Net::ErrorNotification *pNotification);
     void recvMsgHandler();
+    void generateSessionUID();
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
     ByteStream recvMsgBuf;
     ByteStream sendMsgBuf;
     Poco::Net::StreamSocket connSocket;
+    Poco::Net::SocketReactor reactor;
+
     Poco::Timestamp lstTimeStamp;
+    Poco::UUID sessionUID;
+    ROUTE_CONN_STATE state;
 };
 
 class RouteConnFactory : public Poco::Net::TCPServerConnectionFactory {

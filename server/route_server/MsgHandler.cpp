@@ -2,9 +2,10 @@
 // Created by fan on 24-11-20.
 //
 
-#include "IM.BaseType.pb.h"
-#include "MsgHandler.h"
 #include <utility>
+#include "IM.BaseType.pb.h"
+#include "IM.Login.grpc.pb.h"
+#include "MsgHandler.h"
 
 MsgHandlerCallbackMap *MsgHandlerCallbackMap::instance = nullptr;
 
@@ -37,13 +38,17 @@ void MsgHandlerCallbackMap::registerCallback(uint32_t msgType, MsgHandlerCallbac
 }
 
 void MsgHandlerCallbackMap::handleHeartBeatMsg(RouteConn &conn, IMPdu &imPdu) {
-    //TODO: 收到客户端心跳消息后要回复，并记录收到心跳的 time_tick
+    //收到客户端心跳消息后要回复，并记录收到心跳的 time_tick
+    std::cout << "Session " << conn.getSessionUID() << " recv heart beat" << std::endl;
     conn.sendPdu(imPdu);
     conn.updateLsgTimeStamp();
 }
 
 void MsgHandlerCallbackMap::handleLoginMsg(RouteConn &conn, IMPdu &imPdu) {
-
+    //登录消息检查会话状态，如果会话已经登录或正在验证，其他终端无法登录
+    if (!conn.isConnIdle())
+        return;
+    conn.setState(ROUTE_CONN_STATE::CONN_VERIFY);
 }
 
 

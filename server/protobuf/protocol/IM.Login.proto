@@ -1,16 +1,26 @@
 syntax = "proto3";
 
-package IM.login;
+package IM.Login;
+
 import "IM.BaseType.proto";
+
 option optimize_for = LITE_RUNTIME;
 
+// The login service definition.
+service UserRequest {
+    rpc login(ImMsgLoginReq) returns (ImMsgLoginRes) {}
+}
+
+// 登录请求
 message ImMsgLoginReq {
     string user_name = 1;
     string password = 2;
     IM.BaseType.UserState user_state = 3;
 }
 
+// 登录响应消息
 message ImMsgLoginRes {
     uint32 server_time = 1;
+    string uid = 3;
     IM.BaseType.ResultType ret_code = 2;
 }
