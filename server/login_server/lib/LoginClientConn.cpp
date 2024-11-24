@@ -90,7 +90,7 @@ void LoginClientConn::connect() {
 
 void LoginClientConn::reconnect() {
     while (!connected) {
-        Poco::Thread::sleep(5000);
+        Poco::Thread::sleep(RECONNECT_TIME);
         std::cout << "Reconnect login_server: " << serverIP << ":" << serverPort << std::endl;
         connect();
     }

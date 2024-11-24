@@ -29,6 +29,7 @@ private:
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
+    static constexpr int RECONNECT_TIME = 5 * 1000;
 
     std::shared_ptr<Poco::Net::StreamSocket> pSocket;
     Poco::Net::SocketReactor& reactor;
