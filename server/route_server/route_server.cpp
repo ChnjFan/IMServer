@@ -21,9 +21,7 @@ protected:
             // 注册消息处理回调
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
-            ClientHeartBeatHandler heartBeatTask;
-            Poco::Util::Timer timer;
-            timer.schedule(&heartBeatTask, 0, 5000);
+            createHeartBeatTimer();
 
             runServer();
 
@@ -47,6 +45,12 @@ private:
         if (0 == listenPort) {
             listenPort = DEFAULT_PORT;
         }
+    }
+
+    void createHeartBeatTimer() {
+        ClientHeartBeatHandler heartBeatTask;
+        Poco::Util::Timer timer;
+        timer.schedule(&heartBeatTask, 0, 5000);
     }
 
     void runServer() {

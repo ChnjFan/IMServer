@@ -7,6 +7,12 @@
 
 # 服务端方案
 
+## RouteServer
+
+RouteServer 主要负责路由和消息转发，过滤无效消息。
+
+与其他组件通过TCP传输。
+
 ## 登录流程
 
 ```mermaid
