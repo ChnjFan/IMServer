@@ -53,7 +53,7 @@ private:
     void onReadable(Poco::Net::ReadableNotification *pNotification);
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onError(Poco::Net::ErrorNotification *pNotification);
-    void recvMsgHandler();
+    void dispatchMsg();
     void generateSessionUID();
 
 private:

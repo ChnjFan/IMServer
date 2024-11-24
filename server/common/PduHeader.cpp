@@ -37,6 +37,14 @@ void PduHeader::setMsgSeq(uint32_t msgSeq) {
     data.msgSeq = msgSeq;
 }
 
+std::string PduHeader::getUuid() const {
+    return std::string(data.uuid);
+}
+
+void PduHeader::setUuid(std::string uuid) {
+    strncpy(data.uuid, uuid.c_str(), PDU_HEADER_UUID_LEN);
+}
+
 uint32_t PduHeader::getPduHeaderLen() {
     return 3 * sizeof(uint32_t);
 }
@@ -48,3 +56,5 @@ uint32_t PduHeader::serialize(char *buf, uint32_t bufSize) {
     memcpy(buf, &data, sizeof(data));
     return getPduHeaderLen();
 }
+
+

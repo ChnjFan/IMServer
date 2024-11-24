@@ -5,6 +5,7 @@
 #ifndef IMSERVER_ROUTECONNMANAGER_H
 #define IMSERVER_ROUTECONNMANAGER_H
 
+#include <map>
 #include "RouteConn.h"
 
 class RouteConnManager {
@@ -14,6 +15,7 @@ public:
 
     void addConn(RouteConn *pRouteConn);
     void closeConn(RouteConn *pRouteConn);
+    RouteConn* getConn(std::string uuid);
 
     void checkTimeStamp();
 
@@ -21,7 +23,7 @@ private:
     RouteConnManager() = default;
 
     static RouteConnManager *instance;
-    std::set<RouteConn*> routeConnSet;
+    std::map<std::string, RouteConn*> routeConnMap;
 };
 
 

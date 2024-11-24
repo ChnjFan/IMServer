@@ -41,6 +41,10 @@ uint32_t IMPdu::getMsgType() const {
     return header.getMsgType();
 }
 
+std::string IMPdu::getUuid() const {
+    return header.getUuid();
+}
+
 void IMPdu::readHeader(ByteStream &data) {
     header.setLength(data.readUint32());
     header.setMsgType(data.readUint32());

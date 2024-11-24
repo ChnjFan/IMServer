@@ -22,26 +22,33 @@ void RouteConnManager::destroyInstance() {
 }
 
 void RouteConnManager::addConn(RouteConn *pRouteConn) {
-    routeConnSet.insert(pRouteConn);
+    routeConnMap[pRouteConn->getSessionUID()] = pRouteConn;
+}
+
+RouteConn *RouteConnManager::getConn(std::string uuid) {
+    auto it = routeConnMap.find(uuid);
+    if (it == routeConnMap.end())
+        return nullptr;
+    return it->second;
 }
 
 void RouteConnManager::closeConn(RouteConn *pRouteConn) {
-    auto it = routeConnSet.find(pRouteConn);
-    if (it == routeConnSet.end())
+    auto it = routeConnMap.find(pRouteConn->getSessionUID());
+    if (it == routeConnMap.end())
         return;
     pRouteConn->close();
-    routeConnSet.erase(pRouteConn);
+    routeConnMap.erase(it);
 }
 
 void RouteConnManager::checkTimeStamp() {
-    for (auto it = routeConnSet.begin(); it != routeConnSet.end(); ) {
+    for (auto it = routeConnMap.begin(); it != routeConnMap.end(); ) {
         Poco::Timestamp timestamp;
-        RouteConn *conn = *it;
+        RouteConn *conn = it->second;
 
         if (timestamp - conn->getLstTimeStamp() > ClientHeartBeatHandler::HEARTBEAT_CHECK_TIME) {
             std::cout << "Session " << conn->getSessionUID() << " timeout" << std::endl;
             conn->close();
-            it = routeConnSet.erase(it);
+            it = routeConnMap.erase(it);
         }
         else {
             it++;

@@ -78,7 +78,7 @@ void RouteConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
         std::cout << recvMsgBuf.data() << std::endl;
     }
 
-    recvMsgHandler();
+    dispatchMsg();
 }
 
 void RouteConn::onWritable(Poco::Net::WritableNotification *pNotification) {
@@ -108,7 +108,8 @@ void RouteConn::setState(ROUTE_CONN_STATE state) {
     this->state = state;
 }
 
-void RouteConn::recvMsgHandler() {
+// 分发消息
+void RouteConn::dispatchMsg() {
     while (true) {
         std::shared_ptr<IMPdu> pImPdu = IMPdu::readPdu(recvMsgBuf);
         if (pImPdu == nullptr)

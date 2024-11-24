@@ -6,11 +6,6 @@ import "IM.BaseType.proto";
 
 option optimize_for = LITE_RUNTIME;
 
-// The login service definition.
-service UserRequest {
-    rpc login(ImMsgLoginReq) returns (ImMsgLoginRes) {}
-}
-
 // 登录请求
 message ImMsgLoginReq {
     string user_name = 1;

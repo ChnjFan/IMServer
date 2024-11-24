@@ -4,8 +4,8 @@
 
 #include <utility>
 #include "IM.BaseType.pb.h"
-#include "IM.Login.grpc.pb.h"
 #include "MsgHandler.h"
+#include "LoginServerResult.h"
 
 MsgHandlerCallbackMap *MsgHandlerCallbackMap::instance = nullptr;
 
@@ -49,6 +49,7 @@ void MsgHandlerCallbackMap::handleLoginMsg(RouteConn &conn, IMPdu &imPdu) {
     if (!conn.isConnIdle())
         return;
     conn.setState(ROUTE_CONN_STATE::CONN_VERIFY);
+    LoginServerResult::getInstance()->sendPdu(imPdu);
 }
 
 

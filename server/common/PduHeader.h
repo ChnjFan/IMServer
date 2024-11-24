@@ -6,11 +6,15 @@
 #define IMSERVER_PDUHEADER_H
 
 #include <cstdint>
+#include <string>
+
+#define PDU_HEADER_UUID_LEN     (256)
 
 typedef struct {
     uint32_t length;
     uint32_t msgType;
     uint32_t msgSeq;
+    char uuid[PDU_HEADER_UUID_LEN];
 }PDU_HEADER_DATA;
 
 class PduHeader {
@@ -30,6 +34,10 @@ public:
     uint32_t getMsgSeq() const;
 
     void setMsgSeq(uint32_t msgSeq);
+
+    std::string getUuid() const;
+
+    void setUuid(std::string uuid);
 
     static uint32_t getPduHeaderLen();
 

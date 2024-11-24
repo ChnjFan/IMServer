@@ -3,25 +3,33 @@
  * @brief 路由服务器
  */
 
+#include <vector>
+#include <string>
 #include "Poco/AutoPtr.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
 #include "RouteConn.h"
 #include "MsgHandler.h"
 #include "ClientHeartBeatHandler.h"
-#include <vector>
-#include <string>
+#include "LoginClientConn.h"
+#include "LoginServerResult.h"
 
 class RouteServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
             readConfig("route_server_config.ini");
+            Poco::Net::SocketReactor reactor;
+            Poco::ThreadPool threadPool;
 
             // 注册消息处理回调
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
-            createHeartBeatTimer();
+            ClientHeartBeatHandler heartBeatTask;
+            Poco::Util::Timer timer;
+            timer.schedule(&heartBeatTask, 0, 5000);
+            // 注册login_server服务
+            registerLoginServer(reactor, threadPool);
 
             runServer();
 
@@ -47,10 +55,8 @@ private:
         }
     }
 
-    void createHeartBeatTimer() {
-        ClientHeartBeatHandler heartBeatTask;
-        Poco::Util::Timer timer;
-        timer.schedule(&heartBeatTask, 0, 5000);
+    void registerLoginServer(Poco::Net::SocketReactor& reactor, Poco::ThreadPool& threadPool) {
+        LoginServerResult::getInstance()->registerLoginServer(reactor, threadPool);
     }
 
     void runServer() {

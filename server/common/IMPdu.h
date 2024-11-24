@@ -18,6 +18,7 @@ public:
     uint32_t serialize(char* buf, uint32_t bufSize);
 
     uint32_t getMsgType() const;
+    std::string getUuid() const;
 
     uint32_t size();
 
