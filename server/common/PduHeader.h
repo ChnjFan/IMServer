@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <string>
 
+namespace Common {
+
 #define PDU_HEADER_UUID_LEN     (256)
 
 typedef struct {
@@ -15,11 +17,11 @@ typedef struct {
     uint32_t msgType;
     uint32_t msgSeq;
     char uuid[PDU_HEADER_UUID_LEN];
-}PDU_HEADER_DATA;
+} PDU_HEADER_DATA;
 
 class PduHeader {
 public:
-    explicit PduHeader(PDU_HEADER_DATA& data);
+    explicit PduHeader(PDU_HEADER_DATA &data);
 
     PduHeader();
 
@@ -46,5 +48,7 @@ public:
 private:
     PDU_HEADER_DATA data;
 };
+
+}
 
 #endif //IMSERVER_PDUHEADER_H

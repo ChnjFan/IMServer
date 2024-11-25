@@ -13,9 +13,9 @@ class LoginServerResult {
 public:
     static LoginServerResult* getInstance();
 
-    static void handleLoginResult(ByteStream& recvMsgBuf);
+    static void handleLoginResult(Common::ByteStream& recvMsgBuf);
     void registerLoginServer(Poco::Net::SocketReactor& reactor, Poco::ThreadPool& threadPool);
-    void sendPdu(IMPdu& imPdu);
+    void sendPdu(Common::IMPdu& imPdu);
 
 private:
     LoginServerResult() = default;

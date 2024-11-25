@@ -13,6 +13,8 @@
 #include "Poco/Net/SocketNotification.h"
 #include "ByteStream.h"
 
+namespace Common {
+
 class TcpConn : public Poco::Net::TCPServerConnection {
 public:
     explicit TcpConn(const Poco::Net::StreamSocket& socket);
@@ -32,17 +34,19 @@ protected:
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onError(Poco::Net::ErrorNotification *pNotification);
 
-    ByteStream& getRecvMsgBuf();
-    ByteStream& getSendMsgBuf();
+    Common::ByteStream& getRecvMsgBuf();
+    Common::ByteStream& getSendMsgBuf();
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
-    ByteStream recvMsgBuf;
-    ByteStream sendMsgBuf;
+    Common::ByteStream recvMsgBuf;
+    Common::ByteStream sendMsgBuf;
 
     Poco::Net::StreamSocket connSocket;
     Poco::Net::SocketReactor reactor;
 };
+
+}
 
 
 #endif //IMSERVER_TCPCONN_H

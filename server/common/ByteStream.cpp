@@ -4,24 +4,24 @@
 
 #include "ByteStream.h"
 
-ByteStream::ByteStream(std::size_t size) {
+Common::ByteStream::ByteStream(std::size_t size) {
     buffer.reserve(size);
 }
 
-void ByteStream::write(char *data, uint32_t size) {
+void Common::ByteStream::write(char *data, uint32_t size) {
     std::copy(data, data + size, std::back_inserter(buffer));
 }
 
-void ByteStream::write(ByteStream &data, uint32_t size) {
+void Common::ByteStream::write(ByteStream &data, uint32_t size) {
     std::vector<char> tmp = data.read(size);
     std::copy(tmp.begin(), tmp.end(), std::back_inserter(buffer));
 }
 
-const char *ByteStream::data() {
+const char* Common::ByteStream::data() {
     return buffer.data();
 }
 
-std::vector<char> ByteStream::read(uint32_t size) {
+std::vector<char> Common::ByteStream::read(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
         data.insert(data.end(), buffer.begin(), buffer.begin() + size);
@@ -30,7 +30,7 @@ std::vector<char> ByteStream::read(uint32_t size) {
     return data;
 }
 
-std::vector<char> ByteStream::peek(uint32_t size) {
+std::vector<char> Common::ByteStream::peek(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
         data.insert(data.end(), buffer.begin(), buffer.begin() + size);
@@ -38,7 +38,7 @@ std::vector<char> ByteStream::peek(uint32_t size) {
     return data;
 }
 
-uint32_t ByteStream::peekUint32() {
+uint32_t Common::ByteStream::peekUint32() {
     std::vector<char> buf = peek(sizeof(uint32_t));
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -48,7 +48,7 @@ uint32_t ByteStream::peekUint32() {
     return data;
 }
 
-uint32_t ByteStream::readUint32() {
+uint32_t Common::ByteStream::readUint32() {
     std::vector<char> buf = read(sizeof(uint32_t));
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -58,14 +58,14 @@ uint32_t ByteStream::readUint32() {
     return data;
 }
 
-uint32_t ByteStream::size() {
+uint32_t Common::ByteStream::size() {
     return buffer.size();
 }
 
-bool ByteStream::empty() {
+bool Common::ByteStream::empty() {
     return buffer.empty();
 }
 
-void ByteStream::clear() {
+void Common::ByteStream::clear() {
     buffer.clear();
 }

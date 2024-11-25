@@ -15,7 +15,7 @@ RouteConn::RouteConn(const Poco::Net::StreamSocket &socket)
                     , sessionUID()
                     , state(ROUTE_CONN_STATE::CONN_IDLE) { }
 
-void RouteConn::sendPdu(IMPdu &imPdu) {
+void RouteConn::sendPdu(Common::IMPdu &imPdu) {
     char *msg = new char[imPdu.size()];
     uint32_t len = imPdu.serialize(msg, imPdu.size());
     send(msg, len);
@@ -51,7 +51,7 @@ void RouteConn::handleTcpConnError() {
 // 分发消息
 void RouteConn::handleRecvMsg() {
     while (true) {
-        std::shared_ptr<IMPdu> pImPdu = IMPdu::readPdu(getRecvMsgBuf());
+        std::shared_ptr<Common::IMPdu> pImPdu = Common::IMPdu::readPdu(getRecvMsgBuf());
         if (pImPdu == nullptr)
             return;
 

@@ -8,6 +8,8 @@
 #include <vector>
 #include <cstdint>
 
+namespace Common {
+
 class ByteStream {
 public:
     explicit ByteStream(std::size_t size);
@@ -31,5 +33,7 @@ public:
 private:
     std::vector<char> buffer;
 };
+
+}
 
 #endif //IMSERVER_BYTESTREAM_H

@@ -10,9 +10,9 @@
 
 LoginServerResult* LoginServerResult::instance = nullptr;
 
-void LoginServerResult::handleLoginResult(ByteStream &recvMsgBuf) {
+void LoginServerResult::handleLoginResult(Common::ByteStream &recvMsgBuf) {
     while (true) {
-        std::shared_ptr<IMPdu> pImPdu = IMPdu::readPdu(recvMsgBuf);
+        std::shared_ptr<Common::IMPdu> pImPdu = Common::IMPdu::readPdu(recvMsgBuf);
         if (pImPdu == nullptr)
             return;
 
@@ -35,7 +35,7 @@ void LoginServerResult::registerLoginServer(Poco::Net::SocketReactor &reactor, P
     threadPool.start(*pConn);
 }
 
-void LoginServerResult::sendPdu(IMPdu &imPdu) {
+void LoginServerResult::sendPdu(Common::IMPdu &imPdu) {
     pConn->sendPdu(imPdu);
 }
 

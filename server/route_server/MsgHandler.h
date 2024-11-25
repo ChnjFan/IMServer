@@ -13,22 +13,22 @@
 
 class MsgHandlerCallbackMap {
 public:
-    using MsgHandlerCallback = std::function<void(RouteConn &conn, IMPdu&)>;
+    using MsgHandlerCallback = std::function<void(RouteConn &conn, Common::IMPdu&)>;
 
     MsgHandlerCallbackMap(const MsgHandlerCallbackMap&) = delete;
 
     static MsgHandlerCallbackMap* getInstance();
     static void destroyInstance();
     void registerHandler();
-    void invokeCallback(uint32_t msgType, RouteConn &conn, IMPdu &imPdu);
+    void invokeCallback(uint32_t msgType, RouteConn &conn, Common::IMPdu &imPdu);
 
 private:
     MsgHandlerCallbackMap() = default;
 
     void registerCallback(uint32_t msgType, MsgHandlerCallback callback);
 
-    static void handleHeartBeatMsg(RouteConn &conn, IMPdu &imPdu);
-    static void handleLoginMsg(RouteConn &conn, IMPdu &imPdu);
+    static void handleHeartBeatMsg(RouteConn &conn, Common::IMPdu &imPdu);
+    static void handleLoginMsg(RouteConn &conn, Common::IMPdu &imPdu);
 
 
     static MsgHandlerCallbackMap *instance;
@@ -40,7 +40,7 @@ private:
  */
 class MsgHandler {
 public:
-    static void exec(RouteConn &conn, std::shared_ptr<IMPdu> &pImPdu);
+    static void exec(RouteConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu);
 
 };
 

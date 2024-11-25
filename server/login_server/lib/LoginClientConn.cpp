@@ -11,7 +11,7 @@
 #include "Poco/Runnable.h"
 #include "LoginClientConn.h"
 
-LoginClientConn::LoginClientConn(Poco::Net::SocketReactor &reactor, const std::function<void(ByteStream&)>& readCallback)
+LoginClientConn::LoginClientConn(Poco::Net::SocketReactor &reactor, const std::function<void(Common::ByteStream&)>& readCallback)
                                 : reactor(reactor), connected(false), recvMsgBuf(SOCKET_BUFFER_LEN), sendMsgBuf(SOCKET_BUFFER_LEN), readCallback(readCallback) {
     Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig(new Poco::Util::IniFileConfiguration("login_server_config.ini"));
     serverIP = "127.0.0.1";
@@ -26,7 +26,7 @@ LoginClientConn::~LoginClientConn() {
     pSocket->close();
 }
 
-void LoginClientConn::sendPdu(IMPdu &imPdu) {
+void LoginClientConn::sendPdu(Common::IMPdu &imPdu) {
     char *msg = new char[imPdu.size()];
     uint32_t len = imPdu.serialize(msg, imPdu.size());
     sendMsgBuf.write(msg, len);

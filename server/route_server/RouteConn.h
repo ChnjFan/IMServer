@@ -32,11 +32,11 @@ typedef enum {
     CONN_OFFLINE = 3,
 }ROUTE_CONN_STATE;
 
-class RouteConn : public TcpConn {
+class RouteConn : public Common::TcpConn {
 public:
     explicit RouteConn(const Poco::Net::StreamSocket& socket);
 
-    void sendPdu(IMPdu &imPdu);
+    void sendPdu(Common::IMPdu &imPdu);
 
     const Poco::Timestamp getLstTimeStamp() const;
     void updateLsgTimeStamp();

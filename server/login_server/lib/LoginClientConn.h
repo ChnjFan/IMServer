@@ -14,11 +14,11 @@
 
 class LoginClientConn : public Poco::Runnable {
 public:
-    LoginClientConn(Poco::Net::SocketReactor& reactor, const std::function<void(ByteStream&)>& readCallback);
+    LoginClientConn(Poco::Net::SocketReactor& reactor, const std::function<void(Common::ByteStream&)>& readCallback);
     ~LoginClientConn();
 
     void run() override;
-    void sendPdu(IMPdu& imPdu);
+    void sendPdu(Common::IMPdu& imPdu);
 
 private:
     void onReadable(Poco::Net::ReadableNotification *pNotification);
@@ -38,10 +38,10 @@ private:
     int serverPort;
     bool connected;
 
-    ByteStream recvMsgBuf;
-    ByteStream sendMsgBuf;
+    Common::ByteStream recvMsgBuf;
+    Common::ByteStream sendMsgBuf;
 
-    const std::function<void(ByteStream&)>& readCallback;
+    const std::function<void(Common::ByteStream&)>& readCallback;
 };
 
 

@@ -4,7 +4,7 @@
 
 #include "TcpConn.h"
 
-TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
+Common::TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
             : Poco::Net::TCPServerConnection(socket)
             , recvMsgBuf(SOCKET_BUFFER_LEN)
             , sendMsgBuf(SOCKET_BUFFER_LEN)
@@ -13,7 +13,7 @@ TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
 
 }
 
-void TcpConn::run() {
+void Common::TcpConn::run() {
     try {
         newConnect();
 
@@ -39,33 +39,33 @@ void TcpConn::run() {
     }
 }
 
-void TcpConn::close() {
+void Common::TcpConn::close() {
     connSocket.shutdown();
     connSocket.close();
     reactor.stop();
 }
 
-void TcpConn::send(char *msg, uint32_t len) {
+void Common::TcpConn::send(char *msg, uint32_t len) {
     sendMsgBuf.write(msg, len);
 }
 
-void TcpConn::newConnect() {
+void Common::TcpConn::newConnect() {
 
 }
 
-void TcpConn::reactorClose() {
+void Common::TcpConn::reactorClose() {
 
 }
 
-void TcpConn::handleRecvMsg() {
+void Common::TcpConn::handleRecvMsg() {
 
 }
 
-void TcpConn::handleTcpConnError() {
+void Common::TcpConn::handleTcpConnError() {
 
 }
 
-void TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
+void Common::TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
     Poco::Net::StreamSocket socket = pNotification->socket();
 
     while (socket.available()) {
@@ -80,7 +80,7 @@ void TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
     handleRecvMsg();
 }
 
-void TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
+void Common::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
     Poco::Net::StreamSocket socket = pNotification->socket();
 
     if (sendMsgBuf.empty())
@@ -90,17 +90,17 @@ void TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
     sendMsgBuf.clear();
 }
 
-void TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
+void Common::TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
     std::cout << "RouteConn error" << std::endl;
 
     handleTcpConnError();
 }
 
-ByteStream &TcpConn::getRecvMsgBuf() {
+Common::ByteStream &Common::TcpConn::getRecvMsgBuf() {
     return recvMsgBuf;
 }
 
-ByteStream &TcpConn::getSendMsgBuf() {
+Common::ByteStream &Common::TcpConn::getSendMsgBuf() {
     return sendMsgBuf;
 }
 
