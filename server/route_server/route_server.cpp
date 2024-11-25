@@ -27,7 +27,7 @@ protected:
             // 定时检测连接心跳
             ClientHeartBeatHandler heartBeatTask;
             Poco::Util::Timer timer;
-            timer.schedule(&heartBeatTask, 0, 5000);
+            timer.schedule(&heartBeatTask, heartbeatCheckTime, heartbeatCheckTime);
             // 注册login_server服务
             registerLoginServer(reactor, threadPool);
 
@@ -52,6 +52,11 @@ private:
         listenPort = pConfig->getInt("server.listen_port");
         if (0 == listenPort) {
             listenPort = DEFAULT_PORT;
+        }
+
+        heartbeatCheckTime = pConfig->getInt("server.heartbeat_check_time");
+        if (0 == heartbeatCheckTime) {
+            heartbeatCheckTime = DEFAULT_HEARTBEAT_TIME;
         }
     }
 
@@ -79,12 +84,14 @@ private:
     }
 
 private:
-    const int DEFAULT_MAX_CONN = 100;
-    const int DEFAULT_THREAD_NUM = 16;
-    const int DEFAULT_PORT = 1234;
+    static constexpr int DEFAULT_MAX_CONN = 100;
+    static constexpr int DEFAULT_THREAD_NUM = 16;
+    static constexpr int DEFAULT_PORT = 1234;
+    static constexpr Poco::Timespan::TimeDiff DEFAULT_HEARTBEAT_TIME = 5*60*1000;
 
     int listenPort;
     std::string listenIP;
+    Poco::Timespan::TimeDiff heartbeatCheckTime;
 };
 
 POCO_SERVER_MAIN(RouteServer)

@@ -52,7 +52,6 @@ void MsgHandlerCallbackMap::handleLoginMsg(RouteConn &conn, Common::IMPdu &imPdu
     LoginServerResult::getInstance()->sendPdu(imPdu);
 }
 
-
 void MsgHandler::exec(RouteConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu) {
     return MsgHandlerCallbackMap::getInstance()->invokeCallback(pImPdu->getMsgType(), conn, *pImPdu);
 }
