@@ -23,6 +23,7 @@
 #include "Poco/Timer.h"
 #include "IMPdu.h"
 #include "ByteStream.h"
+#include "TcpConn.h"
 
 typedef enum {
     CONN_IDLE = 0,
@@ -31,14 +32,10 @@ typedef enum {
     CONN_OFFLINE = 3,
 }ROUTE_CONN_STATE;
 
-class RouteConn : public Poco::Net::TCPServerConnection {
+class RouteConn : public TcpConn {
 public:
     explicit RouteConn(const Poco::Net::StreamSocket& socket);
 
-    void run() override;
-    void close();
-
-    void send(char* msg, uint32_t len);
     void sendPdu(IMPdu &imPdu);
 
     const Poco::Timestamp getLstTimeStamp() const;
@@ -49,20 +46,14 @@ public:
     bool isConnIdle();
     void setState(ROUTE_CONN_STATE state);
 
-private:
-    void onReadable(Poco::Net::ReadableNotification *pNotification);
-    void onWritable(Poco::Net::WritableNotification *pNotification);
-    void onError(Poco::Net::ErrorNotification *pNotification);
-    void dispatchMsg();
+protected:
+    void newConnect() override;
+    void reactorClose() override;
+    void handleRecvMsg() override;
+    void handleTcpConnError() override;
     void generateSessionUID();
 
 private:
-    static constexpr int SOCKET_BUFFER_LEN = 1024;
-    ByteStream recvMsgBuf;
-    ByteStream sendMsgBuf;
-    Poco::Net::StreamSocket connSocket;
-    Poco::Net::SocketReactor reactor;
-
     Poco::Timestamp lstTimeStamp;
     Poco::UUID sessionUID;
     ROUTE_CONN_STATE state;
