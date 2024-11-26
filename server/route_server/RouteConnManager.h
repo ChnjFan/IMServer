@@ -7,11 +7,12 @@
 
 #include <map>
 #include "RouteConn.h"
+#include "TcpConnManager.h"
 
-class RouteConnManager {
+class RouteConnManager : public Common::TcpConnManager {
 public:
-    static RouteConnManager* getInstance();
-    static void destroyInstance();
+    static RouteConnManager *getInstance();
+    void destroyInstance();
 
     void addConn(RouteConn *pRouteConn);
     void closeConn(RouteConn *pRouteConn);
@@ -20,10 +21,8 @@ public:
     void checkTimeStamp();
 
 private:
-    RouteConnManager() = default;
-
+    RouteConnManager();
     static RouteConnManager *instance;
-    std::map<std::string, RouteConn*> routeConnMap;
 };
 
 

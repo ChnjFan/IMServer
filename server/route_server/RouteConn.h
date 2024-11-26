@@ -30,8 +30,6 @@ class RouteConn : public Common::TcpConn {
 public:
     explicit RouteConn(const Poco::Net::StreamSocket& socket);
 
-    void sendPdu(Common::IMPdu &imPdu);
-
     const Poco::Timestamp getLstTimeStamp() const;
     void updateLsgTimeStamp();
 

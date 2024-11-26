@@ -15,13 +15,6 @@ RouteConn::RouteConn(const Poco::Net::StreamSocket &socket)
                     , sessionUID()
                     , state(ROUTE_CONN_STATE::CONN_IDLE) { }
 
-void RouteConn::sendPdu(Common::IMPdu &imPdu) {
-    char *msg = new char[imPdu.size()];
-    uint32_t len = imPdu.serialize(msg, imPdu.size());
-    send(msg, len);
-    delete[] msg;
-}
-
 std::string RouteConn::getSessionUID() const {
     return sessionUID.toString();
 }

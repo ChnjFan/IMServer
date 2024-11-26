@@ -12,6 +12,7 @@
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/SocketNotification.h"
 #include "ByteStream.h"
+#include "IMPdu.h"
 
 namespace Common {
 
@@ -23,6 +24,7 @@ public:
     void close();
 
     void send(char* msg, uint32_t len);
+    void sendPdu(Common::IMPdu &imPdu);
 
 protected:
     virtual void newConnect();

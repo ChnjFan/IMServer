@@ -49,6 +49,13 @@ void Common::TcpConn::send(char *msg, uint32_t len) {
     sendMsgBuf.write(msg, len);
 }
 
+void Common::TcpConn::sendPdu(Common::IMPdu &imPdu)  {
+    char *msg = new char[imPdu.size()];
+    uint32_t len = imPdu.serialize(msg, imPdu.size());
+    send(msg, len);
+    delete[] msg;
+}
+
 void Common::TcpConn::newConnect() {
 
 }
