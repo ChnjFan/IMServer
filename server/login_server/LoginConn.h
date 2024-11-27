@@ -6,14 +6,21 @@
 #define IMSERVER_LOGINCONN_H
 
 #include "TcpConn.h"
+#include "IM.BaseType.pb.h"
+#include "IM.Login.pb.h"
 
 class LoginConn : public Common::TcpConn {
 public:
     explicit LoginConn(const Poco::Net::StreamSocket& socket);
 
+    void responseLogin(Common::IMPdu& imPdu, IM::BaseType::ResultType resultType);
+
 protected:
     void handleRecvMsg() override;
     void handleTcpConnError() override;
+
+private:
+    void handleLogin(Common::IMPdu& imPdu);
 };
 
 class LoginConnFactory : public Poco::Net::TCPServerConnectionFactory {

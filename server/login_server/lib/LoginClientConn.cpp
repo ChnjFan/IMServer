@@ -79,6 +79,7 @@ void LoginClientConn::connect() {
                                 Poco::Observer<Poco::Runnable, Poco::Net::ErrorNotification>(
                                         *this, reinterpret_cast<void (Runnable::*)(
                                                 Poco::Net::ErrorNotification *)>(&LoginClientConn::onError)));
+        std::cout << "Connect login_server: " << serverIP << ":" << serverPort << " success." << std::endl;
         reactor.run();
     }
     catch(Poco::Exception& ex) {

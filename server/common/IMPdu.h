@@ -17,11 +17,17 @@ public:
 
     static std::shared_ptr<IMPdu> readPdu(Common::ByteStream &data);
 
+    void setImPdu(PduHeader& header, Common::ByteStream& body);
+
     uint32_t serialize(char *buf, uint32_t bufSize);
 
     uint32_t getMsgType() const;
 
+    uint32_t getMsgSeq() const;
+
     std::string getUuid() const;
+
+    ByteStream& getMsgBody();
 
     uint32_t size();
 

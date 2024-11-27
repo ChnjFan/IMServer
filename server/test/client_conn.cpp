@@ -30,7 +30,7 @@ int main (int argc, const char * argv[])
     int sendlen = socket.sendBytes(buffer, 12);
     std::cout << "send size: " << sendlen << std::endl;
 
-    ByteStream data(1024);
+    Common::ByteStream data(1024);
     // 循环接收数据
     while (true)
     {

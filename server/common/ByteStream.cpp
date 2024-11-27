@@ -17,6 +17,10 @@ void Common::ByteStream::write(ByteStream &data, uint32_t size) {
     std::copy(tmp.begin(), tmp.end(), std::back_inserter(buffer));
 }
 
+std::vector<char> &Common::ByteStream::getBuffer() {
+    return buffer;
+}
+
 const char* Common::ByteStream::data() {
     return buffer.data();
 }
@@ -68,4 +72,8 @@ bool Common::ByteStream::empty() {
 
 void Common::ByteStream::clear() {
     buffer.clear();
+}
+
+void Common::ByteStream::operator=(Common::ByteStream &other) {
+    std::copy(other.buffer.begin(), other.buffer.end(), std::back_inserter(buffer));
 }

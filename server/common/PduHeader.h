@@ -45,6 +45,10 @@ public:
 
     uint32_t serialize(char *buf, uint32_t bufSize);
 
+    PDU_HEADER_DATA& getHeaderData();
+
+    void operator=(PduHeader& other);
+
 private:
     PDU_HEADER_DATA data;
 };

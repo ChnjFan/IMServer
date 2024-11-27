@@ -23,6 +23,11 @@ std::shared_ptr<Common::IMPdu> Common::IMPdu::readPdu(Common::ByteStream &data) 
     return pImPdu;
 }
 
+void Common::IMPdu::setImPdu(Common::PduHeader &header, Common::ByteStream &body) {
+    this->header = header;
+    this->body = body;
+}
+
 uint32_t Common::IMPdu::serialize(char *buf, uint32_t bufSize) {
     if (header.getLength() != body.size())//帧头设置的长度与消息体长度不一致
         return 0;
@@ -41,8 +46,16 @@ uint32_t Common::IMPdu::getMsgType() const {
     return header.getMsgType();
 }
 
+uint32_t Common::IMPdu::getMsgSeq() const {
+    return header.getMsgSeq();
+}
+
 std::string Common::IMPdu::getUuid() const {
     return header.getUuid();
+}
+
+Common::ByteStream& Common::IMPdu::getMsgBody() {
+    return body;
 }
 
 void Common::IMPdu::readHeader(Common::ByteStream &data) {

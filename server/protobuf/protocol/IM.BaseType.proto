@@ -14,6 +14,7 @@ enum UserState {
 }
 
 enum ResultType {
-    RESULT_TYPE_NONE = 0;
+    RESULT_TYPE_SUCCESS = 0;
     RESULT_TYPE_NO_SERVER = 1;
+    RESULT_TYPE_REQUEST_ERR = 2;
 }

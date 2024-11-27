@@ -57,4 +57,11 @@ uint32_t Common::PduHeader::serialize(char *buf, uint32_t bufSize) {
     return getPduHeaderLen();
 }
 
+Common::PDU_HEADER_DATA &Common::PduHeader::getHeaderData() {
+    return data;
+}
+
+void Common::PduHeader::operator=(Common::PduHeader &other) {
+    memcpy(&data, &other.getHeaderData(), sizeof(PDU_HEADER_DATA));
+}
 

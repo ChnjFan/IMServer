@@ -15,7 +15,7 @@ message ImMsgLoginReq {
 
 // 登录响应消息
 message ImMsgLoginRes {
-    uint32 server_time = 1;
+    uint64 server_time = 1;
     string uid = 3;
     IM.BaseType.ResultType ret_code = 2;
 }

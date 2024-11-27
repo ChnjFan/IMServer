@@ -12,11 +12,12 @@ namespace Common {
 
 class ByteStream {
 public:
-    explicit ByteStream(std::size_t size);
+    explicit ByteStream(std::size_t size=DEFAULT_BYTESTREAM_SIZE);
 
     void write(char* data, uint32_t size);
     void write(ByteStream &data, uint32_t size);
 
+    std::vector<char>& getBuffer();
     const char* data();
 
     std::vector<char> read(uint32_t size);
@@ -30,7 +31,10 @@ public:
     bool empty();
     void clear();
 
+    void operator=(ByteStream& other);
+
 private:
+    static constexpr int DEFAULT_BYTESTREAM_SIZE = 10;
     std::vector<char> buffer;
 };
 

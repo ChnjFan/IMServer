@@ -11,7 +11,7 @@ class LoginServer : public  Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
-            readConfig("route_server_config.ini");
+            readConfig("login_server_config.ini");
 
             runServer();
 
@@ -48,7 +48,7 @@ private:
 
         // Start the server
         server.start();
-        std::cout << "Server started listen on " << listenIP << ":" << listenPort << std::endl;
+        std::cout << "Login server started listen on " << listenIP << ":" << listenPort << std::endl;
 
         // Wait for termination request
         waitForTerminationRequest();
