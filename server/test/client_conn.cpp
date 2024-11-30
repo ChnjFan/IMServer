@@ -10,6 +10,7 @@
 #include "Poco/Util/IniFileConfiguration.h"
 #include "Poco/AutoPtr.h"
 #include "IMPdu.h"
+#include "ByteStream.h"
 
 #define BUFFER_SIZE 1024
 using Poco::Net::SocketAddress;
@@ -23,6 +24,8 @@ int main (int argc, const char * argv[])
 
     std::string serverIP = "127.0.0.1";
     int serverPort = pConfig->getInt("server.listen_port");
+
+
 
     SocketAddress address(serverIP, serverPort);
     StreamSocket socket(address);

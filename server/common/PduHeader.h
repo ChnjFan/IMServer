@@ -10,7 +10,7 @@
 
 namespace Common {
 
-#define PDU_HEADER_UUID_LEN     (256)
+#define PDU_HEADER_UUID_LEN     (40)
 
 typedef struct {
     uint32_t length;
