@@ -7,7 +7,7 @@
 
 # 服务端方案
 
-![](https://raw.githubusercontent.com/ChnjFan/IMServer/refs/heads/main/doc/server.drawio.png)
+![](img/server.drawio.png)
 
 服务间的通讯方式：
 - 获取状态可以直接使用 grpc 调用对应服务接口。
