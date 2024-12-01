@@ -3,10 +3,10 @@
 //
 
 #include <iostream>
-#include "ClientHeartBeatHandler.h"
-#include "RouteConnManager.h"
+#include "HeartBeatHandler.h"
+#include "SessionConnManager.h"
 
-void ClientHeartBeatHandler::run() {
+void HeartBeatHandler::run() {
     std::cout << "Check Route conn time tick in thread: " << Poco::Thread::current()->name() << std::endl;
-    RouteConnManager::getInstance()->checkTimeStamp();
+    SessionConnManager::getInstance()->checkTimeStamp();
 }

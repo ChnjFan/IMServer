@@ -5,8 +5,8 @@
 #include <memory>
 #include "IMPdu.h"
 #include "LoginServerResult.h"
-#include "RouteConn.h"
-#include "RouteConnManager.h"
+#include "SessionConn.h"
+#include "SessionConnManager.h"
 
 LoginServerResult* LoginServerResult::instance = nullptr;
 
@@ -16,7 +16,7 @@ void LoginServerResult::handleLoginResult(Common::ByteStream &recvMsgBuf) {
         if (pImPdu == nullptr)
             return;
 
-        RouteConn *pConn = RouteConnManager::getInstance()->getConn(pImPdu->getUuid());
+        SessionConn *pConn = SessionConnManager::getInstance()->getConn(pImPdu->getUuid());
         if (nullptr == pConn)
             continue;
 

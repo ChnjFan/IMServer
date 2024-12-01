@@ -5,62 +5,62 @@
 #include <memory>
 #include "Poco/Runnable.h"
 #include "Poco/Timer.h"
-#include "RouteConn.h"
-#include "MsgHandler.h"
-#include "RouteConnManager.h"
+#include "SessionConn.h"
+#include "MsgDispatch.h"
+#include "SessionConnManager.h"
 
-RouteConn::RouteConn(const Poco::Net::StreamSocket &socket)
+SessionConn::SessionConn(const Poco::Net::StreamSocket &socket)
                     : TcpConn(socket)
                     , lstTimeStamp()
                     , sessionUID()
                     , state(ROUTE_CONN_STATE::CONN_IDLE) { }
 
-std::string RouteConn::getSessionUID() const {
+std::string SessionConn::getSessionUID() const {
     return sessionUID.toString();
 }
 
-bool RouteConn::isConnIdle() {
+bool SessionConn::isConnIdle() {
     return state == ROUTE_CONN_STATE::CONN_IDLE;
 }
 
-void RouteConn::setState(ROUTE_CONN_STATE state) {
+void SessionConn::setState(ROUTE_CONN_STATE state) {
     this->state = state;
 }
 
-void RouteConn::newConnect() {
+void SessionConn::newConnect() {
     generateSessionUID();
-    RouteConnManager::getInstance()->addConn(this);
+    SessionConnManager::getInstance()->addConn(this);
     std::cout << "Session " << sessionUID.toString() << " conn" << std::endl;
 }
 
-void RouteConn::reactorClose() {
+void SessionConn::reactorClose() {
     std::cout << "Session " << sessionUID.toString() << " close" << std::endl;
 }
 
-void RouteConn::handleTcpConnError() {
-    RouteConnManager::getInstance()->closeConn(this);
+void SessionConn::handleTcpConnError() {
+    SessionConnManager::getInstance()->closeConn(this);
 }
 
 // 分发消息
-void RouteConn::handleRecvMsg() {
+void SessionConn::handleRecvMsg() {
     while (true) {
         std::shared_ptr<Common::IMPdu> pImPdu = Common::IMPdu::readPdu(getRecvMsgBuf());
         if (pImPdu == nullptr)
             return;
 
-        MsgHandler::exec(*this, pImPdu);
+        MsgDispatch::exec(*this, pImPdu);
     }
 }
 
-const Poco::Timestamp RouteConn::getLstTimeStamp() const {
+const Poco::Timestamp SessionConn::getLstTimeStamp() const {
     return lstTimeStamp;
 }
 
-void RouteConn::updateLsgTimeStamp() {
+void SessionConn::updateLsgTimeStamp() {
     lstTimeStamp.update();
 }
 
-void RouteConn::generateSessionUID() {
+void SessionConn::generateSessionUID() {
     Poco::UUIDGenerator uuidGen;
     sessionUID = uuidGen.create();
 }

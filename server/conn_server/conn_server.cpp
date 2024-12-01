@@ -8,9 +8,9 @@
 #include "Poco/AutoPtr.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
-#include "RouteConn.h"
-#include "MsgHandler.h"
-#include "ClientHeartBeatHandler.h"
+#include "SessionConn.h"
+#include "MsgDispatch.h"
+#include "HeartBeatHandler.h"
 #include "LoginClientConn.h"
 #include "LoginServerResult.h"
 
@@ -25,10 +25,10 @@ protected:
             // 注册消息处理回调
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
-            ClientHeartBeatHandler heartBeatTask;
+            HeartBeatHandler heartBeatTask;
             Poco::Util::Timer timer;
             timer.schedule(&heartBeatTask, heartbeatCheckTime, heartbeatCheckTime);
-            // 注册login_server服务
+            // 订阅login_server服务
             registerLoginServer(reactor, threadPool);
 
             runServer();
@@ -71,7 +71,7 @@ private:
         pParams->setMaxThreads(DEFAULT_THREAD_NUM);  // Maximum number of threads
 
         // Create the TCP server factory
-        Poco::Net::TCPServer server(new RouteConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
+        Poco::Net::TCPServer server(new SessionConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
 
         // Start the server
         server.start();

@@ -98,7 +98,7 @@ void Common::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification)
 }
 
 void Common::TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
-    std::cout << "RouteConn error" << std::endl;
+    std::cout << "SessionConn error" << std::endl;
 
     handleTcpConnError();
 }

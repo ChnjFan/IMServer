@@ -41,7 +41,7 @@ void LoginConn::handleRecvMsg() {
             return;
 
         switch (pImPdu->getMsgType()) {
-            case IM::BaseType::MSG_TYPE_LOGIN:
+            case IM::BaseType::MSG_TYPE_LOGIN_REQ:
                 handleLogin(*pImPdu);
                 break;
             default:

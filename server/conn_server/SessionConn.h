@@ -1,5 +1,5 @@
 /**
- * @file RouteConn.h
+ * @file SessionConn.h
  * @brief route_server 链接处理
  * @note route_server 接受登录消息，登录成功后发送给客户端负载最小的 msg_server 的 ip 和 port
  */
@@ -26,9 +26,9 @@ typedef enum {
     CONN_OFFLINE = 3,
 }ROUTE_CONN_STATE;
 
-class RouteConn : public Common::TcpConn {
+class SessionConn : public Common::TcpConn {
 public:
-    explicit RouteConn(const Poco::Net::StreamSocket& socket);
+    explicit SessionConn(const Poco::Net::StreamSocket& socket);
 
     const Poco::Timestamp getLstTimeStamp() const;
     void updateLsgTimeStamp();
@@ -51,10 +51,10 @@ private:
     ROUTE_CONN_STATE state;
 };
 
-class RouteConnFactory : public Poco::Net::TCPServerConnectionFactory {
+class SessionConnFactory : public Poco::Net::TCPServerConnectionFactory {
 public:
     Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket) override {
-        return new RouteConn(socket);
+        return new SessionConn(socket);
     }
 };
 

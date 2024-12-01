@@ -5,7 +5,10 @@ option optimize_for = LITE_RUNTIME;
 
 enum MsgType {
     MSG_TYPE_HEARTBEAT = 0;
-    MSG_TYPE_LOGIN = 1;
+    MSG_TYPE_LOGIN_REQ = 1;
+    MSG_TYPE_LOGIN_RSP = 2;
+    MSG_TYPE_REGISTER_REQ = 3;
+    MSG_TYPE_REGISTER_RSP = 4;
 }
 
 enum UserState {
@@ -14,7 +17,8 @@ enum UserState {
 }
 
 enum ResultType {
-    RESULT_TYPE_SUCCESS = 0;
-    RESULT_TYPE_NO_SERVER = 1;
-    RESULT_TYPE_REQUEST_ERR = 2;
+    RESULT_TYPE_INVALID = 0;
+    RESULT_TYPE_SUCCESS = 200;
+    RESULT_TYPE_NO_SERVER = 514;
+    RESULT_TYPE_REQUEST_ERR = 998;
 }
