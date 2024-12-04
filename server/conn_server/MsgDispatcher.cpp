@@ -40,8 +40,8 @@ void MsgHandlerCallbackMap::registerCallback(uint32_t msgType, MsgHandlerCallbac
 void MsgHandlerCallbackMap::handleHeartBeatMsg(SessionConn &conn, Common::IMPdu &imPdu) {
     //收到客户端心跳消息后要回复，并记录收到心跳的 time_tick
     std::cout << "Session " << conn.getSessionUID() << " recv heart beat" << std::endl;
-    conn.sendPdu(imPdu);
-    conn.updateLsgTimeStamp();
+    conn.sendMsg(imPdu);
+    conn.updateTimeStamp();
 }
 
 void MsgHandlerCallbackMap::handleLoginMsg(SessionConn &conn, Common::IMPdu &imPdu) {

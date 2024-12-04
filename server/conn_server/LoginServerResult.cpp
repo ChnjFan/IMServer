@@ -16,7 +16,7 @@ void LoginServerResult::handleLoginResult(Common::ByteStream &recvMsgBuf) {
         if (pImPdu == nullptr)
             return;
 
-        SessionConn *pConn = SessionConnManager::getInstance()->getConn(pImPdu->getUuid());
+        SessionConn *pConn = SessionConnManager::getInstance()->get(pImPdu->getUuid());
         if (nullptr == pConn)
             continue;
 

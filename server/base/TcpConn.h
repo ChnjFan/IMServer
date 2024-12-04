@@ -12,7 +12,7 @@
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/SocketNotification.h"
 #include "ByteStream.h"
-#include "IMPdu.h"
+#include "Message.h"
 
 namespace Base {
 
@@ -24,13 +24,12 @@ public:
     void close();
 
     void send(char* msg, uint32_t len);
-    void sendPdu(Base::IMPdu &imPdu);
+    void sendMsg(Base::Message &imMsg);
 
 protected:
-    virtual void newConnect();
-    virtual void reactorClose();
-    virtual void handleRecvMsg();
-    virtual void handleTcpConnError();
+    virtual void connect();
+    virtual void recv();
+    virtual void error();
 
     void onReadable(Poco::Net::ReadableNotification *pNotification);
     void onWritable(Poco::Net::WritableNotification *pNotification);

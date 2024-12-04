@@ -15,7 +15,7 @@ Base::TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
 
 void Base::TcpConn::run() {
     try {
-        newConnect();
+        connect();
 
         // 注册poll事件
         connSocket = socket();
@@ -32,8 +32,6 @@ void Base::TcpConn::run() {
                                         *this, reinterpret_cast<void (Runnable::*)(
                                                 Poco::Net::ErrorNotification *)>(&TcpConn::onError)));
         reactor.run();
-
-        reactorClose();
     } catch (Poco::Exception& e) {
         std::cerr << "Error: " << e.displayText() << std::endl;
     }
@@ -49,26 +47,22 @@ void Base::TcpConn::send(char *msg, uint32_t len) {
     sendMsgBuf.write(msg, len);
 }
 
-void Base::TcpConn::sendPdu(Base::IMPdu &imPdu)  {
-    char *msg = new char[imPdu.size()];
-    uint32_t len = imPdu.serialize(msg, imPdu.size());
+void Base::TcpConn::sendMsg(Base::Message &imMsg)  {
+    char *msg = new char[imMsg.size()];
+    uint32_t len = imMsg.serialize(msg, imMsg.size());
     send(msg, len);
     delete[] msg;
 }
 
-void Base::TcpConn::newConnect() {
+void Base::TcpConn::connect() {
 
 }
 
-void Base::TcpConn::reactorClose() {
+void Base::TcpConn::recv() {
 
 }
 
-void Base::TcpConn::handleRecvMsg() {
-
-}
-
-void Base::TcpConn::handleTcpConnError() {
+void Base::TcpConn::error() {
 
 }
 
@@ -84,7 +78,7 @@ void Base::TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
         std::cout << recvMsgBuf.data() << std::endl;
     }
 
-    handleRecvMsg();
+    recv();
 }
 
 void Base::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
@@ -100,7 +94,7 @@ void Base::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
 void Base::TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
     std::cout << "SessionConn error" << std::endl;
 
-    handleTcpConnError();
+    error();
 }
 
 Base::ByteStream &Base::TcpConn::getRecvMsgBuf() {

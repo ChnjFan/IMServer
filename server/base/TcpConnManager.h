@@ -13,9 +13,10 @@ class TcpConnManager {
 public:
     TcpConnManager() = default;
 
-    void addConn(std::string key, Base::TcpConn *pRouteConn);
-    void closeConn(std::string key, Base::TcpConn *pRouteConn);
-    Base::TcpConn* getConn(std::string key);
+    void add(std::string key, Base::TcpConn *pRouteConn);
+    void close(std::string key, Base::TcpConn *pRouteConn);
+    Base::TcpConn* get(std::string key);
+
 protected:
     std::map<std::string, Base::TcpConn*> tcpConnMap;
 };

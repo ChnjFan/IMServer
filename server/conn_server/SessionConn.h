@@ -15,7 +15,7 @@
 #include "Poco/UUIDGenerator.h"
 #include "Poco/Net/TCPServerConnectionFactory.h"
 #include "Poco/Timer.h"
-#include "IMPdu.h"
+#include "Message.h"
 #include "ByteStream.h"
 #include "TcpConn.h"
 
@@ -26,12 +26,12 @@ typedef enum {
     CONN_OFFLINE = 3,
 }ROUTE_CONN_STATE;
 
-class SessionConn : public Common::TcpConn {
+class SessionConn : public Base::TcpConn {
 public:
     explicit SessionConn(const Poco::Net::StreamSocket& socket);
 
-    const Poco::Timestamp getLstTimeStamp() const;
-    void updateLsgTimeStamp();
+    const Poco::Timestamp getTimeStamp() const;
+    void updateTimeStamp();
 
     std::string getSessionUID() const;
 
@@ -39,14 +39,13 @@ public:
     void setState(ROUTE_CONN_STATE state);
 
 protected:
-    void newConnect() override;
-    void reactorClose() override;
-    void handleRecvMsg() override;
-    void handleTcpConnError() override;
+    void connect() override;
+    void recv() override;
+    void error() override;
     void generateSessionUID();
 
 private:
-    Poco::Timestamp lstTimeStamp;
+    Poco::Timestamp timeStamp;
     Poco::UUID sessionUID;
     ROUTE_CONN_STATE state;
 };

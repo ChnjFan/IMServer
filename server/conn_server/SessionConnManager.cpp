@@ -21,16 +21,16 @@ void SessionConnManager::destroyInstance() {
     instance = nullptr;
 }
 
-void SessionConnManager::addConn(SessionConn *pRouteConn) {
-    Common::TcpConnManager::addConn(pRouteConn->getSessionUID(), pRouteConn);
+void SessionConnManager::add(SessionConn *pRouteConn) {
+    Base::TcpConnManager::add(pRouteConn->getSessionUID(), pRouteConn);
 }
 
-SessionConn *SessionConnManager::getConn(std::string uuid) {
-    return dynamic_cast<SessionConn *>(SessionConnManager::getConn(uuid));
+SessionConn *SessionConnManager::get(std::string uuid) {
+    return dynamic_cast<SessionConn *>(SessionConnManager::get(uuid));
 }
 
-void SessionConnManager::closeConn(SessionConn *pRouteConn) {
-    Common::TcpConnManager::closeConn(pRouteConn->getSessionUID(), pRouteConn);
+void SessionConnManager::close(SessionConn *pRouteConn) {
+    Base::TcpConnManager::close(pRouteConn->getSessionUID(), pRouteConn);
 }
 
 void SessionConnManager::checkTimeStamp() {
@@ -38,7 +38,7 @@ void SessionConnManager::checkTimeStamp() {
         Poco::Timestamp timestamp;
         SessionConn *conn = dynamic_cast<SessionConn *>(it->second);
 
-        if (timestamp - conn->getLstTimeStamp() > HeartBeatHandler::HEARTBEAT_CHECK_TIME) {
+        if (timestamp - conn->getTimeStamp() > HeartBeatHandlerImpl::HEARTBEAT_CHECK_TIME) {
             std::cout << "Session " << conn->getSessionUID() << " timeout" << std::endl;
             //TODO: 向 account_server 发送用户下线消息
             conn->close();
@@ -50,6 +50,4 @@ void SessionConnManager::checkTimeStamp() {
     }
 }
 
-SessionConnManager::SessionConnManager() : Common::TcpConnManager() {
-
-}
+SessionConnManager::SessionConnManager() : Base::TcpConnManager() { }

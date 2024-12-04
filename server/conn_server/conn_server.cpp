@@ -3,33 +3,28 @@
  * @brief 连接服务器
  */
 
-#include <vector>
 #include <string>
-#include "Poco/AutoPtr.h"
+#include "Poco/ThreadPool.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
+#include "Poco/Net/TCPServerParams.h"
+#include "Poco/Net/TCPServer.h"
 #include "SessionConn.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
-#include "LoginClientConn.h"
-#include "LoginServerResult.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
             readConfig("route_server_config.ini");
-            Poco::Net::SocketReactor reactor;
             Poco::ThreadPool threadPool;
 
             // 注册消息处理回调
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
-            HeartBeatHandler heartBeatTask;
-            Poco::Util::Timer timer;
-            timer.schedule(&heartBeatTask, heartbeatCheckTime, heartbeatCheckTime);
-            // 订阅login_server服务
-            registerLoginServer(reactor, threadPool);
+            HeartBeatHandlerImpl heartBeatTask;
+            heartBeatTask.start();
 
             runServer();
 
@@ -58,10 +53,6 @@ private:
         if (0 == heartbeatCheckTime) {
             heartbeatCheckTime = DEFAULT_HEARTBEAT_TIME;
         }
-    }
-
-    void registerLoginServer(Poco::Net::SocketReactor& reactor, Poco::ThreadPool& threadPool) {
-        LoginServerResult::getInstance()->registerLoginServer(reactor, threadPool);
     }
 
     void runServer() {

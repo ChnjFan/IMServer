@@ -11,7 +11,7 @@
 
 SessionConn::SessionConn(const Poco::Net::StreamSocket &socket)
                     : TcpConn(socket)
-                    , lstTimeStamp()
+                    , timeStamp()
                     , sessionUID()
                     , state(ROUTE_CONN_STATE::CONN_IDLE) { }
 
@@ -27,37 +27,33 @@ void SessionConn::setState(ROUTE_CONN_STATE state) {
     this->state = state;
 }
 
-void SessionConn::newConnect() {
+void SessionConn::connect() {
     generateSessionUID();
-    SessionConnManager::getInstance()->addConn(this);
+    SessionConnManager::getInstance()->add(this);
     std::cout << "Session " << sessionUID.toString() << " conn" << std::endl;
 }
 
-void SessionConn::reactorClose() {
-    std::cout << "Session " << sessionUID.toString() << " close" << std::endl;
-}
-
-void SessionConn::handleTcpConnError() {
-    SessionConnManager::getInstance()->closeConn(this);
-}
-
 // 分发消息
-void SessionConn::handleRecvMsg() {
+void SessionConn::recv() {
     while (true) {
-        std::shared_ptr<Common::IMPdu> pImPdu = Common::IMPdu::readPdu(getRecvMsgBuf());
-        if (pImPdu == nullptr)
+        Base::MessagePtr pMessage = Base::Message::getMessage(getRecvMsgBuf());
+        if (pMessage == nullptr)
             return;
 
-        MsgDispatcher::exec(*this, pImPdu);
+        MsgDispatcher::exec(*this, pMessage);
     }
 }
 
-const Poco::Timestamp SessionConn::getLstTimeStamp() const {
-    return lstTimeStamp;
+void SessionConn::error() {
+    SessionConnManager::getInstance()->close(this);
 }
 
-void SessionConn::updateLsgTimeStamp() {
-    lstTimeStamp.update();
+const Poco::Timestamp SessionConn::getTimeStamp() const {
+    return timeStamp;
+}
+
+void SessionConn::updateTimeStamp() {
+    timeStamp.update();
 }
 
 void SessionConn::generateSessionUID() {

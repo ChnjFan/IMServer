@@ -5,18 +5,17 @@
 #ifndef IMSERVER_SESSIONCONNMANAGER_H
 #define IMSERVER_SESSIONCONNMANAGER_H
 
-#include <map>
 #include "SessionConn.h"
 #include "TcpConnManager.h"
 
-class SessionConnManager : public Common::TcpConnManager {
+class SessionConnManager : public Base::TcpConnManager {
 public:
     static SessionConnManager *getInstance();
     void destroyInstance();
 
-    void addConn(SessionConn *pRouteConn);
-    void closeConn(SessionConn *pRouteConn);
-    SessionConn* getConn(std::string uuid);
+    void add(SessionConn *pRouteConn);
+    void close(SessionConn *pRouteConn);
+    SessionConn* get(std::string uuid);
 
     void checkTimeStamp();
 

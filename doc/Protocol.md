@@ -4,38 +4,50 @@ IM客户端使用自定义的请求结构和请求方式。
 
 ## 请求概述
 
-```mermaid
-sequenceDiagram
-    participant IMClient
-    participant IMServer
-    IMClient ->> IMServer: 请求消息[请求头+请求体]
-    activate IMServer
-    IMServer ->> IMServer: 解析请求头
-    critical 解析请求头成功
-        IMServer-->IMServer: 获取请求体<br/>处理请求
-    option 解析请求头失败
-        IMServer-->IMServer: 继续等待客户端剩余请求
-    end
-    IMServer ->> IMClient: 回复请求应答
-deactivate IMServer
-```
-
 - **通讯协议**：TCP+protobuf
-- **请求结构**：请求结构主要由请求头和请求体组成。
+- **请求结构**：请求结构主要由请求头、请求体和校验值组成。
 
 ### 请求头（Header）
 
 #### Header参数
 
-所有客户端请求都需要携带 Header 参数：
+消息请求头应该尽量精简。参考 muduo 网络库中 Protobuf 传输方案，请求头的参数如下：
 
-| 参数      | 参数说明                          |
-|---------|-------------------------------|
-| length  | 消息体长度，uint32类型                |
-| msgType | 消息类型，IM.BaseType.MsgType类型    |
-| msgSeq  | 消息序列号，uint32类型                |
-| time    | 当前UTC时间戳，uint64类型             |
-| uuid    | 会话UUID，String类型，登录消息为空，最大长度36 |
+| 参数       | 参数说明                                  |
+|:---------|---------------------------------------|
+| length   | 消息长度，包括消息头和消息体，不包含checkSum长度，uint32类型 |
+| typeLen  | 消息类型长度（包含\0），uint32类型                 |
+| typeName | 消息类型，String类型                         |
+
+消息类型采用字符串类型，以'\0'结尾，方便读取。
+
+- Message - 基础消息类，用于所有消息类型的基类。
+- LoginMessage - 用于登录消息。
+- TextMessage - 用于文本消息。
+- ImageMessage - 用于图片消息。
+- AudioMessage - 用于音频消息。
+- VideoMessage - 用于视频消息。
+- FileMessage - 用于文件传输消息。
+- LocationMessage - 用于位置分享消息。
+- StickerMessage - 用于表情贴纸消息。
+- CommandMessage - 用于命令或控制消息。
+- NotificationMessage - 用于系统通知消息。
+- StatusMessage - 用于状态更新消息，比如在线、离线状态。
+- ContactMessage - 用于联系人请求或信息。
+- GroupMessage - 用于群组消息。
+- BroadcastMessage - 用于广播消息。
+- HistoryMessage - 用于历史消息查询。
+- TypingIndicatorMessage - 用于显示“正在输入”状态的消息。
+- ReadReceiptMessage - 用于已读回执。
+- DeliveryReceiptMessage - 用于消息送达确认。
+- ErrorMessage - 用于错误消息。
+- PresenceMessage - 用于表示用户在线状态的消息。
+
+### 校验值
+
+虽然 TCP 提供可靠传输，但是网络传输数据必须要考虑数据被破坏的情况，校验值使用adler32算法生成。
+
+POCO 库使用 Poco::Checksum 类支持 adler32 和 CRC-32 校验和，adler32 计算速度比 CRC-32 要快，因此消息校验采用了 adler32 校验。
 
 ### 请求体（Body）
 
