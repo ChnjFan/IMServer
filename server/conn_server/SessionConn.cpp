@@ -6,7 +6,7 @@
 #include "Poco/Runnable.h"
 #include "Poco/Timer.h"
 #include "SessionConn.h"
-#include "MsgDispatch.h"
+#include "MsgDispatcher.h"
 #include "SessionConnManager.h"
 
 SessionConn::SessionConn(const Poco::Net::StreamSocket &socket)
@@ -48,7 +48,7 @@ void SessionConn::handleRecvMsg() {
         if (pImPdu == nullptr)
             return;
 
-        MsgDispatch::exec(*this, pImPdu);
+        MsgDispatcher::exec(*this, pImPdu);
     }
 }
 

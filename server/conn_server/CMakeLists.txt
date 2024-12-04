@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 project(conn_server)
 
-include_directories(. ../protobuf/protocol ../common ../login_server/lib)
+include_directories(. ../protobuf/protocol ../common ../account_server/lib)
 
 aux_source_directory(./ SRC_LIST)
 

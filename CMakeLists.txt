@@ -13,5 +13,5 @@ link_directories(./ third_party/poco/lib/ third_party/protobuf/lib/ third_party/
 add_subdirectory(server/common)
 add_subdirectory(server/protobuf)
 add_subdirectory(server/conn_server)
-add_subdirectory(server/login_server)
+add_subdirectory(server/account_server)
 add_subdirectory(server/test)

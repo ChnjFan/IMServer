@@ -2,8 +2,8 @@
 // Created by fan on 24-11-20.
 //
 
-#ifndef IMSERVER_MSGDISPATCH_H
-#define IMSERVER_MSGDISPATCH_H
+#ifndef IMSERVER_MSGDISPATCHER_H
+#define IMSERVER_MSGDISPATCHER_H
 
 #include <memory>
 #include <map>
@@ -38,11 +38,11 @@ private:
 /**
  * @brief Route消息处理
  */
-class MsgDispatch {
+class MsgDispatcher {
 public:
     static void exec(SessionConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu);
 
 };
 
 
-#endif //IMSERVER_MSGDISPATCH_H
+#endif //IMSERVER_MSGDISPATCHER_H

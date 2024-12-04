@@ -42,3 +42,6 @@ route_server 作为与其他 IMServer 的交互层，接收 conn_server 下发�
 
 msg_server 提供 IM 消息处理服务
 
+## db_proxy
+
+db_proxy 作为数据库代理，提供查库和写库功能，读写分离

@@ -1,6 +1,6 @@
 /**
- * @file route_server.cpp
- * @brief 路由服务器
+ * @file conn_server.cpp
+ * @brief 连接服务器
  */
 
 #include <vector>
@@ -9,12 +9,12 @@
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
 #include "SessionConn.h"
-#include "MsgDispatch.h"
+#include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
 #include "LoginClientConn.h"
 #include "LoginServerResult.h"
 
-class RouteServer : public Poco::Util::ServerApplication {
+class ConnServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
@@ -94,4 +94,4 @@ private:
     Poco::Timespan::TimeDiff heartbeatCheckTime;
 };
 
-POCO_SERVER_MAIN(RouteServer)
+POCO_SERVER_MAIN(ConnServer)

@@ -7,7 +7,7 @@
 #include "Poco/Util/IniFileConfiguration.h"
 #include "LoginConn.h"
 
-class LoginServer : public  Poco::Util::ServerApplication {
+class AccountServer : public  Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
@@ -44,7 +44,7 @@ private:
         pParams->setMaxThreads(DEFAULT_THREAD_NUM);  // Maximum number of threads
 
         // Create the TCP server factory
-        Poco::Net::TCPServer server(new LoginConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
+        Poco::Net::TCPServer server(new AccountConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
 
         // Start the server
         server.start();
@@ -66,4 +66,4 @@ private:
     std::string listenIP;
 };
 
-POCO_SERVER_MAIN(LoginServer)
+POCO_SERVER_MAIN(AccountServer)

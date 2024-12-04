@@ -79,11 +79,11 @@ void LoginClientConn::connect() {
                                 Poco::Observer<Poco::Runnable, Poco::Net::ErrorNotification>(
                                         *this, reinterpret_cast<void (Runnable::*)(
                                                 Poco::Net::ErrorNotification *)>(&LoginClientConn::onError)));
-        std::cout << "Connect login_server: " << serverIP << ":" << serverPort << " success." << std::endl;
+        std::cout << "Connect account_server: " << serverIP << ":" << serverPort << " success." << std::endl;
         reactor.run();
     }
     catch(Poco::Exception& ex) {
-        std::cerr << "Error connecting to login_server: " << ex.displayText() << std::endl;
+        std::cerr << "Error connecting to account_server: " << ex.displayText() << std::endl;
         connected = false;
         reconnect();
     }
@@ -92,7 +92,7 @@ void LoginClientConn::connect() {
 void LoginClientConn::reconnect() {
     while (!connected) {
         Poco::Thread::sleep(RECONNECT_TIME);
-        std::cout << "Reconnect login_server: " << serverIP << ":" << serverPort << std::endl;
+        std::cout << "Reconnect account_server: " << serverIP << ":" << serverPort << std::endl;
         connect();
     }
 }

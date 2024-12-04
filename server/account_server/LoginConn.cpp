@@ -4,11 +4,11 @@
 
 #include "LoginConn.h"
 
-LoginConn::LoginConn(const Poco::Net::StreamSocket &socket) : TcpConn(socket) {
+AccountConn::LoginConn(const Poco::Net::StreamSocket &socket) : TcpConn(socket) {
 
 }
 
-void LoginConn::responseLogin(Common::IMPdu &imPdu, IM::BaseType::ResultType resultType) {
+void AccountConn::responseLogin(Common::IMPdu &imPdu, IM::BaseType::ResultType resultType) {
     IM::Login::ImMsgLoginRes loginRes;
 
     Poco::Timestamp timestamp;
@@ -34,7 +34,7 @@ void LoginConn::responseLogin(Common::IMPdu &imPdu, IM::BaseType::ResultType res
     sendPdu(resPdu);
 }
 
-void LoginConn::handleRecvMsg() {
+void AccountConn::handleRecvMsg() {
     while (true) {
         std::shared_ptr<Common::IMPdu> pImPdu = Common::IMPdu::readPdu(getRecvMsgBuf());
         if (pImPdu == nullptr)
@@ -51,11 +51,11 @@ void LoginConn::handleRecvMsg() {
     }
 }
 
-void LoginConn::handleTcpConnError() {
+void AccountConn::handleTcpConnError() {
 
 }
 
-void LoginConn::handleLogin(Common::IMPdu& imPdu) {
+void AccountConn::handleLogin(Common::IMPdu& imPdu) {
     IM::Login::ImMsgLoginReq loginReq;
     if (!loginReq.ParseFromArray(imPdu.getMsgBody().data(), imPdu.getMsgBody().size())) {
         /* 反解析失败，回复消息错误 */

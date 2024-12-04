@@ -4,7 +4,7 @@
 
 #include <utility>
 #include "IM.BaseType.pb.h"
-#include "MsgDispatch.h"
+#include "MsgDispatcher.h"
 #include "LoginServerResult.h"
 
 MsgHandlerCallbackMap *MsgHandlerCallbackMap::instance = nullptr;
@@ -52,7 +52,7 @@ void MsgHandlerCallbackMap::handleLoginMsg(SessionConn &conn, Common::IMPdu &imP
     LoginServerResult::getInstance()->sendPdu(imPdu);
 }
 
-void MsgDispatch::exec(SessionConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu) {
+void MsgDispatcher::exec(SessionConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu) {
     return MsgHandlerCallbackMap::getInstance()->invokeCallback(pImPdu->getMsgType(), conn, *pImPdu);
 }
 

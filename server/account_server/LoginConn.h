@@ -7,11 +7,11 @@
 
 #include "TcpConn.h"
 #include "IM.BaseType.pb.h"
-#include "IM.Login.pb.h"
+#include "IM.AccountServer.pb.h"
 
-class LoginConn : public Common::TcpConn {
+class AccountConn : public Common::TcpConn {
 public:
-    explicit LoginConn(const Poco::Net::StreamSocket& socket);
+    explicit AccountConn(const Poco::Net::StreamSocket& socket);
 
     void responseLogin(Common::IMPdu& imPdu, IM::BaseType::ResultType resultType);
 
@@ -23,10 +23,10 @@ private:
     void handleLogin(Common::IMPdu& imPdu);
 };
 
-class LoginConnFactory : public Poco::Net::TCPServerConnectionFactory {
+class AccountConnFactory : public Poco::Net::TCPServerConnectionFactory {
 public:
     Poco::Net::TCPServerConnection* createConnection(const Poco::Net::StreamSocket& socket) override {
-        return new LoginConn(socket);
+        return new AccountConn(socket);
     }
 };
 
