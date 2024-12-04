@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace Common {
+namespace Base {
 
 class ByteStream {
 public:

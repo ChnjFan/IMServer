@@ -14,7 +14,7 @@
 #include "ByteStream.h"
 #include "IMPdu.h"
 
-namespace Common {
+namespace Base {
 
 class TcpConn : public Poco::Net::TCPServerConnection {
 public:
@@ -24,7 +24,7 @@ public:
     void close();
 
     void send(char* msg, uint32_t len);
-    void sendPdu(Common::IMPdu &imPdu);
+    void sendPdu(Base::IMPdu &imPdu);
 
 protected:
     virtual void newConnect();
@@ -36,13 +36,13 @@ protected:
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onError(Poco::Net::ErrorNotification *pNotification);
 
-    Common::ByteStream& getRecvMsgBuf();
-    Common::ByteStream& getSendMsgBuf();
+    Base::ByteStream& getRecvMsgBuf();
+    Base::ByteStream& getSendMsgBuf();
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
-    Common::ByteStream recvMsgBuf;
-    Common::ByteStream sendMsgBuf;
+    Base::ByteStream recvMsgBuf;
+    Base::ByteStream sendMsgBuf;
 
     Poco::Net::StreamSocket connSocket;
     Poco::Net::SocketReactor reactor;

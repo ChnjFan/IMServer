@@ -6,11 +6,11 @@
 #include <cstring>
 #include "IMPdu.h"
 
-Common::IMPdu::IMPdu(): header(), body(DEFAULT_BODY_LEN) {
+Base::IMPdu::IMPdu(): header(), body(DEFAULT_BODY_LEN) {
 
 }
 
-std::shared_ptr<Common::IMPdu> Common::IMPdu::readPdu(Common::ByteStream &data) {
+std::shared_ptr<Base::IMPdu> Base::IMPdu::readPdu(Base::ByteStream &data) {
     uint32_t len = data.peekUint32();
 
     if (len + PduHeader::getPduHeaderLen() > static_cast<uint32_t>(data.size()))
@@ -23,12 +23,12 @@ std::shared_ptr<Common::IMPdu> Common::IMPdu::readPdu(Common::ByteStream &data) 
     return pImPdu;
 }
 
-void Common::IMPdu::setImPdu(Common::PduHeader &header, Common::ByteStream &body) {
+void Base::IMPdu::setImPdu(Base::PduHeader &header, Base::ByteStream &body) {
     this->header = header;
     this->body = body;
 }
 
-uint32_t Common::IMPdu::serialize(char *buf, uint32_t bufSize) {
+uint32_t Base::IMPdu::serialize(char *buf, uint32_t bufSize) {
     if (header.getLength() != body.size())//帧头设置的长度与消息体长度不一致
         return 0;
 
@@ -42,33 +42,33 @@ uint32_t Common::IMPdu::serialize(char *buf, uint32_t bufSize) {
     return len;
 }
 
-uint32_t Common::IMPdu::getMsgType() const {
+uint32_t Base::IMPdu::getMsgType() const {
     return header.getMsgType();
 }
 
-uint32_t Common::IMPdu::getMsgSeq() const {
+uint32_t Base::IMPdu::getMsgSeq() const {
     return header.getMsgSeq();
 }
 
-std::string Common::IMPdu::getUuid() const {
+std::string Base::IMPdu::getUuid() const {
     return header.getUuid();
 }
 
-Common::ByteStream& Common::IMPdu::getMsgBody() {
+Base::ByteStream& Base::IMPdu::getMsgBody() {
     return body;
 }
 
-void Common::IMPdu::readHeader(Common::ByteStream &data) {
+void Base::IMPdu::readHeader(Base::ByteStream &data) {
     header.setLength(data.readUint32());
     header.setMsgType(data.readUint32());
     header.setMsgSeq(data.readUint32());
 }
 
-void Common::IMPdu::readBody(Common::ByteStream &data, uint32_t size) {
+void Base::IMPdu::readBody(Base::ByteStream &data, uint32_t size) {
     body.write(data, size);
 }
 
-uint32_t Common::IMPdu::size() {
+uint32_t Base::IMPdu::size() {
     return PduHeader::getPduHeaderLen() + body.size();
 }
 

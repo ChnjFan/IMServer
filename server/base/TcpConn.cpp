@@ -4,7 +4,7 @@
 
 #include "TcpConn.h"
 
-Common::TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
+Base::TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
             : Poco::Net::TCPServerConnection(socket)
             , recvMsgBuf(SOCKET_BUFFER_LEN)
             , sendMsgBuf(SOCKET_BUFFER_LEN)
@@ -13,7 +13,7 @@ Common::TcpConn::TcpConn(const Poco::Net::StreamSocket &socket)
 
 }
 
-void Common::TcpConn::run() {
+void Base::TcpConn::run() {
     try {
         newConnect();
 
@@ -39,40 +39,40 @@ void Common::TcpConn::run() {
     }
 }
 
-void Common::TcpConn::close() {
+void Base::TcpConn::close() {
     connSocket.shutdown();
     connSocket.close();
     reactor.stop();
 }
 
-void Common::TcpConn::send(char *msg, uint32_t len) {
+void Base::TcpConn::send(char *msg, uint32_t len) {
     sendMsgBuf.write(msg, len);
 }
 
-void Common::TcpConn::sendPdu(Common::IMPdu &imPdu)  {
+void Base::TcpConn::sendPdu(Base::IMPdu &imPdu)  {
     char *msg = new char[imPdu.size()];
     uint32_t len = imPdu.serialize(msg, imPdu.size());
     send(msg, len);
     delete[] msg;
 }
 
-void Common::TcpConn::newConnect() {
+void Base::TcpConn::newConnect() {
 
 }
 
-void Common::TcpConn::reactorClose() {
+void Base::TcpConn::reactorClose() {
 
 }
 
-void Common::TcpConn::handleRecvMsg() {
+void Base::TcpConn::handleRecvMsg() {
 
 }
 
-void Common::TcpConn::handleTcpConnError() {
+void Base::TcpConn::handleTcpConnError() {
 
 }
 
-void Common::TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
+void Base::TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification) {
     Poco::Net::StreamSocket socket = pNotification->socket();
 
     while (socket.available()) {
@@ -87,7 +87,7 @@ void Common::TcpConn::onReadable(Poco::Net::ReadableNotification *pNotification)
     handleRecvMsg();
 }
 
-void Common::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
+void Base::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification) {
     Poco::Net::StreamSocket socket = pNotification->socket();
 
     if (sendMsgBuf.empty())
@@ -97,17 +97,17 @@ void Common::TcpConn::onWritable(Poco::Net::WritableNotification *pNotification)
     sendMsgBuf.clear();
 }
 
-void Common::TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
+void Base::TcpConn::onError(Poco::Net::ErrorNotification *pNotification) {
     std::cout << "SessionConn error" << std::endl;
 
     handleTcpConnError();
 }
 
-Common::ByteStream &Common::TcpConn::getRecvMsgBuf() {
+Base::ByteStream &Base::TcpConn::getRecvMsgBuf() {
     return recvMsgBuf;
 }
 
-Common::ByteStream &Common::TcpConn::getSendMsgBuf() {
+Base::ByteStream &Base::TcpConn::getSendMsgBuf() {
     return sendMsgBuf;
 }
 

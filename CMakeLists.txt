@@ -10,7 +10,7 @@ add_definitions( -g -W -Wall -lpthread -lprotobuf)
 include_directories(./ third_party/poco/include third_party/protobuf/include third_party/grpc/include)
 link_directories(./ third_party/poco/lib/ third_party/protobuf/lib/ third_party/grpc/lib)
 
-add_subdirectory(server/common)
+add_subdirectory(server/base)
 add_subdirectory(server/protobuf)
 add_subdirectory(server/conn_server)
 add_subdirectory(server/account_server)

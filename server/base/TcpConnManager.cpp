@@ -4,11 +4,11 @@
 
 #include "TcpConnManager.h"
 
-void Common::TcpConnManager::addConn(std::string key, Common::TcpConn *pRouteConn) {
+void Base::TcpConnManager::addConn(std::string key, Base::TcpConn *pRouteConn) {
     tcpConnMap[key] = pRouteConn;
 }
 
-void Common::TcpConnManager::closeConn(std::string key, Common::TcpConn *pRouteConn) {
+void Base::TcpConnManager::closeConn(std::string key, Base::TcpConn *pRouteConn) {
     auto it = tcpConnMap.find(key);
     if (it == tcpConnMap.end())
         return;
@@ -16,7 +16,7 @@ void Common::TcpConnManager::closeConn(std::string key, Common::TcpConn *pRouteC
     tcpConnMap.erase(it);
 }
 
-Common::TcpConn *Common::TcpConnManager::getConn(std::string key) {
+Base::TcpConn *Base::TcpConnManager::getConn(std::string key) {
     auto it = tcpConnMap.find(key);
     if (it == tcpConnMap.end())
         return nullptr;

@@ -4,28 +4,28 @@
 
 #include "ByteStream.h"
 
-Common::ByteStream::ByteStream(std::size_t size) {
+Base::ByteStream::ByteStream(std::size_t size) {
     buffer.reserve(size);
 }
 
-void Common::ByteStream::write(char *data, uint32_t size) {
+void Base::ByteStream::write(char *data, uint32_t size) {
     std::copy(data, data + size, std::back_inserter(buffer));
 }
 
-void Common::ByteStream::write(ByteStream &data, uint32_t size) {
+void Base::ByteStream::write(ByteStream &data, uint32_t size) {
     std::vector<char> tmp = data.read(size);
     std::copy(tmp.begin(), tmp.end(), std::back_inserter(buffer));
 }
 
-std::vector<char> &Common::ByteStream::getBuffer() {
+std::vector<char> &Base::ByteStream::getBuffer() {
     return buffer;
 }
 
-const char* Common::ByteStream::data() {
+const char* Base::ByteStream::data() {
     return buffer.data();
 }
 
-std::vector<char> Common::ByteStream::read(uint32_t size) {
+std::vector<char> Base::ByteStream::read(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
         data.insert(data.end(), buffer.begin(), buffer.begin() + size);
@@ -34,7 +34,7 @@ std::vector<char> Common::ByteStream::read(uint32_t size) {
     return data;
 }
 
-std::vector<char> Common::ByteStream::peek(uint32_t size) {
+std::vector<char> Base::ByteStream::peek(uint32_t size) {
     std::vector<char> data;
     if (size <= buffer.size()) {
         data.insert(data.end(), buffer.begin(), buffer.begin() + size);
@@ -42,7 +42,7 @@ std::vector<char> Common::ByteStream::peek(uint32_t size) {
     return data;
 }
 
-uint32_t Common::ByteStream::peekUint32() {
+uint32_t Base::ByteStream::peekUint32() {
     std::vector<char> buf = peek(sizeof(uint32_t));
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -52,7 +52,7 @@ uint32_t Common::ByteStream::peekUint32() {
     return data;
 }
 
-uint32_t Common::ByteStream::readUint32() {
+uint32_t Base::ByteStream::readUint32() {
     std::vector<char> buf = read(sizeof(uint32_t));
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -62,18 +62,18 @@ uint32_t Common::ByteStream::readUint32() {
     return data;
 }
 
-uint32_t Common::ByteStream::size() {
+uint32_t Base::ByteStream::size() {
     return buffer.size();
 }
 
-bool Common::ByteStream::empty() {
+bool Base::ByteStream::empty() {
     return buffer.empty();
 }
 
-void Common::ByteStream::clear() {
+void Base::ByteStream::clear() {
     buffer.clear();
 }
 
-void Common::ByteStream::operator=(Common::ByteStream &other) {
+void Base::ByteStream::operator=(Base::ByteStream &other) {
     std::copy(other.buffer.begin(), other.buffer.end(), std::back_inserter(buffer));
 }

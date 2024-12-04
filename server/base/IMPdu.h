@@ -9,15 +9,15 @@
 #include "PduHeader.h"
 #include "ByteStream.h"
 
-namespace Common {
+namespace Base {
 
 class IMPdu {
 public:
     IMPdu();
 
-    static std::shared_ptr<IMPdu> readPdu(Common::ByteStream &data);
+    static std::shared_ptr<IMPdu> readPdu(Base::ByteStream &data);
 
-    void setImPdu(PduHeader& header, Common::ByteStream& body);
+    void setImPdu(PduHeader& header, Base::ByteStream& body);
 
     uint32_t serialize(char *buf, uint32_t bufSize);
 
@@ -32,14 +32,14 @@ public:
     uint32_t size();
 
 private:
-    void readHeader(Common::ByteStream &data);
+    void readHeader(Base::ByteStream &data);
 
-    void readBody(Common::ByteStream &data, uint32_t size);
+    void readBody(Base::ByteStream &data, uint32_t size);
 
 private:
     static constexpr uint32_t DEFAULT_BODY_LEN = 1024;
     PduHeader header;
-    Common::ByteStream body;
+    Base::ByteStream body;
 };
 
 }

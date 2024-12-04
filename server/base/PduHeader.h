@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <string>
 
-namespace Common {
+namespace Base {
 
 #define PDU_HEADER_UUID_LEN     (40)
 
