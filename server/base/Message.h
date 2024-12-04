@@ -31,6 +31,7 @@ public:
     uint32_t serialize(char *buf, uint32_t bufSize);
 
     uint32_t size();
+    std::string& getType();
 
 private:
 

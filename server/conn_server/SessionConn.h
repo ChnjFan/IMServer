@@ -42,6 +42,8 @@ protected:
     void connect() override;
     void recv() override;
     void error() override;
+
+private:
     void generateSessionUID();
 
 private:

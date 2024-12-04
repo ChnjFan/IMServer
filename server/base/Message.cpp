@@ -21,6 +21,7 @@ Base::MessagePtr Base::Message::getMessage(Base::ByteStream &data) {
     // 读取消息头
     pMessage->length = data.readUint32();
     pMessage->typeLen = data.readUint32();
+
     pMessage->typeName = data.readString(pMessage->typeLen);
 
     Base::ByteStream temp = data.read(pMessage->length - pMessage->typeLen - 2*sizeof(uint32_t));
@@ -87,5 +88,9 @@ uint32_t Base::Message::serialize(char *buf, uint32_t bufSize) {
 
 uint32_t Base::Message::size() {
     return length;
+}
+
+std::string &Base::Message::getType() {
+    return typeName;
 }
 

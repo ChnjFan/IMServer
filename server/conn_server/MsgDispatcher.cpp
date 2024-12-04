@@ -52,7 +52,7 @@ void MsgHandlerCallbackMap::handleLoginMsg(SessionConn &conn, Common::IMPdu &imP
     LoginServerResult::getInstance()->sendPdu(imPdu);
 }
 
-void MsgDispatcher::exec(SessionConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu) {
-    return MsgHandlerCallbackMap::getInstance()->invokeCallback(pImPdu->getMsgType(), conn, *pImPdu);
+void MsgDispatcher::exec(SessionConn &conn, Base::MessagePtr &pMessage) {
+    return MsgHandlerCallbackMap::getInstance()->invokeCallback(pMessage->getMsgType(), conn, *pMessage);
 }
 

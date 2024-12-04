@@ -8,27 +8,27 @@
 #include <memory>
 #include <map>
 #include <functional>
-#include "IMPdu.h"
+#include "Message.h"
 #include "SessionConn.h"
 
 class MsgHandlerCallbackMap {
 public:
-    using MsgHandlerCallback = std::function<void(SessionConn &conn, Common::IMPdu&)>;
+    using MsgHandlerCallback = std::function<void(SessionConn &conn, Base::Message&)>;
 
     MsgHandlerCallbackMap(const MsgHandlerCallbackMap&) = delete;
 
     static MsgHandlerCallbackMap* getInstance();
     static void destroyInstance();
     void registerHandler();
-    void invokeCallback(uint32_t msgType, SessionConn &conn, Common::IMPdu &imPdu);
+    void invokeCallback(uint32_t msgType, SessionConn &conn, Base::Message &message);
 
 private:
     MsgHandlerCallbackMap() = default;
 
     void registerCallback(uint32_t msgType, MsgHandlerCallback callback);
 
-    static void handleHeartBeatMsg(SessionConn &conn, Common::IMPdu &imPdu);
-    static void handleLoginMsg(SessionConn &conn, Common::IMPdu &imPdu);
+    static void handleHeartBeatMsg(SessionConn &conn, Base::Message &message);
+    static void handleLoginMsg(SessionConn &conn, Base::Message &message);
 
 
     static MsgHandlerCallbackMap *instance;
@@ -40,8 +40,7 @@ private:
  */
 class MsgDispatcher {
 public:
-    static void exec(SessionConn &conn, std::shared_ptr<Common::IMPdu> &pImPdu);
-
+    static void exec(SessionConn &conn, Base::MessagePtr &pMessage);
 };
 
 
