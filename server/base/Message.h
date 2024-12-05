@@ -25,6 +25,12 @@ class Message {
 public:
     Message();
 
+    /**
+     * @brief 消息解码
+     * @param data 接收数据
+     * @return 请求消息
+     * @throws Exception 消息解码异常
+     */
     static MessagePtr getMessage(Base::ByteStream &data);
 
     ProtobufMsgPtr deserialize();

@@ -25,7 +25,7 @@ void MsgHandlerCallbackMap::registerHandler() {
     registerCallback(IM::BaseType::MSG_TYPE_LOGIN_REQ, MsgHandlerCallbackMap::handleLoginMsg);
 }
 
-void MsgHandlerCallbackMap::invokeCallback(uint32_t msgType, SessionConn &conn, Common::IMPdu &imPdu) {
+void MsgHandlerCallbackMap::invokeCallback(std::string msgType, SessionConn &conn, Common::IMPdu &imPdu) {
     auto it = callbackMap.find(msgType);
     if (it == callbackMap.end()) {
         return;

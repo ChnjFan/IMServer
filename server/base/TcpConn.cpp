@@ -38,8 +38,6 @@ void Base::TcpConn::run() {
 }
 
 void Base::TcpConn::close() {
-    connSocket.shutdown();
-    connSocket.close();
     reactor.stop();
 }
 

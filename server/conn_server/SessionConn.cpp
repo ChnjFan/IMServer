@@ -5,6 +5,7 @@
 #include <memory>
 #include "Poco/Runnable.h"
 #include "Poco/Timer.h"
+#include "Exception.h"
 #include "SessionConn.h"
 #include "MsgDispatcher.h"
 #include "SessionConnManager.h"
@@ -35,12 +36,19 @@ void SessionConn::connect() {
 
 // 分发消息
 void SessionConn::recv() {
-    while (true) {
-        Base::MessagePtr pMessage = Base::Message::getMessage(getRecvMsgBuf());
-        if (pMessage == nullptr)
-            return;
+    try {
+        while (true) {
+            Base::MessagePtr pMessage = Base::Message::getMessage(getRecvMsgBuf());
+            if (pMessage == nullptr)
+                return;
 
-        MsgDispatcher::exec(*this, pMessage);
+            MsgDispatcher::exec(*this, pMessage);
+        }
+    }
+    catch (const Base::Exception& e) {
+        std::cerr << "Get Message error: " << e.what() << std::endl;
+        // 消息异常后关闭客户端连接，需要客户端重连重试
+        close();
     }
 }
 

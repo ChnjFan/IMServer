@@ -22,3 +22,9 @@ enum ResultType {
     RESULT_TYPE_NO_SERVER = 514;
     RESULT_TYPE_REQUEST_ERR = 998;
 }
+
+// 心跳包
+message ImMsgHeartBeat {
+    uint64 time_stamp = 1;
+    uint32 sequence = 2;
+}

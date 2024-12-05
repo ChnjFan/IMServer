@@ -5,6 +5,7 @@
 #include <memory>
 #include <cstring>
 #include "Message.h"
+#include "Exception.h"
 #include "Poco/Checksum.h"
 
 Base::Message::Message(): length(0), typeLen(0), typeName(""), checkSum(0), body(DEFAULT_BODY_LEN) { }
@@ -32,10 +33,10 @@ Base::MessagePtr Base::Message::getMessage(Base::ByteStream &data) {
     Poco::Checksum checker(Poco::Checksum::TYPE_ADLER32);
     checker.update(pMessage->body.data(), pMessage->body.size());
     if (pMessage->checkSum != checker.checksum())
-        return nullptr;
+        throw Exception("Message check sum error");
 
     if (pMessage->typeName.length() == 0)
-        return nullptr;
+        throw Exception("Message type name error");
 
     return pMessage;
 }

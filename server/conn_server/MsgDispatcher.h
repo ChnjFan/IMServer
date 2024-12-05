@@ -5,8 +5,9 @@
 #ifndef IMSERVER_MSGDISPATCHER_H
 #define IMSERVER_MSGDISPATCHER_H
 
-#include <memory>
 #include <map>
+#include <string>
+#include <memory>
 #include <functional>
 #include "Message.h"
 #include "SessionConn.h"
@@ -20,7 +21,7 @@ public:
     static MsgHandlerCallbackMap* getInstance();
     static void destroyInstance();
     void registerHandler();
-    void invokeCallback(uint32_t msgType, SessionConn &conn, Base::Message &message);
+    void invokeCallback(std::string msgType, SessionConn &conn, Base::Message &message);
 
 private:
     MsgHandlerCallbackMap() = default;
@@ -32,7 +33,7 @@ private:
 
 
     static MsgHandlerCallbackMap *instance;
-    std::map<uint32_t, MsgHandlerCallback> callbackMap;
+    std::map<std::string, MsgHandlerCallback> callbackMap;
 };
 
 /**
