@@ -34,3 +34,4 @@
 # 忽略第三方库文件
 third_party/**
 !third_party/**/*.sh
+server/base/zmq.hpp
