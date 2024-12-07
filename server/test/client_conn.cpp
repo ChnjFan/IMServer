@@ -20,7 +20,7 @@ using Poco::Util::IniFileConfiguration;
 
 int main (int argc, const char * argv[])
 {
-    AutoPtr<IniFileConfiguration> pConfig(new IniFileConfiguration("route_server_config.ini"));
+    AutoPtr<IniFileConfiguration> pConfig(new IniFileConfiguration("conn_server_config.ini"));
 
     std::string serverIP = "127.0.0.1";
     int serverPort = pConfig->getInt("server.listen_port");

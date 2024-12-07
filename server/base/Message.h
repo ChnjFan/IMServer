@@ -24,6 +24,7 @@ namespace Base {
 class Message {
 public:
     Message();
+    Message(Base::ByteStream& body, std::string& typeName);
 
     /**
      * @brief 消息解码
@@ -33,13 +34,23 @@ public:
      */
     static MessagePtr getMessage(Base::ByteStream &data);
 
+    /**
+     * @brief 消息反序列化
+     * @return protobuf 消息类型
+     */
     ProtobufMsgPtr deserialize();
+
+    /**
+     * @brief 消息序列化
+     * @param buf 序列化消息内存缓冲区
+     * @param bufSize 缓冲区长度
+     * @return 序列化消息长度
+     */
     uint32_t serialize(char *buf, uint32_t bufSize);
 
     uint32_t size();
-    std::string& getType();
 
-private:
+    std::string& getTypeName();
 
 private:
     static constexpr uint32_t DEFAULT_BODY_LEN = 1024;
@@ -61,6 +72,9 @@ private:
      * @brief 消息校验和
      */
     uint32_t checkSum;
+    /**
+     * @brief 消息体
+     */
     Base::ByteStream body;
 };
 

@@ -9,6 +9,8 @@
 #include "Poco/Util/IniFileConfiguration.h"
 #include "Poco/Net/TCPServerParams.h"
 #include "Poco/Net/TCPServer.h"
+#include "Poco/Net/IPAddress.h"
+#include "Exception.h"
 #include "SessionConn.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
@@ -17,7 +19,7 @@ class ConnServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
-            readConfig("route_server_config.ini");
+            readConfig("conn_server_config.ini");
             Poco::ThreadPool threadPool;
 
             // 注册消息处理回调
@@ -31,6 +33,9 @@ protected:
             return Application::EXIT_OK;
         } catch (Poco::Exception& e) {
             std::cerr << e.displayText() << std::endl;
+            return Application::EXIT_SOFTWARE;
+        } catch (Base::Exception& e) {
+            std::cerr << e.what() << std::endl;
             return Application::EXIT_SOFTWARE;
         }
     }

@@ -22,6 +22,9 @@ public:
 private:
     SessionConnManager();
     static SessionConnManager *instance;
+
+    static Poco::Mutex mutex;
+
 };
 
 

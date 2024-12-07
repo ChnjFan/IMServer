@@ -10,6 +10,17 @@
 
 Base::Message::Message(): length(0), typeLen(0), typeName(""), checkSum(0), body(DEFAULT_BODY_LEN) { }
 
+Base::Message::Message(Base::ByteStream &body, std::string &typeName)
+                    : length(2*sizeof(uint32_t) + typeName.length() + 1 + body.size())
+                    , typeLen(typeName.length() + 1)
+                    , typeName(typeName)
+                    , checkSum(0)
+                    , body(body) {
+    Poco::Checksum checker(Poco::Checksum::TYPE_ADLER32);
+    checker.update(body.data(), body.size());
+    checkSum = checker.checksum();
+}
+
 Base::MessagePtr Base::Message::getMessage(Base::ByteStream &data) {
     uint32_t len = data.peekUint32();
 
@@ -91,7 +102,7 @@ uint32_t Base::Message::size() {
     return length;
 }
 
-std::string &Base::Message::getType() {
+std::string &Base::Message::getTypeName() {
     return typeName;
 }
 

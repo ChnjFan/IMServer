@@ -11,4 +11,4 @@ set_target_properties(conn_server PROPERTIES
 )
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
-target_link_libraries(conn_server PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol base login)
+target_link_libraries(conn_server PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol base)

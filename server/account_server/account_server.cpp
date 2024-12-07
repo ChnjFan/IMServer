@@ -2,16 +2,14 @@
 // Created by fan on 24-11-23.
 //
 
-#include "Poco/Net/TCPServer.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
-#include "LoginConn.h"
 
 class AccountServer : public  Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
-            readConfig("login_server_config.ini");
+            readConfig("account_server_config.ini");
 
             runServer();
 
@@ -38,22 +36,7 @@ private:
     }
 
     void runServer() {
-        // Set up the TCP server parameters
-        Poco::Net::TCPServerParams* pParams = new Poco::Net::TCPServerParams;
-        pParams->setMaxQueued(DEFAULT_MAX_CONN); // Maximum number of queued connections
-        pParams->setMaxThreads(DEFAULT_THREAD_NUM);  // Maximum number of threads
-
-        // Create the TCP server factory
-        Poco::Net::TCPServer server(new AccountConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
-
-        // Start the server
-        server.start();
-        std::cout << "Login server started listen on " << listenIP << ":" << listenPort << std::endl;
-
-        // Wait for termination request
-        waitForTerminationRequest();
-
-        server.stop();
+        // TODO: 向客户端发布服务，然后等待客户端请求。
     }
 
 private:

@@ -12,6 +12,10 @@
 #include "Message.h"
 #include "SessionConn.h"
 
+/**
+* @class MsgHandlerCallbackMap
+* @brief 消息分发器。注册消息回调并发送到各业务，异常消息处理。
+*/
 class MsgHandlerCallbackMap {
 public:
     using MsgHandlerCallback = std::function<void(SessionConn &conn, Base::Message&)>;
@@ -26,7 +30,7 @@ public:
 private:
     MsgHandlerCallbackMap() = default;
 
-    void registerCallback(uint32_t msgType, MsgHandlerCallback callback);
+    void registerCallback(const char *typeName, MsgHandlerCallback callback);
 
     static void handleHeartBeatMsg(SessionConn &conn, Base::Message &message);
     static void handleLoginMsg(SessionConn &conn, Base::Message &message);
@@ -37,8 +41,9 @@ private:
 };
 
 /**
- * @brief Route消息处理
- */
+* @class MsgDispatcher
+* @brief 消息分发
+*/
 class MsgDispatcher {
 public:
     static void exec(SessionConn &conn, Base::MessagePtr &pMessage);

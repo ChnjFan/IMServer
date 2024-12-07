@@ -15,9 +15,11 @@
 #include "Poco/UUIDGenerator.h"
 #include "Poco/Net/TCPServerConnectionFactory.h"
 #include "Poco/Timer.h"
+#include "Poco/Net/IPAddress.h"
 #include "Message.h"
 #include "ByteStream.h"
 #include "TcpConn.h"
+#include "ConnectionLimiter.h"
 
 typedef enum {
     CONN_IDLE = 0,
@@ -29,14 +31,20 @@ typedef enum {
 class SessionConn : public Base::TcpConn {
 public:
     explicit SessionConn(const Poco::Net::StreamSocket& socket);
+    ~SessionConn();
 
     const Poco::Timestamp getTimeStamp() const;
     void updateTimeStamp();
 
+//    void SessionConn::checkAuthTimeout(Poco::Timer& timer);
+
     std::string getSessionUID() const;
+    std::string getClientIP() const;
 
     bool isConnIdle();
     void setState(ROUTE_CONN_STATE state);
+    bool authenticate(const std::string& token);
+    bool isAuthenticated() const;
 
 protected:
     void connect() override;
@@ -45,11 +53,28 @@ protected:
 
 private:
     void generateSessionUID();
+    void initializeConnection();
+    bool checkConnectionLimit();
 
 private:
     Poco::Timestamp timeStamp;
     Poco::UUID sessionUID;
+
+    /**
+     * @brief 连接状态
+     */
     ROUTE_CONN_STATE state;
+
+    /**
+     * @brief 客户端连接IP
+     */
+    std::string clientIP;
+
+    /**
+     * @brief 连接认证参数
+     */
+    bool authenticated;
+    static constexpr int AUTH_TIMEOUT = 30000; // 30秒认证超时
 };
 
 class SessionConnFactory : public Poco::Net::TCPServerConnectionFactory {

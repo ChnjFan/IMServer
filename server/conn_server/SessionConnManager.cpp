@@ -9,31 +9,41 @@
  * 连接管理实例
  */
 SessionConnManager *SessionConnManager::instance = nullptr;
+Poco::Mutex SessionConnManager::mutex;
 
 SessionConnManager *SessionConnManager::getInstance() {
-    if (instance == nullptr)
-        instance = new SessionConnManager();
+    if (instance == nullptr) {
+        Poco::Mutex::ScopedLock lock(mutex);
+        if (instance == nullptr){
+            instance = new SessionConnManager();
+        }
+    }
     return instance;
 }
 
 void SessionConnManager::destroyInstance() {
+    Poco::Mutex::ScopedLock lock(mutex);
     delete instance;
     instance = nullptr;
 }
 
 void SessionConnManager::add(SessionConn *pRouteConn) {
+    Poco::Mutex::ScopedLock lock(mutex);
     Base::TcpConnManager::add(pRouteConn->getSessionUID(), pRouteConn);
 }
 
 SessionConn *SessionConnManager::get(std::string uuid) {
+    Poco::Mutex::ScopedLock lock(mutex);
     return dynamic_cast<SessionConn *>(SessionConnManager::get(uuid));
 }
 
 void SessionConnManager::close(SessionConn *pRouteConn) {
+    Poco::Mutex::ScopedLock lock(mutex);
     Base::TcpConnManager::close(pRouteConn->getSessionUID(), pRouteConn);
 }
 
 void SessionConnManager::checkTimeStamp() {
+    // FIXME: 如何解决线程同步问题和性能问题
     for (auto it = SessionConnManager::tcpConnMap.begin(); it != SessionConnManager::tcpConnMap.end(); ) {
         Poco::Timestamp timestamp;
         SessionConn *conn = dynamic_cast<SessionConn *>(it->second);
