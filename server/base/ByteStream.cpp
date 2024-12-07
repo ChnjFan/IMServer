@@ -8,6 +8,10 @@ Base::ByteStream::ByteStream(std::size_t size) {
     buffer.reserve(size);
 }
 
+Base::ByteStream::~ByteStream() {
+    buffer.clear();
+}
+
 void Base::ByteStream::write(char *data, uint32_t size) {
     std::copy(data, data + size, std::back_inserter(buffer));
 }

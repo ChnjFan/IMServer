@@ -5,7 +5,7 @@ include_directories(.)
 aux_source_directory(./ SRC_LIST)
 
 add_library(base SHARED ${SRC_LIST}
-        zmq.hpp)
+        ZMQSocketWrapper.h)
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
 find_package(protobuf REQUIRED PATHS ${THIRD_PARTY_PATH}/protobuf/lib)

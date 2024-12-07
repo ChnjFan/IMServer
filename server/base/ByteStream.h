@@ -22,6 +22,7 @@ class ByteStream {
 public:
     explicit ByteStream(std::size_t size=DEFAULT_BYTESTREAM_SIZE);
     ByteStream(ByteStream& other) = default;
+    ~ByteStream();
 
     void write(char* data, uint32_t size);
     void write(ByteStream &data, uint32_t size);
