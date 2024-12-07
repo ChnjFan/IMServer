@@ -6,6 +6,20 @@ import "IM.BaseType.proto";
 
 option optimize_for = LITE_RUNTIME;
 
+// 用户状态
+message ImMsgUserStatus {
+    string accid = 1;
+    optional string token = 2;
+    optional string email = 3;
+    optional string mobile = 4;
+    optional string password = 5;
+    optional string name = 6;
+    optional string icon = 7;
+    optional string sign = 8;
+    optional int32 gender = 9;
+    optional string ex = 10;
+}
+
 // 登录请求
 message ImMsgLoginReq {
     optional string accid = 1;
@@ -20,4 +34,14 @@ message ImMsgLoginRes {
     uint64 server_time = 1;
     string uid = 3;
     IM.BaseType.ResultType ret_code = 2;
+}
+
+// 注册请求
+message ImMsgRegister {
+    ImMsgUserStatus status = 1;
+}
+
+// 更新用户状态
+message ImMsgUpdateUserStatus {
+    repeated ImMsgUserStatus status = 1;
 }
