@@ -4,6 +4,7 @@
 
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
+#include "AccountService.h"
 
 class AccountServer : public  Poco::Util::ServerApplication {
 protected:
@@ -36,7 +37,12 @@ private:
     }
 
     void runServer() {
-        // TODO: 向客户端发布服务，然后等待客户端请求。
+        Base::ServiceParam param("AccountService",
+                                 std::to_string(listenPort).c_str(),
+                                 std::to_string(listenPort+1).c_str(),
+                                 8, 100);
+        AccountService service(param);
+        service.start();
     }
 
 private:

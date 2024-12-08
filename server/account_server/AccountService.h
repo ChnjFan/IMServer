@@ -5,43 +5,31 @@
 #ifndef IMSERVER_ACCOUNTSERVICE_H
 #define IMSERVER_ACCOUNTSERVICE_H
 
-#include "Poco/Mutex.h"
-#include "Poco/Net/SocketReactor.h"
+#include "ServiceParam.h"
+#include "BaseService.h"
 #include "IM.AccountServer.pb.h"
-#include "zmq.hpp"
 
 /**
  * @class AccountService
  * @brief 用户相关服务
  */
-class AccountService {
+class AccountService : public Base::BaseService {
 public:
-    AccountService(Poco::Net::SocketReactor& reactor);
-    ~AccountService();
+    using AccountMsgCallback = std::function<void(AccountService& , std::vector<zmq::message_t>&, Base::Message&)>;
 
-    /**
-     * @brief 服务初始化
-     */
-    void initialize();
+    explicit AccountService(Base::ServiceParam& param);
 
-
-
+protected:
+    void messageProcessor() override;
 
 private:
-    static Poco::Mutex mutex;
-    zmq::context_t context;
-    /**
-     * @brief 服务发布广播socket
-     */
-    zmq::socket_t publisher;
-    /**
-     * @brief 消息推送socket
-     */
-    zmq::socket_t pusher;
-    /**
-     * @brief 消息拉取socket
-     */
-    zmq::socket_t poller;
+    void registerCallback(const char* typeName, AccountMsgCallback callback);
+    void registerService();
+    void invokeService(std::string& typeName, std::vector<zmq::message_t>& part, Base::Message &message);
+
+    static void login(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
+
+    std::map<std::string, AccountMsgCallback> callbackMap;
 };
 
 
