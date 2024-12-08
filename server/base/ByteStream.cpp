@@ -8,6 +8,9 @@ Base::ByteStream::ByteStream(std::size_t size) {
     buffer.reserve(size);
 }
 
+Base::ByteStream::ByteStream(Base::ByteStream &&other) noexcept
+        : buffer(std::move(other.buffer)) { }
+
 Base::ByteStream::~ByteStream() {
     buffer.clear();
 }

@@ -21,6 +21,8 @@ namespace Base {
 class ByteStream {
 public:
     explicit ByteStream(std::size_t size=DEFAULT_BYTESTREAM_SIZE);
+    ByteStream(ByteStream&& other) noexcept;
+
     ByteStream(ByteStream& other) = default;
     ~ByteStream();
 

@@ -5,13 +5,38 @@
 #ifndef IMSERVER_BASESERVICE_H
 #define IMSERVER_BASESERVICE_H
 
+#include <vector>
 #include "Poco/Mutex.h"
+#include "Poco/ThreadPool.h"
 #include "Poco/Net/SocketReactor.h"
 #include "ByteStream.h"
+#include "BlockingQueue.h"
 #include "zmq.hpp"
 #include "ZMQSocketWrapper.h"
+#include "ServiceParam.h"
 
 namespace Base {
+
+class ZMQMessage {
+public:
+    ZMQMessage(std::vector<zmq::message_t>&& parts, ByteStream& message) : routingParts(std::move(parts)), content(message) { }
+    ZMQMessage() = default;
+    ZMQMessage(ZMQMessage&& other) noexcept
+            : routingParts(std::move(other.routingParts))
+            , content(std::move(other.content)) { }
+
+    std::vector<zmq::message_t>& getRoutingParts() {
+        return routingParts;
+    }
+
+    ByteStream& getContent() {
+        return content;
+    };
+
+private:
+    std::vector<zmq::message_t> routingParts;  // 路由信息
+    ByteStream content;
+};
 
  /**
  * @class BaseService
@@ -22,14 +47,13 @@ namespace Base {
  *     "name": "AccountService",
  *     "staus": "active",
  *     "timestamp": "%Y-%m-%d %H:%M:%S",
- *     "request_port": "1234",
- *     "response_port": "1235",
- *     "status_updates_port": "1236"
+ *     "route_port": "1234",
+ *     "status_updates_port": "1235"
  *  }
  */
-class BaseService {
+class BaseService : public Poco::Runnable {
 public:
-    BaseService(const char* serviceName, const char* servicePort, const char* requestPort, const char* responsePort);
+    explicit BaseService(ServiceParam& param);
     ~BaseService();
 
     // 服务初始化
@@ -39,16 +63,22 @@ public:
     void start();
 
     // 消息处理
-    void handleAccountMessage(const std::string& message);
-    void publishAccountUpdate(const std::string& userId, const std::string& updateType);
+    void run() override;
+
+    // 消息回复
+    void sendResponse(const std::vector<zmq::message_t>& routingParts, ByteStream& response);
+    void sendResponse(const std::vector<zmq::message_t>& routingParts, char* response, size_t size);
+
+protected:
+    virtual void messageProcessor();
+    BlockingQueue<ZMQMessage>& getMessageQueue();
 
 private:
     void setupSockets();
     void setupReactor();
+    void setupThreadPool();
 
-    void onPublish(Poco::Net::ReadableNotification *pNotification);
     void onReadable(Poco::Net::ReadableNotification *pNotification);
-    void onWritable(Poco::Net::ReadableNotification *pNotification);
 
     void publishServiceInfo();
 
@@ -58,18 +88,17 @@ private:
     zmq::context_t context;
     Poco::Net::SocketReactor reactor;
 
+    uint32_t threadPoolSize;
+    Poco::ThreadPool threadPool;
+
     std::string serviceName;
     std::string publishPort;
-    std::string requestPort;
-    std::string responsePort;
+    std::string routePort;
 
-    std::unique_ptr<zmq::socket_t> publisher;         // 用于发布服务信息和账户状态更新
-    std::unique_ptr<zmq::socket_t> puller;            // 用于接收客户端请求
-    std::unique_ptr<zmq::socket_t> pusher;            // 用于发送响应
+    zmq::socket_t publisher;         // 用于发布服务信息和账户状态更新
+    zmq::socket_t router;            // 用于收发客户端请求
 
-    Base::ByteStream publishMsgBuf;
-    Base::ByteStream recvMsgBuf;
-    Base::ByteStream sendMsgBuf;
+    BlockingQueue<ZMQMessage> messageQueue;
 };
 
 }

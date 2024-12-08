@@ -51,6 +51,7 @@ public:
         // 创建Poco socket
         auto pImpl = new FDSocketImpl(fd);
         pocoSocket_.reset(new FDSocket(pImpl));
+        delete pImpl;
     }
 
     Poco::Net::Socket& socket() { return *pocoSocket_; }
