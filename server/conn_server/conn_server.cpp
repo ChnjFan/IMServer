@@ -14,6 +14,7 @@
 #include "SessionConn.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
+#include "BaseClient.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
@@ -27,6 +28,10 @@ protected:
             // 定时检测连接心跳
             HeartBeatHandlerImpl heartBeatTask;
             heartBeatTask.start();
+
+            // 订阅 account_server 服务
+            std::string accountService = "127.0.0.1";
+            Base::BaseClient accountClient(accountService, 9200);
 
             runServer();
 

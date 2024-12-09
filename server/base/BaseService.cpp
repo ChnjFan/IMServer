@@ -139,7 +139,9 @@ void Base::BaseService::publishServiceInfo() {
     serviceInfo.set("name", serviceName.c_str());
     serviceInfo.set("status", "active");
     serviceInfo.set("timestamp", Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y-%m-%d %H:%M:%S"));
-    serviceInfo.set("route_port", routePort);
+
+    std::string routerEndpoint = router.get(zmq::sockopt::last_endpoint);
+    serviceInfo.set("end_point", routerEndpoint);
     serviceInfo.set("status_updates_port", publishPort);
 
     std::stringstream ss;

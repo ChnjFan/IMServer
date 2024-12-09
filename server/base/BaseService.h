@@ -45,9 +45,9 @@ private:
  *  {
  *     "type": "service_info",
  *     "name": "AccountService",
- *     "staus": "active",
+ *     "status": "active",
  *     "timestamp": "%Y-%m-%d %H:%M:%S",
- *     "route_port": "1234",
+ *     "route_port"staus: "1234",
  *     "status_updates_port": "1235"
  *  }
  */

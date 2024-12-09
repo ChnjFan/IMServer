@@ -28,3 +28,8 @@ message ImMsgHeartBeat {
     uint64 time_stamp = 1;
     uint32 sequence = 2;
 }
+
+// 消息信息
+message ImMsgInfo {
+    uint32 seq = 1;
+}

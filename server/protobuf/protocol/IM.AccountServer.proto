@@ -22,11 +22,12 @@ message ImMsgUserStatus {
 
 // 登录请求
 message ImMsgLoginReq {
-    optional string accid = 1;
-    optional string token = 2;
-    optional string email = 3;
-    optional string mobile = 4;
-    string password = 5;
+    IM.BaseType.ImMsgInfo msg_info = 1;
+    optional string accid = 2;
+    optional string token = 3;
+    optional string email = 4;
+    optional string mobile = 5;
+    string password = 6;
 }
 
 // 登录响应消息
@@ -37,7 +38,7 @@ message ImMsgLoginRes {
 }
 
 // 注册请求
-message ImMsgRegister {
+message ImMsgRegisterReq {
     ImMsgUserStatus status = 1;
 }
 

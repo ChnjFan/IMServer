@@ -28,6 +28,7 @@ private:
     void invokeService(std::string& typeName, std::vector<zmq::message_t>& part, Base::Message &message);
 
     static void login(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
+    static void registerUser(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
 
     std::map<std::string, AccountMsgCallback> callbackMap;
 };

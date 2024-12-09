@@ -4,6 +4,8 @@
 
 #include "Exception.h"
 #include "AccountService.h"
+
+#include <utility>
 #include "IM.AccountServer.pb.h"
 
 AccountService::AccountService(Base::ServiceParam &param) : BaseService(param), callbackMap() {
@@ -25,11 +27,12 @@ void AccountService::messageProcessor() {
 }
 
 void AccountService::registerCallback(const char* typeName, AccountService::AccountMsgCallback callback) {
-    callbackMap[typeName] = callback;
+    callbackMap[typeName] = std::move(callback);
 }
 
 void AccountService::registerService() {
     registerCallback("IM.Account.ImMsgLoginReq", AccountService::login);
+    registerCallback("IM.Account.ImMsgRegisterReq", AccountService::registerUser);
 }
 
 void AccountService::invokeService(std::string& typeName, std::vector<zmq::message_t>& part, Base::Message &message) {
@@ -48,8 +51,12 @@ void AccountService::login(AccountService& service, std::vector<zmq::message_t>&
     response.set_ret_code(IM::BaseType::ResultType::RESULT_TYPE_SUCCESS);
 
     int size = response.ByteSizeLong();
-    char *content = new char[size] ;
+    char *content = new char[size];
     response.SerializeToArray(content, size);
     service.sendResponse(part, content, size);
     delete content;
+}
+
+void AccountService::registerUser(AccountService &service, std::vector<zmq::message_t> &part, Base::Message &message) {
+
 }

@@ -12,4 +12,4 @@ set_target_properties(client_conn PROPERTIES
 )
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
-target_link_libraries(client_conn PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol common)
+target_link_libraries(client_conn PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON protocol base zmq)
