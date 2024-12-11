@@ -23,7 +23,7 @@ public:
     BlockingQueue& operator=(const BlockingQueue&) = delete;
 
     // 入队操作
-    void push(const T& item) {
+    void push(T& item) {
         Poco::ScopedLock<Poco::Mutex> lock(mutex_);
         queue_.push(item);
         condition_.signal();  // 通知等待的消费者

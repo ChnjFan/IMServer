@@ -5,6 +5,7 @@
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/Util/IniFileConfiguration.h"
 #include "AccountService.h"
+#include "AccountWorker.h"
 
 class AccountServer : public  Poco::Util::ServerApplication {
 protected:

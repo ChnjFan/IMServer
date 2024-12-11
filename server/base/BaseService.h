@@ -19,23 +19,61 @@ namespace Base {
 
 class ZMQMessage {
 public:
-    ZMQMessage(std::vector<zmq::message_t>&& parts, ByteStream& message) : routingParts(std::move(parts)), content(message) { }
     ZMQMessage() = default;
-    ZMQMessage(ZMQMessage&& other) noexcept
-            : routingParts(std::move(other.routingParts))
-            , content(std::move(other.content)) { }
 
-    std::vector<zmq::message_t>& getRoutingParts() {
-        return routingParts;
+    ZMQMessage(ZMQMessage &message) {
+        identity.copy(message.identity);
     }
 
-    ByteStream& getContent() {
-        return content;
-    };
+
+    ZMQMessage(ZMQMessage const &message) {
+        identity.rebuild(message.identity.data(), message.identity.size());
+        msg.rebuild(message.msg.data(), message.msg.size());
+    }
+
+    ZMQMessage& operator=(const ZMQMessage& message) {
+        identity.rebuild(message.identity.data(), message.identity.size());
+        msg.rebuild(message.msg.data(), message.msg.size());
+        return *this;
+    }
+
+    zmq::message_t &getIdentity() const {
+        return (zmq::message_t &) std::move(identity);
+    }
+
+    void setIdentity(zmq::message_t &pIdentity) {
+        ZMQMessage::identity.copy(pIdentity);
+    }
+
+    zmq::message_t &getMsg() const {
+        return (zmq::message_t &) std::move(msg);
+    }
+
+    void setMsg(zmq::message_t &pMsg) {
+        ZMQMessage::msg.copy(pMsg);
+    }
+
 
 private:
-    std::vector<zmq::message_t> routingParts;  // 路由信息
-    ByteStream content;
+    zmq::message_t identity;
+    zmq::message_t msg;
+};
+
+class BaseWorker : public Poco::Runnable {
+public:
+    BaseWorker(zmq::context_t &ctx, zmq::socket_type socType) : ctx(ctx), worker(ctx, socType) { }
+
+    void run() override;
+
+    virtual void onReadable();
+    virtual void onError();
+
+private:
+    zmq::context_t &ctx;
+    zmq::socket_t worker;
+
+    BlockingQueue<ZMQMessage> recvMsgQueue;
+    BlockingQueue<ZMQMessage> sendMsgQueue;
 };
 
  /**
@@ -51,42 +89,29 @@ private:
  *     "status_updates_port": "1235"
  *  }
  */
-class BaseService : public Poco::Runnable {
+class BaseService {
 public:
     explicit BaseService(ServiceParam& param);
     ~BaseService();
 
+    // 服务启动
+    void start(Base::BaseWorker &worker);
+
+private:
     // 服务初始化
     void initialize();
 
-    // 服务启动
-    void start();
-
-    // 消息处理
-    void run() override;
-
-    // 消息回复
-    void sendResponse(const std::vector<zmq::message_t>& routingParts, ByteStream& response);
-    void sendResponse(const std::vector<zmq::message_t>& routingParts, char* response, size_t size);
-
-protected:
-    virtual void messageProcessor();
-    BlockingQueue<ZMQMessage>& getMessageQueue();
-
-private:
     void setupSockets();
-    void setupReactor();
-    void setupThreadPool();
 
-    void onReadable(Poco::Net::ReadableNotification *pNotification);
+    void startWorkThread(Base::BaseWorker &worker);
 
     void publishServiceInfo();
+protected:
+    zmq::context_t context;
 
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
 
-    zmq::context_t context;
-    Poco::Net::SocketReactor reactor;
 
     uint32_t threadPoolSize;
     Poco::ThreadPool threadPool;
@@ -96,9 +121,9 @@ private:
     std::string routePort;
 
     zmq::socket_t publisher;         // 用于发布服务信息和账户状态更新
-    zmq::socket_t router;            // 用于收发客户端请求
+    zmq::socket_t frontend;
+    zmq::socket_t backend;
 
-    BlockingQueue<ZMQMessage> messageQueue;
 };
 
 }

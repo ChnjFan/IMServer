@@ -8,6 +8,7 @@
 #include "ServiceParam.h"
 #include "BaseService.h"
 #include "IM.AccountServer.pb.h"
+#include "AccountWorker.h"
 
 /**
  * @class AccountService
@@ -19,8 +20,7 @@ public:
 
     explicit AccountService(Base::ServiceParam& param);
 
-protected:
-    void messageProcessor() override;
+    void start();
 
 private:
     void registerCallback(const char* typeName, AccountMsgCallback callback);
@@ -31,6 +31,7 @@ private:
     static void registerUser(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
 
     std::map<std::string, AccountMsgCallback> callbackMap;
+    AccountWorker worker;
 };
 
 

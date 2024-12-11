@@ -8,22 +8,11 @@
 #include <utility>
 #include "IM.AccountServer.pb.h"
 
-AccountService::AccountService(Base::ServiceParam &param) : BaseService(param), callbackMap() {
+AccountService::AccountService(Base::ServiceParam &param)
+                                : BaseService(param)
+                                , callbackMap()
+                                , worker(Base::BaseService::context, zmq::socket_type::dealer) {
     registerService();
-}
-
-void AccountService::messageProcessor() {
-    try {
-        Base::ZMQMessage zmqMsg = getMessageQueue().pop();
-        Base::MessagePtr pMessage = Base::Message::getMessage(zmqMsg.getContent());
-        if (nullptr == pMessage)
-            return;
-
-        invokeService(pMessage->getTypeName(), zmqMsg.getRoutingParts(), *pMessage);
-    }
-    catch (Base::Exception& e) {
-        std::cerr << e.what() << std::endl;
-    }
 }
 
 void AccountService::registerCallback(const char* typeName, AccountService::AccountMsgCallback callback) {
@@ -33,6 +22,10 @@ void AccountService::registerCallback(const char* typeName, AccountService::Acco
 void AccountService::registerService() {
     registerCallback("IM.Account.ImMsgLoginReq", AccountService::login);
     registerCallback("IM.Account.ImMsgRegisterReq", AccountService::registerUser);
+}
+
+void AccountService::start() {
+    Base::BaseService::start(worker);
 }
 
 void AccountService::invokeService(std::string& typeName, std::vector<zmq::message_t>& part, Base::Message &message) {
@@ -53,7 +46,6 @@ void AccountService::login(AccountService& service, std::vector<zmq::message_t>&
     int size = response.ByteSizeLong();
     char *content = new char[size];
     response.SerializeToArray(content, size);
-    service.sendResponse(part, content, size);
     delete content;
 }
 

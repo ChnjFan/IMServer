@@ -4,7 +4,7 @@ project(client_conn)
 include_directories(.)
 
 aux_source_directory(./ SRC_LIST)
-include_directories(. ../protobuf/protocol ../common)
+include_directories(. ../protobuf/protocol ../base)
 
 add_executable(client_conn ${SRC_LIST})
 set_target_properties(client_conn PROPERTIES
