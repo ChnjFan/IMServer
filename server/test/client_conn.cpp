@@ -1,178 +1,92 @@
-//  Asynchronous client-to-server (DEALER to ROUTER)
-//
-//  While this example runs in a single process, that is to make
-//  it easier to start and stop the example. Each task has its own
-//  context and conceptually acts as a separate process.
-
-#include <vector>
+#include <iostream>
 #include <thread>
-#include <memory>
-#include <functional>
-
 #include <zmq.hpp>
-#include <csignal>
+#include <string>
+#include <chrono>
+#include <unistd.h>
 
+// Subscriber thread function
+void subscriber_thread(zmq::context_t& ctx) {
+    zmq::socket_t subscriber(ctx, ZMQ_SUB);
+    subscriber.connect("tcp://localhost:6001");
+    subscriber.set(zmq::sockopt::subscribe, "A");
+    subscriber.set(zmq::sockopt::subscribe, "B");
 
-//  This is our client task class.
-//  It connects to the server, and then sends a request once per second
-//  It collects responses as they arrive, and it prints them out. We will
-//  run several client tasks in parallel, each with a different random ID.
-//  Attention! -- this random work well only on linux.
+    int count = 0;
+    while (count < 5) {
+        zmq::message_t message;
+        if (subscriber.recv(message)) {
+            std::string msg = std::string((char*)(message.data()), message.size());
+            std::cout << "Received: " << msg << std::endl;
+            count++;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 
-class client_task {
-public:
-    client_task()
-            : ctx_(1),
-              client_socket_(ctx_, zmq::socket_type::dealer)
-    {}
+// Publisher thread function
+void publisher_thread(zmq::context_t& ctx) {
+    zmq::socket_t publisher(ctx, ZMQ_PUB);
+    publisher.bind("tcp://*:6000");
 
-    void start() {
-        // generate random identity
-        char identity[10] = {};
-        sprintf(identity, "1234-1234");
-        client_socket_.connect("tcp://localhost:5570");
+    while (true) {
+        char string[10];
+        sprintf(string, "%c-%05d", rand() % 10 + 'A', rand() % 100000);
+        zmq::message_t message(string, strlen(string));
+        publisher.send(message, zmq::send_flags::none);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+}
 
-        zmq::pollitem_t items[] = {
-                { client_socket_.handle(), 0, ZMQ_POLLIN, 0 }
-        };
+// Listener thread function
+void listener_thread(zmq::context_t& ctx) {
+    zmq::socket_t listener(ctx, ZMQ_PAIR);
+    listener.connect("inproc://listener");
 
-        // 使用 std::chrono::duration 设置超时时间
-        std::chrono::milliseconds timeout(1000); // 1000 毫秒
-
-        int request_nbr = 0;
-        try {
-            while (true) {
-                for (int i = 0; i < 1; ++i) {
-                    // 10 milliseconds
-                    zmq::poll(items, 1, timeout);
-                    if (items[0].revents & ZMQ_POLLIN) {
-                        printf("\n%s ", identity);
-                    }
-                }
-                char request_string[16] = {};
-                sprintf(request_string, "request #%d", ++request_nbr);
-                client_socket_.send(zmq::buffer(request_string, strlen(request_string)), zmq::send_flags::none);
+    while (true) {
+        zmq::message_t message;
+        if (listener.recv(message)) {
+            std::string msg = std::string((char*)(message.data()), message.size());
+            std::cout << "Listener Received: ";
+            if (msg[0] == 0 || msg[0] == 1){
+                std::cout << int(msg[0]);
+                std::cout << msg[1]<< std::endl;
+            } else {
+                std::cout << msg << std::endl;
             }
         }
-        catch (std::exception &e) {}
     }
+}
 
-private:
-    zmq::context_t ctx_;
-    zmq::socket_t client_socket_;
-};
-
-
-//  .split worker task
-//  Each worker task works on one request at a time and sends a random number
-//  of replies back, with random delays between replies:
-
-class server_worker {
-public:
-    server_worker(zmq::context_t &ctx, zmq::socket_type sock_type)
-            : ctx_(ctx),
-              worker_(ctx_, sock_type)
-    {}
-
-    void work() {
-        worker_.connect("inproc://backend");
-
-        try {
-            while (true) {
-                zmq::message_t identity;
-                zmq::message_t msg;
-
-                auto res = worker_.recv(identity, zmq::recv_flags::none);
-                if (!res) continue;
-                res = worker_.recv(msg, zmq::recv_flags::none);
-                if (!res) continue;
-
-                for (int reply = 0; reply < 10; ++reply) {
-                    worker_.send(identity, zmq::send_flags::sndmore);
-                    worker_.send(msg, zmq::send_flags::none);
-                }
-            }
-        }
-        catch (std::exception &e) {}
-    }
-
-private:
-    zmq::context_t &ctx_;
-    zmq::socket_t worker_;
-};
+int main() {
+    zmq::context_t context(1);
+    // Main thread acts as the listener proxy
+    zmq::socket_t proxy(context, ZMQ_PAIR);
+    proxy.bind("inproc://listener");
+    zmq::socket_t xsub(context, ZMQ_XSUB);
+    zmq::socket_t xpub(context, ZMQ_XPUB);
+    xpub.bind("tcp://*:6001");
+    sleep(1);
 
 
-//  .split server task
-//  This is our server task.
-//  It uses the multithreaded server model to deal requests out to a pool
-//  of workers and route replies back to clients. One worker can handle
-//  one request at a time but one client can talk to multiple workers at
-//  once.
+    // Start publisher and subscriber threads
+    std::thread sub_thread(subscriber_thread, std::ref(context));
+    sleep(1);
+    std::thread pub_thread(publisher_thread, std::ref(context));
 
+    // Set up listener thread
+    std::thread lis_thread(listener_thread, std::ref(context));
 
-class server_task {
-public:
-    server_task()
-            : ctx_(1),
-              frontend_(ctx_, zmq::socket_type::router),
-              backend_(ctx_, zmq::socket_type::dealer)
-    {}
+    sleep(1);
 
-    enum { kMaxThread = 5 };
+    xsub.connect("tcp://localhost:6000");
+    // Proxy messages between SUB and PUB sockets
+    zmq_proxy(xsub, xpub, proxy);
 
-    void run() {
-        frontend_.bind("tcp://*:5570");
-        backend_.bind("inproc://backend");
+    // Wait for threads to finish
+    pub_thread.join();
+    sub_thread.join();
+    lis_thread.join();
 
-        std::vector<server_worker *> worker;
-        std::vector<std::thread *> worker_thread;
-        for (int i = 0; i < kMaxThread; ++i) {
-            worker.push_back(new server_worker(ctx_, zmq::socket_type::dealer));
-
-            worker_thread.push_back(new std::thread(std::bind(&server_worker::work, worker[i])));
-            worker_thread[i]->detach();
-        }
-
-
-        try {
-            zmq::proxy(frontend_, backend_);
-        }
-        catch (std::exception &e) {}
-
-        for (int i = 0; i < kMaxThread; ++i) {
-            delete worker[i];
-            delete worker_thread[i];
-        }
-    }
-
-
-private:
-    zmq::context_t ctx_;
-    zmq::socket_t frontend_;
-    zmq::socket_t backend_;
-};
-
-
-//  The main thread simply starts several clients and a server, and then
-//  waits for the server to finish.
-
-int main (void)
-{
-    client_task ct1;
-    client_task ct2;
-    client_task ct3;
-    server_task st;
-
-    std::thread t1(std::bind(&client_task::start, &ct1));
-    std::thread t2(std::bind(&client_task::start, &ct2));
-    std::thread t3(std::bind(&client_task::start, &ct3));
-    std::thread t4(std::bind(&server_task::run, &st));
-
-    t1.detach();
-    t2.detach();
-    t3.detach();
-    t4.detach();
-
-    getchar();
     return 0;
 }

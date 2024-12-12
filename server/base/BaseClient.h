@@ -6,34 +6,42 @@
 #define IMSERVER_BASECLIENT_H
 
 #include "Poco/Thread.h"
+#include "Poco/ThreadPool.h"
 #include "zmq.hpp"
 
 namespace Base {
 
 class BaseClient : public Poco::Runnable {
 public:
-    BaseClient(std::string& serviceIP, uint32_t servicePort);
+    BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool& threadPool);
     ~BaseClient();
+
+    void subscribe(std::string& serviceName);
+
+    void start();
 
     void run() override;            // 监听服务状态
 
 private:
     void initialize();
-
     void parseServiceUpdate(std::string& update);
 
 private:
-    std::string serviceIP;
-    uint32_t servicePort;
+    std::string serviceProxyEndPoint;
     zmq::context_t context;
 
-    zmq::socket_t subscriber;         // 用于订阅服务
-    zmq::socket_t dealer;             // 处理请求应答
-    uint32_t dealerPort;              // 服务端消息端口
-
-    Poco::Thread listener;            // 服务状态监听线程
+    /**
+     * @brief 订阅服务
+     */
+    zmq::socket_t subscriber;
+    /**
+     * @brief 服务是否可用
+     */
     std::atomic<bool> running{false};
 
+    std::vector<std::string> subscribeService;
+
+    Poco::ThreadPool& threadPool;
     Poco::Mutex mutex;
 };
 

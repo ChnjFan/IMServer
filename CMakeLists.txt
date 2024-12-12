@@ -11,6 +11,7 @@ include_directories(./ third_party/poco/include third_party/protobuf/include thi
 link_directories(./ third_party/poco/lib/ third_party/protobuf/lib/ third_party/zeromq/lib)
 
 add_subdirectory(server/base)
+add_subdirectory(server/service_proxy)
 add_subdirectory(server/protobuf)
 add_subdirectory(server/conn_server)
 add_subdirectory(server/account_server)

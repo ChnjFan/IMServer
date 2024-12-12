@@ -8,7 +8,8 @@ add_library(base SHARED ${SRC_LIST}
         ZMQSocketWrapper.h
         ServiceParam.h
         BlockingQueue.h
-        BaseClient.h)
+        BaseClient.h
+        String.h)
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
 find_package(protobuf REQUIRED PATHS ${THIRD_PARTY_PATH}/protobuf/lib)

@@ -15,6 +15,7 @@
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
 #include "BaseClient.h"
+#include "String.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
@@ -28,10 +29,10 @@ protected:
             // 定时检测连接心跳
             HeartBeatHandlerImpl heartBeatTask;
             heartBeatTask.start();
-
             // 订阅 account_server 服务
-            std::string accountService = "127.0.0.1";
-            Base::BaseClient accountClient(accountService, 9200);
+            Base::BaseClient accountClient(serviceProxyEndPoint, threadPool);
+            accountClient.subscribe(serviceName[0]);
+            accountClient.start();
 
             runServer();
 
@@ -63,6 +64,10 @@ private:
         if (0 == heartbeatCheckTime) {
             heartbeatCheckTime = DEFAULT_HEARTBEAT_TIME;
         }
+
+        serviceProxyEndPoint = pConfig->getString("subscribe.proxy_endpoint");
+        std::string services = pConfig->getString("subscribe.service");
+        Base::String::split(serviceName, services, ',');
     }
 
     void runServer() {
@@ -92,6 +97,8 @@ private:
 
     int listenPort;
     std::string listenIP;
+    std::string serviceProxyEndPoint;
+    std::vector<std::string> serviceName;
     Poco::Timespan::TimeDiff heartbeatCheckTime;
 };
 
