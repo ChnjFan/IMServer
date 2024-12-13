@@ -68,7 +68,6 @@ int main() {
     xpub.bind("tcp://*:6001");
     sleep(1);
 
-
     // Start publisher and subscriber threads
     std::thread sub_thread(subscriber_thread, std::ref(context));
     sleep(1);

@@ -95,9 +95,16 @@ void Base::BaseService::setupSockets() {
 }
 
 void Base::BaseService::start(Base::BaseWorker &worker) {
-    // 服务启动后向客户端发布服务
+    // TODO:服务启动后定时向客户端推送状态
+    int count = 0;
+    while (count < 60)
+    {
+        publishServiceInfo();
+        sleep(1);
+        count++;
+    }
     startWorkThread(worker);
-    publishServiceInfo();
+
 }
 
 void Base::BaseService::startWorkThread(Base::BaseWorker &worker) {
@@ -126,6 +133,7 @@ void Base::BaseService::publishServiceInfo() {
     std::string jsonString = ss.str();
 
     // 发布服务信息
+    std::cout << "Publish" << std::endl;
     zmq::message_t topic(serviceName.c_str(), serviceName.length());
     publisher.send(topic, zmq::send_flags::sndmore);
     zmq::message_t content(jsonString.data(), jsonString.size());

@@ -19,7 +19,7 @@ Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool
 void Base::BaseClient::initialize() {
     try {
         /* 连接到代理服务器，等待服务发布消息 */
-        subscriber.connect(serviceProxyEndPoint);
+        subscriber.connect("tcp://localhost:5558");
     }
     catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -46,10 +46,13 @@ void Base::BaseClient::run() {
     std::cout << "Start listener thread: listening service" << std::endl;
     while (true) {
         zmq::message_t message;
-        if (subscriber.recv(message, zmq::recv_flags::none)) {
-            std::string updateStr(static_cast<char *>(message.data()), message.size());
-            parseServiceUpdate(updateStr);
-        }
+        subscriber.recv(message);
+        std::string topic(static_cast<char *>(message.data()), message.size());
+        subscriber.recv(message);
+        std::string data(static_cast<char *>(message.data()), message.size());
+        std::cout << topic << ": " << data << std::endl;
+        parseServiceUpdate(data);
+
         Poco::Thread::trySleep(100);
     }
 }
@@ -70,6 +73,7 @@ void Base::BaseClient::parseServiceUpdate(std::string &update) {
                 Poco::Mutex::ScopedLock lock(mutex);
                 running = true;
                 auto endpoint = object->getValue<std::string>("end_point");
+                std::cout << endpoint << std::endl;
             }
         }
     } catch (const std::exception& e) {
