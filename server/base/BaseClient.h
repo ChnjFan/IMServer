@@ -30,7 +30,6 @@ private:
 
 private:
     std::string serviceProxyEndPoint;
-    std::string clientIdentity;
     zmq::context_t context;
 
     /**

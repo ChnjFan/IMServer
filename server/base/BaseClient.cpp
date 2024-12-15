@@ -6,10 +6,10 @@
 #include "Poco/JSON/Parser.h"
 #include "Poco/UUIDGenerator.h"
 #include "BaseClient.h"
+#include "zmq_addon.hpp"
 
 Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool& threadPool)
                                 : serviceProxyEndPoint(serviceProxyEndPoint)
-                                , clientIdentity()
                                 , context(1)
                                 , subscriber(context, zmq::socket_type::sub)
                                 , clientSocket(context, zmq::socket_type::dealer)
@@ -22,11 +22,8 @@ Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool
 
 void Base::BaseClient::initialize() {
     try {
-        Poco::UUIDGenerator uuidGen;
-        clientIdentity = uuidGen.create().toString();
-
         /* 连接到代理服务器，等待服务发布消息 */
-        subscriber.connect("tcp://localhost:5558");
+        subscriber.connect(serviceProxyEndPoint);
     }
     catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
@@ -46,9 +43,8 @@ void Base::BaseClient::send(std::string &content) {
         return;
     }
 
-    zmq::message_t msg(clientIdentity.c_str(), clientIdentity.length());
-    clientSocket.send(msg, zmq::send_flags::sndmore);
-    msg.rebuild(content.c_str(), content.length());
+    zmq::message_t msg(content.c_str(), content.length());
+    std::cout << "Send msg: " << msg.to_string() << std::endl;
     clientSocket.send(msg, zmq::send_flags::none);
 }
 
@@ -104,9 +100,9 @@ void Base::BaseClient::connectService() {
     }
     clientSocket.connect(serviceEndpoint);
     std::cout << "Connect service: " << serviceEndpoint << std::endl;
-    std::string res("Connect success");
-    send(res);
     running = true;
+
+    //TODO:启动一个线程用来接收应答消息
 }
 
 
