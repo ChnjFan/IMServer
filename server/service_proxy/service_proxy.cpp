@@ -2,9 +2,6 @@
 // Created by fan on 24-12-12.
 //
 
-#define SERVICE_PROXY_SUB_PORT  5561
-#define SERVICE_PROXY_PUB_PORT  5562
-
 #include "Poco/Util/ServerApplication.h"
 #include "Poco/ThreadPool.h"
 #include "zmq.hpp"

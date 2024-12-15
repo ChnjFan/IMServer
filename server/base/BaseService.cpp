@@ -6,6 +6,7 @@
 #include "Poco/JSON/Object.h"
 #include "BaseService.h"
 #include "zmq.h"
+#include "zmq_addon.hpp"
 
 void Base::BaseWorker::run()  {
     worker.connect("inproc://backend");
@@ -22,16 +23,17 @@ void Base::BaseWorker::run()  {
             if (items[0].revents & ZMQ_POLLIN) {
                 zmq::message_t identity;
                 zmq::message_t msg;
+                std::vector<zmq::message_t> recv_msgs;
 
-                auto res = worker.recv(identity, zmq::recv_flags::none);
-                if (!res) continue;
-                res = worker.recv(msg, zmq::recv_flags::none);
+                auto res = zmq::recv_multipart(worker, std::back_inserter(recv_msgs));
                 if (!res) continue;
 
-                std::cout << "Recv Request: " << identity << std::endl;
+                std::cout << "Recv Request: " << recv_msgs[0].to_string() << std::endl;
+                for (auto it = recv_msgs.begin()+1; it != recv_msgs.end(); ++it)
+                    std::cout << "Recv Msg: " << (*it).to_string() << std::endl;
                 ZMQMessage zmqMsg;
-                zmqMsg.setIdentity(identity);
-                zmqMsg.setMsg(msg);
+                zmqMsg.setIdentity(recv_msgs[0]);
+                zmqMsg.setMsg(recv_msgs[1]);
                 recvMsgQueue.push(zmqMsg);
 
                 onReadable();
@@ -61,6 +63,14 @@ void Base::BaseWorker::onError() {
 
 }
 
+Base::BlockingQueue<Base::ZMQMessage> &Base::BaseWorker::getRecvMsgQueue() {
+    return recvMsgQueue;
+}
+
+Base::BlockingQueue<Base::ZMQMessage> &Base::BaseWorker::getSendMsgQueue() {
+    return sendMsgQueue;
+}
+
 void Base::BaseServiceUpdate::setService(Base::BaseService *pBaseService) {
     this->pService = pBaseService;
 }
@@ -72,7 +82,7 @@ void Base::BaseServiceUpdate::run() {
 void Base::BaseServiceUpdate::updateServiceInfo() {
     Poco::JSON::Object serviceInfo;
 
-    std::string routerEndpoint = pService->getRouterEndpoint();
+    std::string routerEndpoint = pService->getRequestConnEndpoint();
     serviceInfo.set("end_point", routerEndpoint);
     serviceInfo.set("timestamp", Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y-%m-%d %H:%M:%S"));
     serviceInfo.set("status", "active");
@@ -94,8 +104,9 @@ Base::BaseService::BaseService(Base::ServiceParam &param)
                                 , threadPoolSize(param.getThreadPoolSize())
                                 , threadPool(param.getServiceName()+"ThreadPool", 1, param.getThreadPoolSize())
                                 , serviceName(param.getServiceName())
-                                , publishPort(param.getServicePort())
-                                , routePort(param.getRoutePort())
+                                , publishEndpoint(param.getPublishEndport())
+                                , requestEndpoint(param.getRequestEndpoint())
+                                , requestConnEndpoint(param.getRequestConnectEndpoint())
                                 , publisher(context, zmq::socket_type::pub)
                                 , frontend(context, zmq::socket_type::router)
                                 , backend(context, zmq::socket_type::dealer) {
@@ -118,8 +129,8 @@ void Base::BaseService::initialize() {
 }
 
 void Base::BaseService::setupSockets() {
-    publisher.bind("tcp://*:" + publishPort);
-    frontend.bind("tcp://*:" + routePort);
+    publisher.bind(publishEndpoint);
+    frontend.bind(requestEndpoint);
     backend.bind("inproc://backend");
 }
 
@@ -135,7 +146,8 @@ void Base::BaseService::startWorkThread(Base::BaseWorker &worker) {
     threadPool.start(worker, serviceName + "_WorkThread");
 
     try {
-        zmq::proxy(frontend, backend);
+        zmq::proxy(zmq::socket_ref(zmq::from_handle, frontend.handle()),
+                   zmq::socket_ref(zmq::from_handle, backend.handle()));
     }
     catch (std::exception &e) {}
 }
@@ -149,10 +161,6 @@ const std::string &Base::BaseService::getServiceName() const {
     return serviceName;
 }
 
-std::string Base::BaseService::getRouterEndpoint() const {
-    return frontend.get(zmq::sockopt::last_endpoint);
-}
-
-const std::string &Base::BaseService::getPublishPort() const {
-    return publishPort;
+std::string Base::BaseService::getRequestConnEndpoint() const {
+    return requestConnEndpoint;
 }

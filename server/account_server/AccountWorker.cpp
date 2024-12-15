@@ -9,6 +9,14 @@ AccountWorker::AccountWorker(zmq::context_t &ctx, zmq::socket_type socType) : Ba
 }
 
 void AccountWorker::onReadable() {
+    Base::BlockingQueue<Base::ZMQMessage>& recvMsgQueue = getRecvMsgQueue();
+    Base::BlockingQueue<Base::ZMQMessage>& sendMsgQueue = getSendMsgQueue();
+    Base::ZMQMessage message;
+    if (!recvMsgQueue.tryPopFor(message, 500))
+        return;
+    std::cout << "Recv " << message.getIdentity().to_string() << " request: " << message.getMsg().to_string() << std::endl;
+
+    sendMsgQueue.push(message);
 }
 
 void AccountWorker::onError() {

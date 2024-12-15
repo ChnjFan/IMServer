@@ -72,11 +72,17 @@ public:
     virtual void onReadable();
     virtual void onError();
 
+    BlockingQueue<ZMQMessage> &getRecvMsgQueue();
+    BlockingQueue<ZMQMessage> &getSendMsgQueue();
+
 private:
     zmq::context_t &ctx;
     zmq::socket_t worker;
 
     BlockingQueue<ZMQMessage> recvMsgQueue;
+
+
+private:
     BlockingQueue<ZMQMessage> sendMsgQueue;
 };
 
@@ -116,7 +122,11 @@ public:
     void update(const std::string& content, zmq::send_flags flag);
 
     const std::string &getServiceName() const;
-    std::string getRouterEndpoint() const;
+    std::string getRequestConnEndpoint() const;
+
+protected:
+    zmq::context_t context;
+
 private:
     // 服务初始化
     void initialize();
@@ -125,24 +135,16 @@ private:
 
     void startWorkThread(Base::BaseWorker &worker);
 
-protected:
-    zmq::context_t context;
-
 private:
     static constexpr int SOCKET_BUFFER_LEN = 1024;
-
 
     uint32_t threadPoolSize;
     Poco::ThreadPool threadPool;
 
     std::string serviceName;
-private:
-    std::string publishPort;
-public:
-    const std::string &getPublishPort() const;
-
-private:
-    std::string routePort;
+    std::string publishEndpoint;
+    std::string requestEndpoint;
+    std::string requestConnEndpoint;
 
     zmq::socket_t publisher;         // 用于发布服务信息和账户状态更新
     zmq::socket_t frontend;

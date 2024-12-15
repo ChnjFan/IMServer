@@ -12,14 +12,16 @@ namespace Base {
 
 class ServiceParam {
 public:
-    ServiceParam(const char* serviceName="Service",
-                 const char* servicePort="8251",
-                 const char* routePort="8252",
+    ServiceParam(const char* serviceName,
+                 std::string& publishEndpoint,
+                 std::string& requestBindEndpoint,
+                 std::string& requestConnectEndpoint,
                  int32_t threadPoolSize=8,
                  int32_t taskQueueSize=100)
                     : serviceName(serviceName)
-                    , servicePort(servicePort)
-                    , routePort(routePort)
+                    , publishEndpoint(publishEndpoint)
+                    , requestBindEndpoint(requestBindEndpoint)
+                    , requestConnectEndpoint(requestConnectEndpoint)
                     , threadPoolSize(threadPoolSize)
                     , taskQueueSize(taskQueueSize) { }
 
@@ -31,20 +33,20 @@ public:
         ServiceParam::serviceName = serviceName;
     }
 
-    const std::string &getServicePort() const {
-        return servicePort;
+    const std::string &getPublishEndport() const {
+        return publishEndpoint;
     }
 
-    void setServicePort(const std::string &servicePort) {
-        ServiceParam::servicePort = servicePort;
+    void setPublishEndport(const std::string &publishEndpoint) {
+        ServiceParam::publishEndpoint = publishEndpoint;
     }
 
-    const std::string &getRoutePort() const {
-        return routePort;
+    const std::string &getRequestEndpoint() const {
+        return requestBindEndpoint;
     }
 
-    void setRoutePort(const std::string &routePort) {
-        ServiceParam::routePort = routePort;
+    void setRequestEndport(const std::string &requestEndpoint) {
+        ServiceParam::requestBindEndpoint = requestEndpoint;
     }
 
     int32_t getThreadPoolSize() const {
@@ -63,10 +65,21 @@ public:
         ServiceParam::taskQueueSize = taskQueueSize;
     }
 
+    const std::string &getRequestConnectEndpoint() const {
+        return requestConnectEndpoint;
+    }
+
+    void setRequestConnectEndpoint(const std::string &requestConnectEndpoint) {
+        ServiceParam::requestConnectEndpoint = requestConnectEndpoint;
+    }
+
 private:
     std::string serviceName;
-    std::string servicePort;
-    std::string routePort;
+    std::string publishEndpoint;
+    std::string requestBindEndpoint;
+    std::string requestConnectEndpoint;
+
+private:
 
     int32_t threadPoolSize;
     int32_t taskQueueSize;
