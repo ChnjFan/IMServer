@@ -17,6 +17,7 @@ public:
     ~BaseClient();
 
     void subscribe(std::string& serviceName);
+    void send(std::string& content);
 
     void start();
 
@@ -25,19 +26,23 @@ public:
 private:
     void initialize();
     void parseServiceUpdate(std::string& update);
+    void connectService();
 
 private:
     std::string serviceProxyEndPoint;
+    std::string clientIdentity;
     zmq::context_t context;
 
     /**
      * @brief 订阅服务
      */
     zmq::socket_t subscriber;
+    zmq::socket_t clientSocket;
     /**
      * @brief 服务是否可用
      */
     std::atomic<bool> running{false};
+    std::string serviceEndpoint;
 
     std::vector<std::string> subscribeService;
 

@@ -9,6 +9,8 @@
 #include "Poco/Mutex.h"
 #include "Poco/ThreadPool.h"
 #include "Poco/Net/SocketReactor.h"
+#include "Poco/Util/TimerTask.h"
+#include "Poco/Util/Timer.h"
 #include "ByteStream.h"
 #include "BlockingQueue.h"
 #include "zmq.hpp"
@@ -16,6 +18,8 @@
 #include "ServiceParam.h"
 
 namespace Base {
+
+class BaseService;
 
 class ZMQMessage {
 public:
@@ -76,6 +80,18 @@ private:
     BlockingQueue<ZMQMessage> sendMsgQueue;
 };
 
+class BaseServiceUpdate : public Poco::Util::TimerTask {
+public:
+    BaseServiceUpdate() = default;
+
+    void setService(BaseService *pBaseService);
+    void run() override;
+    void updateServiceInfo();
+
+private:
+    BaseService *pService = nullptr;
+};
+
  /**
  * @class BaseService
  * @brief 基础服务发布，负责发布服务，客户端请求响应。
@@ -97,6 +113,10 @@ public:
     // 服务启动
     void start(Base::BaseWorker &worker);
 
+    void update(const std::string& content, zmq::send_flags flag);
+
+    const std::string &getServiceName() const;
+    std::string getRouterEndpoint() const;
 private:
     // 服务初始化
     void initialize();
@@ -105,7 +125,6 @@ private:
 
     void startWorkThread(Base::BaseWorker &worker);
 
-    void publishServiceInfo();
 protected:
     zmq::context_t context;
 
@@ -117,13 +136,20 @@ private:
     Poco::ThreadPool threadPool;
 
     std::string serviceName;
+private:
     std::string publishPort;
+public:
+    const std::string &getPublishPort() const;
+
+private:
     std::string routePort;
 
     zmq::socket_t publisher;         // 用于发布服务信息和账户状态更新
     zmq::socket_t frontend;
     zmq::socket_t backend;
 
+    Poco::Util::Timer timer;
+    BaseServiceUpdate serviceUpdate;
 };
 
 }

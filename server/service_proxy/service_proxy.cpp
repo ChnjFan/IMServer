@@ -78,8 +78,8 @@ private:
             if (items[1].revents & ZMQ_POLLIN) {
                 zmq::message_t msg;
 
-                backend.recv(&msg);
-                if (msg.size() == 0)
+                backend.recv(msg, zmq::recv_flags::none);
+                if (msg.empty())
                     break;
 
                 //  Event is one byte 0=unsub or 1=sub, followed by topic

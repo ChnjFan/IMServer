@@ -28,6 +28,7 @@ void Base::BaseWorker::run()  {
                 res = worker.recv(msg, zmq::recv_flags::none);
                 if (!res) continue;
 
+                std::cout << "Recv Request: " << identity << std::endl;
                 ZMQMessage zmqMsg;
                 zmqMsg.setIdentity(identity);
                 zmqMsg.setMsg(msg);
@@ -58,6 +59,34 @@ void Base::BaseWorker::onReadable() {
 
 void Base::BaseWorker::onError() {
 
+}
+
+void Base::BaseServiceUpdate::setService(Base::BaseService *pBaseService) {
+    this->pService = pBaseService;
+}
+
+void Base::BaseServiceUpdate::run() {
+    updateServiceInfo();
+}
+
+void Base::BaseServiceUpdate::updateServiceInfo() {
+    Poco::JSON::Object serviceInfo;
+
+    std::string routerEndpoint = pService->getRouterEndpoint();
+    serviceInfo.set("end_point", routerEndpoint);
+    serviceInfo.set("timestamp", Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y-%m-%d %H:%M:%S"));
+    serviceInfo.set("status", "active");
+    serviceInfo.set("name", pService->getServiceName());
+    serviceInfo.set("type", "service_info");
+
+    std::stringstream ss;
+    serviceInfo.stringify(ss);
+    std::string jsonString = ss.str();
+
+    // 发布服务信息
+    std::cout << "Update service info" << std::endl;
+    pService->update(pService->getServiceName(), zmq::send_flags::sndmore);
+    pService->update(jsonString, zmq::send_flags::none);
 }
 
 Base::BaseService::BaseService(Base::ServiceParam &param)
@@ -95,16 +124,10 @@ void Base::BaseService::setupSockets() {
 }
 
 void Base::BaseService::start(Base::BaseWorker &worker) {
-    // TODO:服务启动后定时向客户端推送状态
-    int count = 0;
-    while (count < 60)
-    {
-        publishServiceInfo();
-        sleep(1);
-        count++;
-    }
+    // TODO:服务启动后定时向客户端推送状态，设置1s更新一次
+    serviceUpdate.setService(this);
+    timer.schedule(&serviceUpdate, 0, 3000);
     startWorkThread(worker);
-
 }
 
 void Base::BaseService::startWorkThread(Base::BaseWorker &worker) {
@@ -117,25 +140,19 @@ void Base::BaseService::startWorkThread(Base::BaseWorker &worker) {
     catch (std::exception &e) {}
 }
 
-void Base::BaseService::publishServiceInfo() {
-    Poco::JSON::Object serviceInfo;
-    serviceInfo.set("type", "service_info");
-    serviceInfo.set("name", serviceName.c_str());
-    serviceInfo.set("status", "active");
-    serviceInfo.set("timestamp", Poco::DateTimeFormatter::format(Poco::DateTime(), "%Y-%m-%d %H:%M:%S"));
+void Base::BaseService::update(const std::string &content, zmq::send_flags flag) {
+    zmq::message_t msg(content.c_str(), content.length());
+    publisher.send(msg, flag);
+}
 
-    std::string routerEndpoint = frontend.get(zmq::sockopt::last_endpoint);
-    serviceInfo.set("end_point", routerEndpoint);
-    serviceInfo.set("status_updates_port", publishPort);
+const std::string &Base::BaseService::getServiceName() const {
+    return serviceName;
+}
 
-    std::stringstream ss;
-    serviceInfo.stringify(ss);
-    std::string jsonString = ss.str();
+std::string Base::BaseService::getRouterEndpoint() const {
+    return frontend.get(zmq::sockopt::last_endpoint);
+}
 
-    // 发布服务信息
-    std::cout << "Publish" << std::endl;
-    zmq::message_t topic(serviceName.c_str(), serviceName.length());
-    publisher.send(topic, zmq::send_flags::sndmore);
-    zmq::message_t content(jsonString.data(), jsonString.size());
-    publisher.send(content, zmq::send_flags::none);
+const std::string &Base::BaseService::getPublishPort() const {
+    return publishPort;
 }

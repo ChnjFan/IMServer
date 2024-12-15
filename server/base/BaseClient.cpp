@@ -4,12 +4,16 @@
 
 #include "Poco/JSON/Object.h"
 #include "Poco/JSON/Parser.h"
+#include "Poco/UUIDGenerator.h"
 #include "BaseClient.h"
 
 Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool& threadPool)
                                 : serviceProxyEndPoint(serviceProxyEndPoint)
+                                , clientIdentity()
                                 , context(1)
                                 , subscriber(context, zmq::socket_type::sub)
+                                , clientSocket(context, zmq::socket_type::dealer)
+                                , serviceEndpoint()
                                 , subscribeService()
                                 , threadPool(threadPool)
                                 , mutex() {
@@ -18,6 +22,9 @@ Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool
 
 void Base::BaseClient::initialize() {
     try {
+        Poco::UUIDGenerator uuidGen;
+        clientIdentity = uuidGen.create().toString();
+
         /* 连接到代理服务器，等待服务发布消息 */
         subscriber.connect("tcp://localhost:5558");
     }
@@ -32,6 +39,17 @@ Base::BaseClient::~BaseClient() {
 
 void Base::BaseClient::subscribe(std::string &serviceName) {
     subscribeService.push_back(serviceName);
+}
+
+void Base::BaseClient::send(std::string &content) {
+    if (!running) {
+        return;
+    }
+
+    zmq::message_t msg(clientIdentity.c_str(), clientIdentity.length());
+    clientSocket.send(msg, zmq::send_flags::sndmore);
+    msg.rebuild(content.c_str(), content.length());
+    clientSocket.send(msg, zmq::send_flags::none);
 }
 
 void Base::BaseClient::start() {
@@ -67,18 +85,28 @@ void Base::BaseClient::parseServiceUpdate(std::string &update) {
 
         auto type = object->getValue<std::string>("type");
         if (type == "service_info") {
-            std::cout << "Recv service_info" << std::endl;
             auto status = object->getValue<std::string>("status");
             if (status == "active") {
                 Poco::Mutex::ScopedLock lock(mutex);
-                running = true;
-                auto endpoint = object->getValue<std::string>("end_point");
-                std::cout << endpoint << std::endl;
+                serviceEndpoint = object->getValue<std::string>("end_point");
+                connectService();
             }
         }
     } catch (const std::exception& e) {
         std::cerr << "Error parsing update: " << e.what() << std::endl;
     }
+}
+
+void Base::BaseClient::connectService() {
+    if (running)
+    {
+        return;
+    }
+    clientSocket.connect(serviceEndpoint);
+    std::cout << "Connect service: " << serviceEndpoint << std::endl;
+    std::string res("Connect success");
+    send(res);
+    running = true;
 }
 
 

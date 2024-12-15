@@ -5,11 +5,7 @@ include_directories(.)
 aux_source_directory(./ SRC_LIST)
 
 add_library(base SHARED ${SRC_LIST}
-        ZMQSocketWrapper.h
-        ServiceParam.h
-        BlockingQueue.h
-        BaseClient.h
-        String.h)
+        Logger.h)
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
 find_package(protobuf REQUIRED PATHS ${THIRD_PARTY_PATH}/protobuf/lib)

@@ -46,7 +46,7 @@ void AccountService::login(AccountService& service, std::vector<zmq::message_t>&
     int size = response.ByteSizeLong();
     char *content = new char[size];
     response.SerializeToArray(content, size);
-    delete content;
+    delete[] content;
 }
 
 void AccountService::registerUser(AccountService &service, std::vector<zmq::message_t> &part, Base::Message &message) {
