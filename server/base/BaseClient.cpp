@@ -7,6 +7,7 @@
 #include "Poco/UUIDGenerator.h"
 #include "BaseClient.h"
 #include "zmq_addon.hpp"
+#include "Exception.h"
 
 Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool& threadPool)
                                 : serviceProxyEndPoint(serviceProxyEndPoint)
@@ -35,7 +36,7 @@ Base::BaseClient::~BaseClient() {
 }
 
 void Base::BaseClient::subscribe(std::string &serviceName) {
-    subscribeService.push_back(serviceName);
+    subscribeService.insert(serviceName);
 }
 
 void Base::BaseClient::send(std::string &content) {
@@ -48,24 +49,49 @@ void Base::BaseClient::send(std::string &content) {
     clientSocket.send(msg, zmq::send_flags::none);
 }
 
+void Base::BaseClient::send(Base::ByteStream &content) {
+    if (!running) {
+        return;
+    }
+
+    zmq::message_t msg(content.data(), content.size());
+    clientSocket.send(msg, zmq::send_flags::none);
+}
+
+void Base::BaseClient::recv(std::vector<zmq::message_t> &message) {
+    if  (!running) {
+        return;
+    }
+
+    auto res = zmq::recv_multipart(subscriber, std::back_inserter(message));
+    if (!res || message.size() != 2)
+        throw Base::Exception("Client recv message error");
+}
+
 void Base::BaseClient::start() {
     for (const auto& service : subscribeService) {
         subscriber.set(zmq::sockopt::subscribe, service);
     }
-    /* 启动一个线程接收处理服务发布消息 */
+    /* 启动一个线程接收服务状态消息 */
     threadPool.start(*this);
 }
 
+void Base::BaseClient::startTask(Poco::Runnable &task) {
+    threadPool.start(task);
+}
+
 void Base::BaseClient::run() {
-    std::cout << "Start listener thread: listening service" << std::endl;
+    //TODO:增加日志记录订阅服务
     while (true) {
-        zmq::message_t message;
-        subscriber.recv(message);
-        std::string topic(static_cast<char *>(message.data()), message.size());
-        subscriber.recv(message);
-        std::string data(static_cast<char *>(message.data()), message.size());
-        std::cout << topic << ": " << data << std::endl;
-        parseServiceUpdate(data);
+        std::vector<zmq::message_t> message;
+        auto res = zmq::recv_multipart(subscriber, std::back_inserter(message));
+        if(!res || message.size() != 2) {
+            assert(0);
+        }
+
+        std::cout << message[0].to_string() << ": " << message[1].to_string() << std::endl;
+        std::string serviceStatus = message[1].to_string();
+        parseServiceUpdate(serviceStatus);
 
         Poco::Thread::trySleep(100);
     }
@@ -80,13 +106,21 @@ void Base::BaseClient::parseServiceUpdate(std::string &update) {
         std::cout << "Recv Service " +  object->getValue<std::string>("name") + " status update." << std::endl;
 
         auto type = object->getValue<std::string>("type");
-        if (type == "service_info") {
-            auto status = object->getValue<std::string>("status");
-            if (status == "active") {
-                Poco::Mutex::ScopedLock lock(mutex);
-                serviceEndpoint = object->getValue<std::string>("end_point");
-                connectService();
-            }
+        if (type != "service_info")
+            return;
+        // 检查是否订阅该服务
+        auto serviceName = object->getValue<std::string>("name");
+        if (subscribeService.find(serviceName) == subscribeService.end())
+            return;
+
+        auto status = object->getValue<std::string>("status");
+        if (status == "active") {
+            Poco::Mutex::ScopedLock lock(mutex);
+            serviceEndpoint = object->getValue<std::string>("end_point");
+            connectService();
+        }
+        else {
+            running = false;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error parsing update: " << e.what() << std::endl;
@@ -101,8 +135,6 @@ void Base::BaseClient::connectService() {
     clientSocket.connect(serviceEndpoint);
     std::cout << "Connect service: " << serviceEndpoint << std::endl;
     running = true;
-
-    //TODO:启动一个线程用来接收应答消息
 }
 
 

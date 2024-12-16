@@ -6,6 +6,7 @@
 #define IMSERVER_BASESERVICE_H
 
 #include <vector>
+#include "zmq.hpp"
 #include "Poco/Mutex.h"
 #include "Poco/ThreadPool.h"
 #include "Poco/Net/SocketReactor.h"
@@ -13,55 +14,12 @@
 #include "Poco/Util/Timer.h"
 #include "ByteStream.h"
 #include "BlockingQueue.h"
-#include "zmq.hpp"
-#include "ZMQSocketWrapper.h"
 #include "ServiceParam.h"
+#include "ZMQMessage.h"
 
 namespace Base {
 
 class BaseService;
-
-class ZMQMessage {
-public:
-    ZMQMessage() = default;
-
-    ZMQMessage(ZMQMessage &message) {
-        identity.copy(message.identity);
-    }
-
-
-    ZMQMessage(ZMQMessage const &message) {
-        identity.rebuild(message.identity.data(), message.identity.size());
-        msg.rebuild(message.msg.data(), message.msg.size());
-    }
-
-    ZMQMessage& operator=(const ZMQMessage& message) {
-        identity.rebuild(message.identity.data(), message.identity.size());
-        msg.rebuild(message.msg.data(), message.msg.size());
-        return *this;
-    }
-
-    zmq::message_t &getIdentity() const {
-        return (zmq::message_t &) std::move(identity);
-    }
-
-    void setIdentity(zmq::message_t &pIdentity) {
-        ZMQMessage::identity.copy(pIdentity);
-    }
-
-    zmq::message_t &getMsg() const {
-        return (zmq::message_t &) std::move(msg);
-    }
-
-    void setMsg(zmq::message_t &pMsg) {
-        ZMQMessage::msg.copy(pMsg);
-    }
-
-
-private:
-    zmq::message_t identity;
-    zmq::message_t msg;
-};
 
 class BaseWorker : public Poco::Runnable {
 public:
@@ -80,9 +38,6 @@ private:
     zmq::socket_t worker;
 
     BlockingQueue<ZMQMessage> recvMsgQueue;
-
-
-private:
     BlockingQueue<ZMQMessage> sendMsgQueue;
 };
 

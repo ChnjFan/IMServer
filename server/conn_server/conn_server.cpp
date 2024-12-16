@@ -51,20 +51,8 @@ private:
         Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig(new Poco::Util::IniFileConfiguration(file));
 
         listenIP = pConfig->getString("server.listen_ip");
-        if (listenIP.empty()) {
-            listenIP = "0.0.0.0";
-        }
-
         listenPort = pConfig->getInt("server.listen_port");
-        if (0 == listenPort) {
-            listenPort = DEFAULT_PORT;
-        }
-
         heartbeatCheckTime = pConfig->getInt("server.heartbeat_check_time");
-        if (0 == heartbeatCheckTime) {
-            heartbeatCheckTime = DEFAULT_HEARTBEAT_TIME;
-        }
-
         serviceProxyEndPoint = pConfig->getString("subscribe.proxy_endpoint");
         std::string services = pConfig->getString("subscribe.service");
         Base::String::split(serviceName, services, ',');
