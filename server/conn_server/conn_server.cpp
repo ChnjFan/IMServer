@@ -9,7 +9,6 @@
 #include "Poco/Util/IniFileConfiguration.h"
 #include "Poco/Net/TCPServerParams.h"
 #include "Poco/Net/TCPServer.h"
-#include "Poco/Net/IPAddress.h"
 #include "Exception.h"
 #include "SessionConn.h"
 #include "MsgDispatcher.h"
@@ -80,8 +79,6 @@ private:
 private:
     static constexpr int DEFAULT_MAX_CONN = 100;
     static constexpr int DEFAULT_THREAD_NUM = 16;
-    static constexpr int DEFAULT_PORT = 1234;
-    static constexpr Poco::Timespan::TimeDiff DEFAULT_HEARTBEAT_TIME = 5*60*1000;
 
     int listenPort;
     std::string listenIP;

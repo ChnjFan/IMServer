@@ -16,22 +16,13 @@
  */
 class AccountService : public Base::BaseService {
 public:
-    using AccountMsgCallback = std::function<void(AccountService& , std::vector<zmq::message_t>&, Base::Message&)>;
-
     explicit AccountService(Base::ServiceParam& param);
 
     void start();
 
 private:
-    void registerCallback(const char* typeName, AccountMsgCallback callback);
-    void registerService();
-    void invokeService(std::string& typeName, std::vector<zmq::message_t>& part, Base::Message &message);
-
-    static void login(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
-    static void registerUser(AccountService& service, std::vector<zmq::message_t>& part, Base::Message& message);
-
-    std::map<std::string, AccountMsgCallback> callbackMap;
-    AccountWorker worker;
+    uint32_t threadSize;
+    std::vector<std::shared_ptr<AccountWorker>> workers;
 };
 
 

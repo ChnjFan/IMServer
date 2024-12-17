@@ -41,7 +41,6 @@ private:
     }
 
 private:
-    static constexpr Poco::Timespan::TimeDiff DEFAULT_HEARTBEAT_TIME = 5*60*1000;
 
     std::string requestBindEndpoint;
     std::string requestConnectEndpoint;

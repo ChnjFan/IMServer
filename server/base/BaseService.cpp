@@ -63,6 +63,16 @@ void Base::BaseWorker::onError() {
 
 }
 
+void Base::BaseWorker::send(Base::ZMQMessage& request, char* data, uint32_t size) {
+    Base::ZMQMessage response;
+    response.setIdentity(request.getIdentity());
+
+    zmq::message_t resMsg(data, (size_t)size);
+    response.setMsg(resMsg);
+
+    sendMsgQueue.push(response);
+}
+
 Base::BlockingQueue<Base::ZMQMessage> &Base::BaseWorker::getRecvMsgQueue() {
     return recvMsgQueue;
 }
@@ -101,7 +111,6 @@ void Base::BaseServiceUpdate::updateServiceInfo() {
 
 Base::BaseService::BaseService(Base::ServiceParam &param)
                                 : context(1)
-                                , threadPoolSize(param.getThreadPoolSize())
                                 , threadPool(param.getServiceName()+"ThreadPool", 1, param.getThreadPoolSize())
                                 , serviceName(param.getServiceName())
                                 , publishEndpoint(param.getPublishEndport())
@@ -134,17 +143,14 @@ void Base::BaseService::setupSockets() {
     backend.bind("inproc://backend");
 }
 
-void Base::BaseService::start(Base::BaseWorker &worker) {
+void Base::BaseService::start() {
     // TODO:服务启动后定时向客户端推送状态，设置1s更新一次
     serviceUpdate.setService(this);
     timer.schedule(&serviceUpdate, 0, 3000);
-    startWorkThread(worker);
+    startMsgProxy();
 }
 
-void Base::BaseService::startWorkThread(Base::BaseWorker &worker) {
-    // 启动消息处理线程
-    threadPool.start(worker, serviceName + "_WorkThread");
-
+void Base::BaseService::startMsgProxy() {
     try {
         zmq::proxy(zmq::socket_ref(zmq::from_handle, frontend.handle()),
                    zmq::socket_ref(zmq::from_handle, backend.handle()));

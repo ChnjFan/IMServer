@@ -29,6 +29,7 @@ public:
 
     virtual void onReadable();
     virtual void onError();
+    void send(Base::ZMQMessage& request, char* data, uint32_t size);
 
     BlockingQueue<ZMQMessage> &getRecvMsgQueue();
     BlockingQueue<ZMQMessage> &getSendMsgQueue();
@@ -72,7 +73,7 @@ public:
     ~BaseService();
 
     // 服务启动
-    void start(Base::BaseWorker &worker);
+    void start();
 
     void update(const std::string& content, zmq::send_flags flag);
 
@@ -88,12 +89,9 @@ private:
 
     void setupSockets();
 
-    void startWorkThread(Base::BaseWorker &worker);
+    void startMsgProxy();
 
 private:
-    static constexpr int SOCKET_BUFFER_LEN = 1024;
-
-    uint32_t threadPoolSize;
     Poco::ThreadPool threadPool;
 
     std::string serviceName;
