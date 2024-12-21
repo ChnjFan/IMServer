@@ -30,6 +30,7 @@ public:
     virtual void onReadable();
     virtual void onError();
     void send(Base::ZMQMessage& request, char* data, uint32_t size);
+    void send(Base::ZMQMessage& request, google::protobuf::MessageLite& message, uint32_t size);
 
     BlockingQueue<ZMQMessage> &getRecvMsgQueue();
     BlockingQueue<ZMQMessage> &getSendMsgQueue();

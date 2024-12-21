@@ -7,6 +7,7 @@
 
 #include <string>
 #include "Message.h"
+#include "IM.AccountServer.pb.h"
 
 class UserInfo;
 typedef std::shared_ptr<UserInfo> UserInfoPtr;
@@ -15,7 +16,7 @@ class UserInfo {
 public:
     UserInfo() = default;
 
-    static UserInfoPtr getUserInfo(Base::Message& message);
+    static UserInfoPtr getUserInfo(const IM::Account::ImMsgUserStatus& status);
 
     const std::string &getAccid() const;
 

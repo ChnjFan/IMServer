@@ -3,9 +3,9 @@
 //
 
 #include "AccountWorker.h"
-#include "Message.h"
 #include "IM.BaseType.pb.h"
 #include "IM.AccountServer.pb.h"
+#include "Exception.h"
 #include "UserInfo.h"
 
 AccountWorker::AccountWorker(zmq::context_t &ctx, zmq::socket_type socType) : BaseWorker(ctx, socType) {
@@ -43,7 +43,14 @@ void AccountWorker::invokeService(std::string& typeName, Base::ZMQMessage& zmqMs
     auto it = callbackMap.find(typeName);
     if (it == callbackMap.end())
         errRequest(*this, zmqMsg, message);
-    it->second(*this, zmqMsg, message);
+
+    try {
+        it->second(*this, zmqMsg, message);
+    }
+    catch (Base::Exception& e) {
+        std::cerr << e.what() << std::endl;
+        errRequest(*this, zmqMsg, message);
+    }
 }
 
 void AccountWorker::errRequest(AccountWorker &worker, Base::ZMQMessage& zmqMsg, Base::Message &message) {
@@ -62,19 +69,19 @@ void AccountWorker::login(AccountWorker& worker, Base::ZMQMessage& zmqMsg, Base:
     IM::Account::ImMsgLoginRes response;
     Poco::Timestamp timestamp;
     //TODO: 登录终端uid设置
-    response.set_uid("0");
     response.set_server_time(timestamp.epochMicroseconds());
     response.set_ret_code(IM::BaseType::ResultType::RESULT_TYPE_SUCCESS);
 
-    int size = response.ByteSizeLong();
-    char *content = new char[size];
-    response.SerializeToArray(content, size);
-    worker.send(zmqMsg, content, size);
-    delete[] content;
+    worker.send(zmqMsg, response, response.ByteSizeLong());
 }
 
 void AccountWorker::registerUser(AccountWorker &worker, Base::ZMQMessage& zmqMsg, Base::Message &message) {
-    UserInfoPtr pUserInfo = UserInfo::getUserInfo(message);
+    if (message.getTypeName() != "IM.Account.ImMsgRegisterReq") {
+        throw Base::Exception("Message type error, name: " + message.getTypeName());
+    }
+    std::shared_ptr<IM::Account::ImMsgRegisterReq> pRegisterReq =
+            std::dynamic_pointer_cast<IM::Account::ImMsgRegisterReq>(message.deserialize());
+    UserInfoPtr pUserInfo = UserInfo::getUserInfo(pRegisterReq->status());
     if (nullptr == pUserInfo) {
         errRequest(worker, zmqMsg, message);
         return;
@@ -82,4 +89,8 @@ void AccountWorker::registerUser(AccountWorker &worker, Base::ZMQMessage& zmqMsg
 
     // TODO:将用户信息保存进数据库，返回注册结果
 
+    IM::Account::ImMsgRegisterRes registerRes;
+    registerRes.set_allocated_msg_info(pRegisterReq->mutable_msg_info());
+    registerRes.set_res_type(IM::BaseType::RESULT_TYPE_SUCCESS);
+    worker.send(zmqMsg, registerRes, registerRes.ByteSizeLong());
 }

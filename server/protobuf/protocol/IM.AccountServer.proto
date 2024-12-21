@@ -8,7 +8,7 @@ option optimize_for = LITE_RUNTIME;
 
 // 用户状态
 message ImMsgUserStatus {
-    string accid = 1;
+    string acc_id = 1;
     optional string token = 2;
     optional string email = 3;
     optional string mobile = 4;
@@ -23,7 +23,7 @@ message ImMsgUserStatus {
 // 登录请求
 message ImMsgLoginReq {
     IM.BaseType.ImMsgInfo msg_info = 1;
-    optional string accid = 2;
+    optional string acc_id = 2;
     optional string token = 3;
     optional string email = 4;
     optional string mobile = 5;
@@ -32,14 +32,22 @@ message ImMsgLoginReq {
 
 // 登录响应消息
 message ImMsgLoginRes {
-    uint64 server_time = 1;
-    string uid = 3;
-    IM.BaseType.ResultType ret_code = 2;
+    IM.BaseType.ImMsgInfo msg_info = 1;
+    uint64 server_time = 2;
+    string acc_id = 3;
+    IM.BaseType.ResultType ret_code = 4;
 }
 
 // 注册请求
 message ImMsgRegisterReq {
-    ImMsgUserStatus status = 1;
+    IM.BaseType.ImMsgInfo msg_info = 1;
+    ImMsgUserStatus status = 2;
+}
+
+// 注册响应
+message ImMsgRegisterRes {
+    IM.BaseType.ImMsgInfo msg_info = 1;
+    uint32 res_type = 2;
 }
 
 // 更新用户状态

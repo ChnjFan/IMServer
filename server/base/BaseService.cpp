@@ -73,6 +73,13 @@ void Base::BaseWorker::send(Base::ZMQMessage& request, char* data, uint32_t size
     sendMsgQueue.push(response);
 }
 
+void Base::BaseWorker::send(Base::ZMQMessage &request, google::protobuf::MessageLite &message, uint32_t size) {
+    char *content = new char[size];
+    message.SerializeToArray(content, size);
+    send(request, content, size);
+    delete[] content;
+}
+
 Base::BlockingQueue<Base::ZMQMessage> &Base::BaseWorker::getRecvMsgQueue() {
     return recvMsgQueue;
 }

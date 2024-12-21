@@ -6,33 +6,25 @@
 #include "IM.AccountServer.pb.h"
 #include "Exception.h"
 
-UserInfoPtr UserInfo::getUserInfo(Base::Message &message) {
-    if (message.getTypeName() != "IM::Account::ImMsgUserStatus")
-        return nullptr;
-
-    std::shared_ptr<IM::Account::ImMsgUserStatus> pUserStatus =
-            std::dynamic_pointer_cast<IM::Account::ImMsgUserStatus>(message.deserialize());
-    if (!pUserStatus)
-        return nullptr;
-
+UserInfoPtr UserInfo::getUserInfo(const IM::Account::ImMsgUserStatus& status) {
     UserInfoPtr pUserInfo = std::make_shared<UserInfo>();
-    pUserInfo->setAccid(pUserStatus->accid());
-    if (pUserStatus->has_token())
-        pUserInfo->setToken(pUserStatus->token());
-    if (pUserStatus->has_email())
-        pUserInfo->setEmail(pUserStatus->email());
-    if (pUserStatus->has_mobile())
-        pUserInfo->setMobile(pUserStatus->mobile());
-    if (pUserStatus->has_password())
-        pUserInfo->setPassword(pUserStatus->password());
-    if (pUserStatus->has_name())
-        pUserInfo->setName(pUserStatus->name());
-    if (pUserStatus->has_icon())
-        pUserInfo->setIcon(pUserStatus->icon());
-    if (pUserStatus->has_sign())
-        pUserInfo->setGender(pUserStatus->gender());
-    if (pUserStatus->has_ex())
-        pUserInfo->setEx(pUserStatus->ex());
+    pUserInfo->setAccid(status.acc_id());
+    if (status.has_token())
+        pUserInfo->setToken(status.token());
+    if (status.has_email())
+        pUserInfo->setEmail(status.email());
+    if (status.has_mobile())
+        pUserInfo->setMobile(status.mobile());
+    if (status.has_password())
+        pUserInfo->setPassword(status.password());
+    if (status.has_name())
+        pUserInfo->setName(status.name());
+    if (status.has_icon())
+        pUserInfo->setIcon(status.icon());
+    if (status.has_sign())
+        pUserInfo->setGender(status.gender());
+    if (status.has_ex())
+        pUserInfo->setEx(status.ex());
     return pUserInfo;
 }
 
