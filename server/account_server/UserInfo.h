@@ -17,6 +17,7 @@ public:
     UserInfo() = default;
 
     static UserInfoPtr getUserInfo(const IM::Account::ImMsgUserStatus& status);
+    static UserInfoPtr getUserInfo(const IM::Account::ImMsgLoginReq& loginInfo);
 
     const std::string &getAccid() const;
 

@@ -1,13 +1,14 @@
 cmake_minimum_required(VERSION 3.28)
-project(IMServerTest)
+project(client_conn)
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/")
-set(CMAKE_CXX_STANDARD 17)
-set(THIRD_PARTY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/")
+include_directories(. ../base ../protobuf/protocol)
 
-add_definitions( -g -W -Wall -lpthread -lprotobuf)
+aux_source_directory(./ SRC_LIST)
 
-include_directories(./ third_party/poco/include third_party/protobuf/include third_party/zeromq/include)
-link_directories(./ third_party/poco/lib/ third_party/protobuf/lib/ third_party/zeromq/lib)
+add_executable(client_conn ${SRC_LIST})
+set_target_properties(client_conn PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug
+)
 
-add_subdirectory(zmq_test)
+find_package(Poco REQUIRED COMPONENTS Net Util JSON)
+target_link_libraries(client_conn PRIVATE Poco::Net Poco::Util Poco::XML Poco::JSON base protobuf protocol)

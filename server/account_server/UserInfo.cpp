@@ -28,6 +28,20 @@ UserInfoPtr UserInfo::getUserInfo(const IM::Account::ImMsgUserStatus& status) {
     return pUserInfo;
 }
 
+UserInfoPtr UserInfo::getUserInfo(const IM::Account::ImMsgLoginReq &loginInfo) {
+    UserInfoPtr pUserInfo = std::make_shared<UserInfo>();
+    pUserInfo->setPassword(loginInfo.password());
+    if (loginInfo.has_acc_id())
+        pUserInfo->setAccid(loginInfo.acc_id());
+    if (loginInfo.has_email())
+        pUserInfo->setEmail(loginInfo.email());
+    if (loginInfo.has_mobile())
+        pUserInfo->setMobile(loginInfo.mobile());
+    if (loginInfo.has_token())
+        pUserInfo->setToken(loginInfo.token());
+    return pUserInfo;
+}
+
 const std::string &UserInfo::getAccid() const {
     return accid;
 }

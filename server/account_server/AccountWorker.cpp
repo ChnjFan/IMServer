@@ -57,21 +57,27 @@ void AccountWorker::errRequest(AccountWorker &worker, Base::ZMQMessage& zmqMsg, 
     IM::BaseType::ImMsgError errMsg;
 
     errMsg.set_error_type(IM::BaseType::RESULT_TYPE_REQUEST_ERR);
-
-    char *data = new char[errMsg.ByteSizeLong()];
-    errMsg.SerializeToArray(data, errMsg.ByteSizeLong());
-
-    worker.send(zmqMsg, data, errMsg.ByteSizeLong());
-    delete[] data;
+    worker.send(zmqMsg, errMsg, errMsg.ByteSizeLong());
 }
 
 void AccountWorker::login(AccountWorker& worker, Base::ZMQMessage& zmqMsg, Base::Message &message) {
+    std::shared_ptr<IM::Account::ImMsgLoginReq> pLoginReq =
+            std::dynamic_pointer_cast<IM::Account::ImMsgLoginReq>(message.deserialize());
+    if (pLoginReq == nullptr) {
+        throw Base::Exception("Login message error");
+    }
+
+    UserInfoPtr pUserInfo = UserInfo::getUserInfo(*pLoginReq);
+    if (nullptr == pUserInfo) {
+        throw Base::Exception("Get login user info error");
+    }
+
+    // TODO:数据库获取用户密码，校验密码是否正确
+
     IM::Account::ImMsgLoginRes response;
     Poco::Timestamp timestamp;
-    //TODO: 登录终端uid设置
     response.set_server_time(timestamp.epochMicroseconds());
     response.set_ret_code(IM::BaseType::ResultType::RESULT_TYPE_SUCCESS);
-
     worker.send(zmqMsg, response, response.ByteSizeLong());
 }
 
@@ -83,8 +89,7 @@ void AccountWorker::registerUser(AccountWorker &worker, Base::ZMQMessage& zmqMsg
             std::dynamic_pointer_cast<IM::Account::ImMsgRegisterReq>(message.deserialize());
     UserInfoPtr pUserInfo = UserInfo::getUserInfo(pRegisterReq->status());
     if (nullptr == pUserInfo) {
-        errRequest(worker, zmqMsg, message);
-        return;
+        throw Base::Exception("Get register user info error");
     }
 
     // TODO:将用户信息保存进数据库，返回注册结果
