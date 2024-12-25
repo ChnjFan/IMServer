@@ -29,12 +29,12 @@ public:
     void write(char* data, uint32_t size);
     void write(ByteStream &data, uint32_t size);
 
-    std::vector<char>& getBuffer();
-    const char* data();
+    std::vector<unsigned char>& getBuffer();
+    const unsigned char* data();
 
     ByteStream read(uint32_t size);
-    void read(uint32_t size, std::vector<char>& buf);
-    void peek(uint32_t size, std::vector<char>& buf);
+    void read(uint32_t size, std::vector<unsigned char>& buf);
+    void peek(uint32_t size, std::vector<unsigned char>& buf);
 
     /**
      * @brief 查看缓冲区前4字节数据
@@ -59,7 +59,7 @@ private:
      * @brief Byte stream buffer default size
      */
     static constexpr int DEFAULT_BYTESTREAM_SIZE = 10;
-    std::vector<char> buffer;
+    std::vector<unsigned char> buffer;
 };
 
 }

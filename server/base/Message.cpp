@@ -6,6 +6,7 @@
 #include <cstring>
 #include "Message.h"
 #include "Exception.h"
+#include "Poco/ByteOrder.h"
 #include "Poco/Checksum.h"
 
 Base::Message::Message(): length(0), typeLen(0), typeName(""), checkSum(0), body(DEFAULT_BODY_LEN) { }
@@ -17,7 +18,7 @@ Base::Message::Message(Base::ByteStream &body, std::string &typeName)
                     , checkSum(0)
                     , body(body) {
     Poco::Checksum checker(Poco::Checksum::TYPE_ADLER32);
-    checker.update(body.data(), body.size());
+    checker.update((const char*)body.data(), body.size());
     checkSum = checker.checksum();
 }
 
@@ -25,7 +26,7 @@ Base::MessagePtr Base::Message::getMessage(Base::ByteStream &data) {
     uint32_t len = data.peekUint32();
 
     // 数据不完整，继续等待接收数据。其他情况消息内容有问题，需要跳过消息。
-    if (len + sizeof(uint32_t) > static_cast<uint32_t>(data.size()))
+    if (len > static_cast<uint32_t>(data.size()) || 0 == len)
         return nullptr;
 
     Base::MessagePtr pMessage = std::make_shared<Message>();
@@ -36,13 +37,13 @@ Base::MessagePtr Base::Message::getMessage(Base::ByteStream &data) {
 
     pMessage->typeName = data.readString(pMessage->typeLen);
 
-    Base::ByteStream temp = data.read(pMessage->length - pMessage->typeLen - 2*sizeof(uint32_t));
+    Base::ByteStream temp = data.read(pMessage->length - pMessage->typeLen - 1 - 3*sizeof(uint32_t));
     pMessage->body = temp;
 
     pMessage->checkSum = data.readUint32();
     // 计算校验和，校验失败返回空，此时该消息也从缓冲区中读完
     Poco::Checksum checker(Poco::Checksum::TYPE_ADLER32);
-    checker.update(pMessage->body.data(), pMessage->body.size());
+    checker.update((const char*)pMessage->body.data(), pMessage->body.size());
     if (pMessage->checkSum != checker.checksum())
         throw Exception("Message check sum error");
 
@@ -90,7 +91,7 @@ uint32_t Base::Message::serialize(char *buf, uint32_t bufSize) {
 
     //添加消息校验和
     Poco::Checksum checker(Poco::Checksum::TYPE_ADLER32);
-    checker.update(body.data(), body.size());
+    checker.update((const char*)body.data(), body.size());
     checkSum = checker.checksum();
     memcpy(buf+len, &checkSum, sizeof(uint32_t));
     len += sizeof(uint32_t);

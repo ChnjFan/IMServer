@@ -48,6 +48,7 @@ void MsgHandlerCallbackMap::handleLoginMsg(SessionConn &conn, Base::Message& mes
     if (!conn.isConnIdle())
         return;
     conn.setState(ROUTE_CONN_STATE::CONN_VERIFY);
+
 }
 
 void MsgDispatcher::exec(SessionConn &conn, Base::MessagePtr &pMessage) {

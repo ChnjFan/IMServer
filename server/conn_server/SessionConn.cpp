@@ -75,13 +75,6 @@ void SessionConn::connect() {
     std::cout << "Session " << sessionUID.toString() << " from " << clientIP << " connected" << std::endl;
 }
 
-//void SessionConn::checkAuthTimeout(Poco::Timer& timer) {
-//    if (!authenticated) {
-//        std::cout << "Session " << sessionUID.toString() << " authentication timeout" << std::endl;
-//        close();
-//    }
-//}
-
 std::string SessionConn::getSessionUID() const {
     return sessionUID.toString();
 }

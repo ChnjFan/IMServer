@@ -20,16 +20,16 @@ void Base::ByteStream::write(char *data, uint32_t size) {
 }
 
 void Base::ByteStream::write(ByteStream &data, uint32_t size) {
-    std::vector<char> tmp(size);
+    std::vector<unsigned char> tmp(size);
     data.read(size, tmp);
     std::copy(tmp.begin(), tmp.end(), std::back_inserter(buffer));
 }
 
-std::vector<char> &Base::ByteStream::getBuffer() {
+std::vector<unsigned char> &Base::ByteStream::getBuffer() {
     return buffer;
 }
 
-const char* Base::ByteStream::data() {
+const unsigned char* Base::ByteStream::data() {
     return buffer.data();
 }
 
@@ -41,7 +41,7 @@ Base::ByteStream Base::ByteStream::read(uint32_t size) {
     return data;
 }
 
-void Base::ByteStream::read(uint32_t size, std::vector<char>& buf) {
+void Base::ByteStream::read(uint32_t size, std::vector<unsigned char>& buf) {
     if (size <= buffer.size()) {
         buf.insert(buf.end(), buffer.begin(), buffer.begin() + size);
         buffer.erase(buffer.begin(), buffer.begin() + size);
@@ -49,7 +49,7 @@ void Base::ByteStream::read(uint32_t size, std::vector<char>& buf) {
     return;
 }
 
-void Base::ByteStream::peek(uint32_t size, std::vector<char>& buf) {
+void Base::ByteStream::peek(uint32_t size, std::vector<unsigned char>& buf) {
     if (size <= buffer.size()) {
         buf.insert(buf.end(), buffer.begin(), buffer.begin() + size);
     }
@@ -57,7 +57,7 @@ void Base::ByteStream::peek(uint32_t size, std::vector<char>& buf) {
 }
 
 uint32_t Base::ByteStream::peekUint32() {
-    std::vector<char> buf(sizeof(uint32_t));
+    std::vector<unsigned char> buf;
     peek(sizeof(uint32_t), buf);
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -68,7 +68,7 @@ uint32_t Base::ByteStream::peekUint32() {
 }
 
 uint32_t Base::ByteStream::readUint32() {
-    std::vector<char> buf(sizeof(uint32_t));
+    std::vector<unsigned char> buf;
     read(sizeof(uint32_t), buf);
     if (buf.size() != sizeof(uint32_t))
         return 0;
@@ -82,7 +82,7 @@ std::string Base::ByteStream::readString(uint32_t size) {
     if (buffer[size] != '\0')
         return "";
     std::string data(buffer.begin(), buffer.begin() + size);
-    buffer.erase(buffer.begin(), buffer.begin() + size);
+    buffer.erase(buffer.begin(), buffer.begin() + size + 1);
     return data;
 }
 

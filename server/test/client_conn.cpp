@@ -1,3 +1,5 @@
+#include "Poco/ByteOrder.h"
+#include "Poco/Checksum.h"
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/SocketAddress.h"
 #include "IM.AccountServer.pb.h"
@@ -18,13 +20,28 @@ int main()
     int bodySize = loginReq.ByteSizeLong();
     std::string typeName = "IM.Account.ImMsgLoginReq";
     uint32_t len = typeName.length() + 1;
-    int size = bodySize + len + sizeof(uint32_t) * 2;
+    int size = bodySize + len + sizeof(uint32_t) * 3;
 
     char *pBuf = new char[size];
-    memcpy(pBuf, &size, sizeof(uint32_t));
-    memcpy(pBuf + sizeof(uint32_t), &len, sizeof(uint32_t));
+
+    // 消息头
+    uint32_t netVal = Poco::ByteOrder::toNetwork(size);
+    memcpy(pBuf, &netVal, sizeof(uint32_t));
+    netVal = Poco::ByteOrder::toNetwork(len-1);
+    memcpy(pBuf + sizeof(uint32_t), &netVal, sizeof(uint32_t));
     memcpy(pBuf + 2 * sizeof(uint32_t), typeName.data(), len);
-    loginReq.SerializeToArray(pBuf + 2 * sizeof(uint32_t) + len, bodySize);
+
+    // 序列化消息体
+    char *pBody = pBuf + 2 * sizeof(uint32_t) + len;
+    loginReq.SerializeToArray(pBody, bodySize);
+
+    // 添加校验值
+    Poco::Checksum checkSum(Poco::Checksum::TYPE_ADLER32);
+    checkSum.update(pBody, bodySize);
+    uint32_t checkSumNum = checkSum.checksum();
+    netVal = Poco::ByteOrder::toNetwork(checkSumNum);
+    memcpy(pBody + bodySize, &netVal, sizeof(uint32_t));
+
     socket.sendBytes(pBuf, size);
 
     char buffer[1024];
