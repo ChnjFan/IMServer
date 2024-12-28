@@ -13,7 +13,7 @@ Base::BaseClient::BaseClient(std::string& serviceProxyEndPoint, Poco::ThreadPool
                                 : serviceProxyEndPoint(serviceProxyEndPoint)
                                 , context(1)
                                 , subscriber(context, zmq::socket_type::sub)
-                                , clientSocket(context, zmq::socket_type::dealer)
+                                , client(context, zmq::socket_type::dealer)
                                 , serviceEndpoint()
                                 , subscribeService()
                                 , threadPool(threadPool)
@@ -32,37 +32,25 @@ void Base::BaseClient::initialize() {
 }
 
 Base::BaseClient::~BaseClient() {
-    running = false;
 }
 
 void Base::BaseClient::subscribe(std::string &serviceName) {
-    subscribeService.insert(serviceName);
+    subscribeService.insert(std::pair<std::string, zmq::socket_t>(serviceName, zmq::socket_t(context, zmq::socket_type::dealer)));
 }
 
 void Base::BaseClient::send(std::string &content) {
-    if (!running) {
-        return;
-    }
-
     zmq::message_t msg(content.c_str(), content.length());
     std::cout << "Send msg: " << msg.to_string() << std::endl;
-    clientSocket.send(msg, zmq::send_flags::none);
+    client.send(msg, zmq::send_flags::none);
 }
 
 void Base::BaseClient::send(Base::ByteStream &content) {
-    if (!running) {
-        return;
-    }
 
     zmq::message_t msg(content.data(), content.size());
-    clientSocket.send(msg, zmq::send_flags::none);
+    client.send(msg, zmq::send_flags::none);
 }
 
 void Base::BaseClient::recv(std::vector<zmq::message_t> &message) {
-    if  (!running) {
-        return;
-    }
-
     auto res = zmq::recv_multipart(subscriber, std::back_inserter(message));
     if (!res || message.size() != 2)
         throw Base::Exception("Client recv message error");
@@ -70,7 +58,7 @@ void Base::BaseClient::recv(std::vector<zmq::message_t> &message) {
 
 void Base::BaseClient::start() {
     for (const auto& service : subscribeService) {
-        subscriber.set(zmq::sockopt::subscribe, service);
+        subscriber.set(zmq::sockopt::subscribe, service.first);
     }
     /* 启动一个线程接收服务状态消息 */
     threadPool.start(*this);
@@ -115,9 +103,10 @@ void Base::BaseClient::parseServiceUpdate(std::string &update) {
 
         auto status = object->getValue<std::string>("status");
         if (status == "active") {
+            // 服务上线
             Poco::Mutex::ScopedLock lock(mutex);
             serviceEndpoint = object->getValue<std::string>("end_point");
-            connectService();
+            connectService(serviceName);
         }
         else {
             running = false;
@@ -127,14 +116,9 @@ void Base::BaseClient::parseServiceUpdate(std::string &update) {
     }
 }
 
-void Base::BaseClient::connectService() {
-    if (running)
-    {
-        return;
-    }
-    clientSocket.connect(serviceEndpoint);
+void Base::BaseClient::connectService(std::string& serviceName) {
+    client.connect(serviceEndpoint);
     std::cout << "Connect service: " << serviceEndpoint << std::endl;
-    running = true;
 }
 
 

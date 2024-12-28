@@ -5,7 +5,7 @@
 #ifndef IMSERVER_BASECLIENT_H
 #define IMSERVER_BASECLIENT_H
 
-#include <set>
+#include <map>
 #include "zmq.hpp"
 #include "Poco/Thread.h"
 #include "Poco/ThreadPool.h"
@@ -13,6 +13,18 @@
 #include "ByteStream.h"
 
 namespace Base {
+
+class ClientConn {
+public:
+    ClientConn(zmq::socket_t socket, bool status);
+
+    void send(std::string& content);
+    void send(Base::ByteStream& content);
+
+private:
+    zmq::socket_t client;
+    std::atomic<bool> running{false};
+};
 
 class BaseClient : public Poco::Runnable {
 public:
@@ -32,7 +44,7 @@ public:
 private:
     void initialize();
     void parseServiceUpdate(std::string& update);
-    void connectService();
+    void connectService(std::string& serviceName);
 
 private:
     std::string serviceProxyEndPoint;
@@ -42,14 +54,12 @@ private:
      * @brief 订阅服务
      */
     zmq::socket_t subscriber;
-    zmq::socket_t clientSocket;
     /**
      * @brief 服务是否可用
      */
-    std::atomic<bool> running{false};
     std::string serviceEndpoint;
 
-    std::set<std::string> subscribeService;
+    std::map<std::string, zmq::socket_t> subscribeService;
 
     Poco::ThreadPool& threadPool;
     Poco::Mutex mutex;

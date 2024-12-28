@@ -47,8 +47,9 @@ void MsgHandlerCallbackMap::handleLoginMsg(SessionConn &conn, Base::Message& mes
     //登录消息检查会话状态，如果会话已经登录或正在验证，其他终端无法登录
     if (!conn.isConnIdle())
         return;
-    conn.setState(ROUTE_CONN_STATE::CONN_VERIFY);
 
+
+    conn.setState(ROUTE_CONN_STATE::CONN_VERIFY);
 }
 
 void MsgDispatcher::exec(SessionConn &conn, Base::MessagePtr &pMessage) {
