@@ -1,38 +1,39 @@
-/**
- * @file ConnectionLimiter.cpp
- * @brief 连接层流量控制
- * @author ChnjFan
- * @date 2024-12-04
- * @copyright Copyright (c) 2024 ChnjFan. All rights reserved.
- */
+//
+// Created by fan on 24-12-30.
+//
 
-#include "ConnectionLimiter.h"
+#include "ServerConnectionLimiter.h"
 
-ConnectionLimiter* ConnectionLimiter::instance = nullptr;
-Poco::Mutex ConnectionLimiter::mutex;
+TcpServerNet::ServerConnectionLimiter* TcpServerNet::ServerConnectionLimiter::instance = nullptr;
+Poco::Mutex TcpServerNet::ServerConnectionLimiter::mutex;
 
-ConnectionLimiter* ConnectionLimiter::getInstance() {
+TcpServerNet::ServerConnectionLimiter* TcpServerNet::ServerConnectionLimiter::getInstance() {
     if (instance == nullptr) {
         Poco::Mutex::ScopedLock lock(mutex);
         if (instance == nullptr) {
-            instance = new ConnectionLimiter();
+            instance = new ServerConnectionLimiter();
         }
     }
     return instance;
 }
 
-void ConnectionLimiter::destroyInstance() {
+void TcpServerNet::ServerConnectionLimiter::destroyInstance() {
     Poco::Mutex::ScopedLock lock(mutex);
     delete instance;
     instance = nullptr;
 }
 
-ConnectionLimiter::ConnectionLimiter() = default;
+void TcpServerNet::ServerConnectionLimiter::setLimiter(bool flag) {
+    isOpen = flag;
+}
 
-bool ConnectionLimiter::isIPAllowed(const std::string& ip) {
+bool TcpServerNet::ServerConnectionLimiter::isIPAllowed(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
+    if (!isOpen)
+        return true;
+
     auto it = ipRecords.find(ip);
-    
+
     if (it == ipRecords.end()) {
         return true;
     }
@@ -52,8 +53,10 @@ bool ConnectionLimiter::isIPAllowed(const std::string& ip) {
     return it->second.connectionCount < MAX_CONNECTIONS_PER_IP;
 }
 
-void ConnectionLimiter::recordConnection(const std::string& ip) {
+void TcpServerNet::ServerConnectionLimiter::recordConnection(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
+    if (!isOpen)
+        return;
     auto& record = ipRecords[ip];
     record.connectionCount++;
     if (record.lastReset.isElapsed(0)) {
@@ -61,11 +64,13 @@ void ConnectionLimiter::recordConnection(const std::string& ip) {
     }
 }
 
-void ConnectionLimiter::recordAuthFailure(const std::string& ip) {
+void TcpServerNet::ServerConnectionLimiter::recordAuthFailure(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
+    if (!isOpen)
+        return;
     auto& record = ipRecords[ip];
     record.authFailureCount++;
-    
+
     if (record.authFailureCount >= MAX_AUTH_FAILURES) {
         // 设置封禁时间
         record.banUntil.update();
@@ -73,7 +78,9 @@ void ConnectionLimiter::recordAuthFailure(const std::string& ip) {
     }
 }
 
-bool ConnectionLimiter::isIPBanned(const std::string& ip) {
+bool TcpServerNet::ServerConnectionLimiter::isIPBanned(const std::string& ip) {
+    if (!isOpen)
+        return false;
     auto it = ipRecords.find(ip);
     if (it == ipRecords.end()) {
         return false;
@@ -83,7 +90,9 @@ bool ConnectionLimiter::isIPBanned(const std::string& ip) {
     return now < it->second.banUntil;
 }
 
-void ConnectionLimiter::resetIPCounter(const std::string& ip) {
+void TcpServerNet::ServerConnectionLimiter::resetIPCounter(const std::string& ip) {
+    if (!isOpen)
+        return;
     auto& record = ipRecords[ip];
     record.connectionCount = 0;
     record.lastReset.update();

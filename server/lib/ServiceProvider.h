@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include "google/protobuf/service.h"
 
-namespace RpcService {
+namespace ServerNet {
 
 /**
  * @class ServiceProvider
@@ -29,8 +29,10 @@ public:
     void run();
 
 private:
+    void connectionLimiter();
+
     static constexpr int DEFAULT_MAX_CONN = 100;
-    static constexpr int DEFAULT_THREAD_NUM = 16;
+    static constexpr int DEFAULT_THREAD_NUM = 4;
 
     struct ServiceInfo {
         google::protobuf::Service *pService;    /**@brief 服务对象 */
