@@ -7,7 +7,7 @@
 
 #include "Poco/Util/IniFileConfiguration.h"
 
-namespace RpcService {
+namespace ServerNet {
 
 /**
  * @class ApplicationConfig
