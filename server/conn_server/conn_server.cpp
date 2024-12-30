@@ -6,34 +6,41 @@
 #include <string>
 #include "Poco/ThreadPool.h"
 #include "Poco/Util/ServerApplication.h"
-#include "Poco/Util/IniFileConfiguration.h"
-#include "Poco/Net/TCPServerParams.h"
-#include "Poco/Net/TCPServer.h"
 #include "Exception.h"
-#include "SessionConn.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
-#include "BaseClient.h"
-#include "String.h"
+#include "ApplicationConfig.h"
+#include "ServerWorker.h"
+#include "ServiceProvider.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
-            readConfig("conn_server_config.ini");
-            Poco::ThreadPool threadPool;
+            // 读配置文件
+            ServerNet::ApplicationConfig::getInstance()->init("conn_server_config.ini");
 
-            // 注册消息处理回调
+            // TODO:订阅组件内服务
+
+            // 启动工作线程
+            Poco::ThreadPool threadPool;
+            std::vector<std::shared_ptr<ServerNet::ServerWorker>> workers;
+            for (int i = 0; i < DEFAULT_WORKER_THREAD_NUM; ++i) {
+                std::shared_ptr<ServerNet::ServerWorker> pWorker = std::make_shared<ServerNet::ServerWorker>();
+                threadPool.start(*pWorker);
+                workers.push_back(pWorker);
+            }
+
             MsgHandlerCallbackMap::getInstance()->registerHandler();
             // 定时检测连接心跳
             HeartBeatHandlerImpl heartBeatTask;
             heartBeatTask.start();
-            // 订阅 account_server 服务
-            Base::BaseClient accountClient(serviceProxyEndPoint, threadPool);
-            accountClient.subscribe(serviceName[0]);
-            accountClient.start();
 
-            runServer();
+            ServerNet::ServiceProvider server;
+            // TODO:注册服务
+            server.run();
+
+            waitForTerminationRequest();
 
             return Application::EXIT_OK;
         } catch (Poco::Exception& e) {
@@ -46,45 +53,7 @@ protected:
     }
 
 private:
-    void readConfig(const char *file) {
-        Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig(new Poco::Util::IniFileConfiguration(file));
-
-        listenIP = pConfig->getString("server.listen_ip");
-        listenPort = pConfig->getInt("server.listen_port");
-        heartbeatCheckTime = pConfig->getInt("server.heartbeat_check_time");
-        serviceProxyEndPoint = pConfig->getString("subscribe.proxy_endpoint");
-        std::string services = pConfig->getString("subscribe.service");
-        Base::String::split(serviceName, services, ',');
-    }
-
-    void runServer() {
-        // Set up the TCP server parameters
-        Poco::Net::TCPServerParams* pParams = new Poco::Net::TCPServerParams;
-        pParams->setMaxQueued(DEFAULT_MAX_CONN); // Maximum number of queued connections
-        pParams->setMaxThreads(DEFAULT_THREAD_NUM);  // Maximum number of threads
-
-        // Create the TCP server factory
-        Poco::Net::TCPServer server(new SessionConnFactory(), *new Poco::Net::ServerSocket(listenPort), pParams);
-
-        // Start the server
-        server.start();
-        std::cout << "Server started listen on " << listenIP << ":" << listenPort << std::endl;
-
-        // Wait for termination request
-        waitForTerminationRequest();
-
-        server.stop();
-    }
-
-private:
-    static constexpr int DEFAULT_MAX_CONN = 100;
-    static constexpr int DEFAULT_THREAD_NUM = 16;
-
-    int listenPort;
-    std::string listenIP;
-    std::string serviceProxyEndPoint;
-    std::vector<std::string> serviceName;
-    Poco::Timespan::TimeDiff heartbeatCheckTime;
+    static constexpr int DEFAULT_WORKER_THREAD_NUM = 8;
 };
 
 POCO_SERVER_MAIN(ConnServer)
