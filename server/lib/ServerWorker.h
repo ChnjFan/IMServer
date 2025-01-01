@@ -13,8 +13,10 @@ namespace ServerNet {
 class ServerWorker : public Poco::Runnable {
 public:
     void run() override;
-    void send(std::string connName, Base::Message& message);
-    void close(std::string connName);
+
+    static void send(std::string connName, Base::Message& message);
+    static void close(std::string connName);
+
     virtual void work(Base::Message& message, std::string& connName);
 private:
 };

@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.28)
 project(server_lib)
 
-include_directories(. ./tcp_server ../base)
+include_directories(. ../base)
 aux_source_directory(./ SRC_LIST)
-aux_source_directory(./tcp_server SRC_LIST)
 
-add_library(server_lib SHARED ${SRC_LIST}
-        tcp_server/ServerConnectionLimiter.h)
+add_library(server_lib SHARED ${SRC_LIST})
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
 find_package(protobuf REQUIRED PATHS ${THIRD_PARTY_PATH}/protobuf/lib)

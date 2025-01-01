@@ -4,11 +4,9 @@
 
 #include <iostream>
 #include "HeartBeatHandler.h"
-#include "SessionConnManager.h"
 
 void HeartBeatHandler::run() {
     std::cout << "Check Route conn time tick in thread: " << Poco::Thread::current()->name() << std::endl;
-    SessionConnManager::getInstance()->checkTimeStamp();
 }
 
 void HeartBeatHandlerImpl::start() {

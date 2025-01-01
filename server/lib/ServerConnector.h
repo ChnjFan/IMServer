@@ -10,33 +10,20 @@
 #include "BlockingQueue.h"
 #include "Message.h"
 
-namespace TcpServerNet {
+namespace ServerNet {
 
 /**
  * @class ServerConnector
  * @brief 服务连接类
  * @note 根据传入 socket 创建一个 acceptor 连接客户端
  */
-template <class ServiceHandler>
+template <class ServerHandler>
 class ServerConnector {
 public:
-    explicit ServerConnector(Poco::Net::StreamSocket& ss):
-            _socket(ss),
-            _pReactor(nullptr)
-            { }
+    explicit ServerConnector(Poco::Net::StreamSocket& ss);
+    ServerConnector(Poco::Net::StreamSocket& ss, Poco::Net::SocketReactor& reactor);
 
-    ServerConnector(Poco::Net::StreamSocket& ss, Poco::Net::SocketReactor& reactor):
-            _socket(ss),
-            _pReactor(nullptr)
-    {
-        registerConnector(reactor);
-        onConnect();
-    }
-
-    virtual ~ServerConnector()
-    {
-        unregisterConnector();
-    }
+    virtual ~ServerConnector();
 
 private:
     void registerConnector(Poco::Net::SocketReactor& reactor);

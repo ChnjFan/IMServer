@@ -16,37 +16,17 @@ namespace ServerNet {
  */
 class ApplicationConfig {
 public:
-    ApplicationConfig() = default;
-
-    /**
-     * @brief 初始化配置文件
-     * @param configFile 配置文件路径
-     */
-    static void init(std::string configFile);
-    /**
-     * @brief 获取配置实例
-     */
-    static ApplicationConfig* getInstance();
-    /**
-     * @brief 删除配置实例
-     */
-    static void destroyInstance();
-
-    /**
-     * @brief 读取配置文件
-     * @param configFile 配置文件路径
-     */
-    void readConfig(std::string& configFile);
+    explicit ApplicationConfig(std::string configFile);
 
     /**
      * @brief 获取配置
-     * @param configFile 配置文件路径
      */
     Poco::AutoPtr<Poco::Util::IniFileConfiguration>& getConfig();
 
 private:
+    void readConfig(std::string& configFile);
+
     Poco::AutoPtr<Poco::Util::IniFileConfiguration> pConfig;
-    static ApplicationConfig* pAppConfig;
 };
 
 }

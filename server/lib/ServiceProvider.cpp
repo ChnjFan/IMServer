@@ -32,34 +32,34 @@ void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pServ
     serviceMap.insert({serviceName, serviceInfo});
 }
 
-void ServerNet::ServiceProvider::run() {
-    std::string ip = ServerNet::ApplicationConfig::getInstance()->getConfig()->getString("server.listen_ip");
-    uint16_t port = ServerNet::ApplicationConfig::getInstance()->getConfig()->getUInt16("service.listen_port");
+void ServerNet::ServiceProvider::run(ServerNet::ApplicationConfig& config) {
+    std::string ip = config.getConfig()->getString("server.listen_ip");
+    uint16_t port = config.getConfig()->getUInt16("service.listen_port");
     // TODO: 向 zookeeper 发布服务
 
     // 流量控制开关
-    connectionLimiter();
+    connectionLimiter(config);
 
     // 启动网络服务
-    Poco::Net::TCPServerParams* pParams = new Poco::Net::TCPServerParams;
+    auto* pParams = new Poco::Net::TCPServerParams;
     pParams->setMaxQueued(DEFAULT_MAX_CONN);
     pParams->setMaxThreads(DEFAULT_THREAD_NUM);
     pParams->setThreadIdleTime(100);
     Poco::Net::ServerSocket socket(port);
 
-    Poco::Net::TCPServer server(new Poco::Net::TCPServerConnectionFactoryImpl<TcpServerNet::ServerConnection>(), socket, pParams);
+    Poco::Net::TCPServer server(new Poco::Net::TCPServerConnectionFactoryImpl<ServerNet::ServerConnection>(), socket, pParams);
     server.start();
 }
 
-void ServerNet::ServiceProvider::connectionLimiter() {
+void ServerNet::ServiceProvider::connectionLimiter(ServerNet::ApplicationConfig& config) {
     try {
-        std::string connLimiter = ServerNet::ApplicationConfig::getInstance()->getConfig()->getString("server.conn_limiter");
+        std::string connLimiter = config.getConfig()->getString("server.conn_limiter");
         if (connLimiter == "true")
-            TcpServerNet::ServerConnectionLimiter::getInstance()->setLimiter(true);
+            ServerNet::ServerConnectionLimiter::getInstance()->setLimiter(true);
         else
-            TcpServerNet::ServerConnectionLimiter::getInstance()->setLimiter(false);
+            ServerNet::ServerConnectionLimiter::getInstance()->setLimiter(false);
     }
     catch (...) {
-        TcpServerNet::ServerConnectionLimiter::getInstance()->setLimiter(false);
+        ServerNet::ServerConnectionLimiter::getInstance()->setLimiter(false);
     }
 }

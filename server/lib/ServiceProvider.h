@@ -8,6 +8,7 @@
 #include <string>
 #include <unordered_map>
 #include "google/protobuf/service.h"
+#include "ApplicationConfig.h"
 
 namespace ServerNet {
 
@@ -26,10 +27,10 @@ public:
     /**
      * @brief 运行 rpc 服务，提供远程调用服务
      */
-    void run();
+    void run(ApplicationConfig& config);
 
 private:
-    void connectionLimiter();
+    void connectionLimiter(ApplicationConfig& config);
 
     static constexpr int DEFAULT_MAX_CONN = 100;
     static constexpr int DEFAULT_THREAD_NUM = 4;
@@ -40,6 +41,7 @@ private:
     };
 
     std::unordered_map<std::string, ServiceInfo> serviceMap;
+
 };
 
 }

@@ -9,7 +9,7 @@
 #include "Poco/Net/SocketReactor.h"
 #include "Message.h"
 
-namespace TcpServerNet {
+namespace ServerNet {
 
 class ServiceHandler {
 public:
@@ -17,10 +17,10 @@ public:
     ~ServiceHandler();
 
     void onReadable(Poco::Net::ReadableNotification *pNotification);
-    void onWritable(Poco::Net::ReadableNotification *pNotification);
-    void onShutdown(Poco::Net::ReadableNotification *pNotification);
-    void onTimeout(Poco::Net::ReadableNotification *pNotification);
-    void onError(Poco::Net::ReadableNotification *pNotification);
+    void onWritable(Poco::Net::WritableNotification *pNotification);
+    void onShutdown(Poco::Net::ShutdownNotification *pNotification);
+    void onTimeout(Poco::Net::TimeoutNotification *pNotification);
+    void onError(Poco::Net::ErrorNotification *pNotification);
 
 private:
     void setTaskMessage(Poco::Net::ReadableNotification *pNotification);
@@ -31,6 +31,12 @@ private:
     Poco::Net::StreamSocket   _socket;
     Poco::Net::SocketReactor& _reactor;
     Base::ByteBuffer          _buffer;
+
+    Poco::Observer<ServiceHandler, Poco::Net::ReadableNotification> _or;
+    Poco::Observer<ServiceHandler, Poco::Net::WritableNotification> _ow;
+    Poco::Observer<ServiceHandler, Poco::Net::ErrorNotification>    _oe;
+    Poco::Observer<ServiceHandler, Poco::Net::TimeoutNotification>  _ot;
+    Poco::Observer<ServiceHandler, Poco::Net::ShutdownNotification> _os;
 };
 
 }

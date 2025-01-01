@@ -4,10 +4,10 @@
 
 #include "ServerConnectionLimiter.h"
 
-TcpServerNet::ServerConnectionLimiter* TcpServerNet::ServerConnectionLimiter::instance = nullptr;
-Poco::Mutex TcpServerNet::ServerConnectionLimiter::mutex;
+ServerNet::ServerConnectionLimiter* ServerNet::ServerConnectionLimiter::instance = nullptr;
+Poco::Mutex ServerNet::ServerConnectionLimiter::mutex;
 
-TcpServerNet::ServerConnectionLimiter* TcpServerNet::ServerConnectionLimiter::getInstance() {
+ServerNet::ServerConnectionLimiter* ServerNet::ServerConnectionLimiter::getInstance() {
     if (instance == nullptr) {
         Poco::Mutex::ScopedLock lock(mutex);
         if (instance == nullptr) {
@@ -17,17 +17,17 @@ TcpServerNet::ServerConnectionLimiter* TcpServerNet::ServerConnectionLimiter::ge
     return instance;
 }
 
-void TcpServerNet::ServerConnectionLimiter::destroyInstance() {
+void ServerNet::ServerConnectionLimiter::destroyInstance() {
     Poco::Mutex::ScopedLock lock(mutex);
     delete instance;
     instance = nullptr;
 }
 
-void TcpServerNet::ServerConnectionLimiter::setLimiter(bool flag) {
+void ServerNet::ServerConnectionLimiter::setLimiter(bool flag) {
     isOpen = flag;
 }
 
-bool TcpServerNet::ServerConnectionLimiter::isIPAllowed(const std::string& ip) {
+bool ServerNet::ServerConnectionLimiter::isIPAllowed(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
     if (!isOpen)
         return true;
@@ -53,7 +53,7 @@ bool TcpServerNet::ServerConnectionLimiter::isIPAllowed(const std::string& ip) {
     return it->second.connectionCount < MAX_CONNECTIONS_PER_IP;
 }
 
-void TcpServerNet::ServerConnectionLimiter::recordConnection(const std::string& ip) {
+void ServerNet::ServerConnectionLimiter::recordConnection(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
     if (!isOpen)
         return;
@@ -64,7 +64,7 @@ void TcpServerNet::ServerConnectionLimiter::recordConnection(const std::string& 
     }
 }
 
-void TcpServerNet::ServerConnectionLimiter::recordAuthFailure(const std::string& ip) {
+void ServerNet::ServerConnectionLimiter::recordAuthFailure(const std::string& ip) {
     Poco::Mutex::ScopedLock lock(mutex);
     if (!isOpen)
         return;
@@ -78,7 +78,7 @@ void TcpServerNet::ServerConnectionLimiter::recordAuthFailure(const std::string&
     }
 }
 
-bool TcpServerNet::ServerConnectionLimiter::isIPBanned(const std::string& ip) {
+bool ServerNet::ServerConnectionLimiter::isIPBanned(const std::string& ip) {
     if (!isOpen)
         return false;
     auto it = ipRecords.find(ip);
@@ -90,7 +90,7 @@ bool TcpServerNet::ServerConnectionLimiter::isIPBanned(const std::string& ip) {
     return now < it->second.banUntil;
 }
 
-void TcpServerNet::ServerConnectionLimiter::resetIPCounter(const std::string& ip) {
+void ServerNet::ServerConnectionLimiter::resetIPCounter(const std::string& ip) {
     if (!isOpen)
         return;
     auto& record = ipRecords[ip];

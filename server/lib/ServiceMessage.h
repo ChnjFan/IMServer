@@ -10,7 +10,7 @@
 #include "BlockingQueue.h"
 #include "Poco/Mutex.h"
 
-namespace TcpServerNet {
+namespace ServerNet {
 
 using ServiceMessageQueue = Base::BlockingQueue<Base::Message>;
 using ServiceMessageQueueMap = std::unordered_map<std::string, ServiceMessageQueue>;

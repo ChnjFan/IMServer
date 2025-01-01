@@ -10,7 +10,6 @@
 #include <memory>
 #include <functional>
 #include "Message.h"
-#include "SessionConn.h"
 
 /**
 * @class MsgHandlerCallbackMap
@@ -18,22 +17,22 @@
 */
 class MsgHandlerCallbackMap {
 public:
-    using MsgHandlerCallback = std::function<void(SessionConn &conn, Base::Message&)>;
+    using MsgHandlerCallback = std::function<void(std::string connName, Base::Message&)>;
 
     MsgHandlerCallbackMap(const MsgHandlerCallbackMap&) = delete;
 
     static MsgHandlerCallbackMap* getInstance();
     static void destroyInstance();
     void registerHandler();
-    void invokeCallback(std::string msgType, SessionConn &conn, Base::Message &message);
+    void invokeCallback(std::string msgType, std::string connName, Base::Message &message);
 
 private:
     MsgHandlerCallbackMap() = default;
 
     void registerCallback(const char *typeName, MsgHandlerCallback callback);
 
-    static void handleHeartBeatMsg(SessionConn &conn, Base::Message &message);
-    static void handleLoginMsg(SessionConn &conn, Base::Message &message);
+    static void handleHeartBeatMsg(std::string connName, Base::Message &message);
+    static void handleLoginMsg(std::string connName, Base::Message &message);
 
 
     static MsgHandlerCallbackMap *instance;
@@ -46,7 +45,8 @@ private:
 */
 class MsgDispatcher {
 public:
-    static void exec(SessionConn &conn, Base::MessagePtr &pMessage);
+    static void init();
+    static void exec(std::string connName, Base::MessagePtr &pMessage);
 };
 
 

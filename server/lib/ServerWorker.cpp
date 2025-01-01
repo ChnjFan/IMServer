@@ -12,7 +12,7 @@ void ServerNet::ServerWorker::run() {
             Base::Message message;
             std::string connName;
             // 从连接消息队列中获取请求消息处理
-            if (TcpServerNet::ServiceMessage::getInstance()->tryGetTaskMessage(message, connName)) {
+            if (ServerNet::ServiceMessage::getInstance()->tryGetTaskMessage(message, connName)) {
                 work(message, connName);
             }
         }
@@ -23,13 +23,13 @@ void ServerNet::ServerWorker::run() {
 }
 
 void ServerNet::ServerWorker::send(std::string connName, Base::Message &message) {
-    TcpServerNet::ServiceMessage::getInstance()->getSendQueue(connName).push(message);
+    ServerNet::ServiceMessage::getInstance()->getSendQueue(connName).push(message);
 }
 
 void ServerNet::ServerWorker::close(std::string connName) {
     Base::ByteBuffer buffer(0);
     Base::Message message(buffer, "ServerNet::CloseConn");
-    TcpServerNet::ServiceMessage::getInstance()->getSendQueue(connName).push(message);
+    ServerNet::ServiceMessage::getInstance()->getSendQueue(connName).push(message);
 }
 
 // 具体工作类实现

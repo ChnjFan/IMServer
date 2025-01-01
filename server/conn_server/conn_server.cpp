@@ -18,7 +18,7 @@ protected:
     int main(const std::vector<std::string>& args) override {
         try {
             // 读配置文件
-            ServerNet::ApplicationConfig::getInstance()->init("conn_server_config.ini");
+            ServerNet::ApplicationConfig config("conn_server_config.ini");
 
             // TODO:订阅组件内服务
 
@@ -31,14 +31,16 @@ protected:
                 workers.push_back(pWorker);
             }
 
-            MsgHandlerCallbackMap::getInstance()->registerHandler();
+            // 初始化消息转发器
+            MsgDispatcher::init();
+
             // 定时检测连接心跳
             HeartBeatHandlerImpl heartBeatTask;
             heartBeatTask.start();
 
             ServerNet::ServiceProvider server;
             // TODO:注册服务
-            server.run();
+            server.run(config);
 
             waitForTerminationRequest();
 

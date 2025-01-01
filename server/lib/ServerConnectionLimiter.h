@@ -14,7 +14,7 @@
 #include "Poco/Timespan.h"
 #include "Poco/Mutex.h"
 
-namespace TcpServerNet {
+namespace ServerNet {
 
 class ServerConnectionLimiter {
 public:

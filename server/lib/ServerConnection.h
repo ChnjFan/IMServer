@@ -10,7 +10,7 @@
 #include "ServiceHandler.h"
 #include "ServerConnector.h"
 
-namespace TcpServerNet {
+namespace ServerNet {
 
 class ServerConnection: public Poco::Net::TCPServerConnection
 {

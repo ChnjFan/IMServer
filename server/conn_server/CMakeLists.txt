@@ -5,8 +5,7 @@ include_directories(. ../protobuf/protocol ../base ../lib ../account_server/lib)
 
 aux_source_directory(./ SRC_LIST)
 
-add_executable(conn_server ${SRC_LIST}
-        ConnService.h)
+add_executable(conn_server ${SRC_LIST})
 set_target_properties(conn_server PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug
 )
