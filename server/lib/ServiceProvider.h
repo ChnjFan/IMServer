@@ -8,6 +8,8 @@
 #include <string>
 #include <unordered_map>
 #include "google/protobuf/service.h"
+#include "Poco/Net/ParallelSocketAcceptor.h"
+#include "ServiceHandler.h"
 #include "ApplicationConfig.h"
 
 namespace ServerNet {
@@ -29,8 +31,11 @@ public:
      */
     void run(ApplicationConfig& config);
 
+    void onClientConnected(ServerNet::ServiceHandler *pClientHandler);
+    void onClientRemoved(const void* pSender, Poco::Net::StreamSocket &socket);
+
 private:
-    void connectionLimiter(ApplicationConfig& config);
+    static void connectionLimiter(ApplicationConfig& config);
 
     static constexpr int DEFAULT_MAX_CONN = 100;
     static constexpr int DEFAULT_THREAD_NUM = 4;
@@ -41,7 +46,24 @@ private:
     };
 
     std::unordered_map<std::string, ServiceInfo> serviceMap;
+    std::unordered_set<ServerNet::ServiceHandler*> clients;
+};
 
+template <class ServiceHandler, class SR>
+class ServiceAcceptor : public Poco::Net::ParallelSocketAcceptor<ServiceHandler, SR> {
+public:
+    ServiceAcceptor(Poco::Net::ServerSocket& socket, Poco::Net::SocketReactor& reactor, ServiceProvider* server)
+                    : Poco::Net::ParallelSocketAcceptor<ServiceHandler, SR>(socket, reactor) {
+        pServer = server;
+    }
+protected:
+    ServiceHandler* createServiceHandler(Poco::Net::StreamSocket& socket) override {
+        ServiceHandler *socketHandler = new ServiceHandler(socket, *Poco::Net::ParallelSocketAcceptor<ServiceHandler, SR>::reactor());
+        pServer->onClientConnected(socketHandler);
+        return socketHandler;
+    }
+private:
+    ServiceProvider *pServer;
 };
 
 }

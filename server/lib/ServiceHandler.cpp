@@ -10,13 +10,14 @@
 ServerNet::ServiceHandler::ServiceHandler(Poco::Net::StreamSocket &socket, Poco::Net::SocketReactor &reactor) :
         _socket(socket),
         _reactor(reactor),
-        _buffer(SOCKET_BUFFER_LEN),
+        _buffer(0),
         _or(*this, &ServerNet::ServiceHandler::onReadable),
         _ow(*this, &ServerNet::ServiceHandler::onWritable),
         _oe(*this, &ServerNet::ServiceHandler::onError),
         _ot(*this, &ServerNet::ServiceHandler::onTimeout),
         _os(*this, &ServerNet::ServiceHandler::onShutdown)
 {
+    _buffer.setCapacity(SOCKET_BUFFER_LEN);
     _reactor.addEventHandler(_socket, _ot);
     _reactor.addEventHandler(_socket, _oe);
     _reactor.addEventHandler(_socket, _os);
@@ -37,9 +38,12 @@ void ServerNet::ServiceHandler::onReadable(Poco::Net::ReadableNotification *pNot
 
     try {
         while (socket.available()) {
-            Base::ByteBuffer temp(SOCKET_BUFFER_LEN);
-            if (socket.receiveBytes(temp.begin(), SOCKET_BUFFER_LEN) <= 0)
-                break;
+            Base::ByteBuffer temp(0);
+            temp.setCapacity(SOCKET_BUFFER_LEN);
+            if (socket.receiveBytes(temp.begin(), SOCKET_BUFFER_LEN) <= 0 || temp.empty()) {
+                closeEvent.notify(this, socket);
+                return;
+            }
             _buffer.append(temp);
         }
 
@@ -63,7 +67,7 @@ void ServerNet::ServiceHandler::onWritable(Poco::Net::WritableNotification *pNot
     try {
         Base::Message message;
         std::string connName = pNotification->name();
-        while (ServerNet::ServiceMessage::getInstance()->getSendQueue(connName).tryPopFor(message, 100)) {
+        while (_message.tryGetTaskMessage(message, 100)) {
             if (message.getTypeName() == "ServerNet::CloseConn") {
                 close();
                 delete this;
@@ -111,7 +115,7 @@ void ServerNet::ServiceHandler::setTaskMessage(Poco::Net::ReadableNotification *
         if (nullptr == pMessage)
             return;
         // 消息加入队列等待工作线程处理
-        ServerNet::ServiceMessage::getInstance()->pushTaskMessage(*pMessage, pNotification->name());
+        _message.pushTaskMessage(*pMessage);
     }
 }
 

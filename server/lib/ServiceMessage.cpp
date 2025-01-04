@@ -4,41 +4,24 @@
 
 #include "ServiceMessage.h"
 
-ServerNet::ServiceMessage* ServerNet::ServiceMessage::serviceMessage = nullptr;
-Poco::Mutex ServerNet::ServiceMessage::mutex;
-
-ServerNet::ServiceMessage *ServerNet::ServiceMessage::getInstance() {
-    if (serviceMessage == nullptr) {
-        Poco::Mutex::ScopedLock lock(mutex);
-        if (serviceMessage == nullptr) {
-            serviceMessage = new ServiceMessage();
-        }
-    }
-    return serviceMessage;
+void ServerNet::ServiceMessage::sendServiceResult(Base::Message &message) {
+    send.push(message);
 }
 
-ServerNet::ServiceMessageQueue &ServerNet::ServiceMessage::getSendQueue(std::string& connName) {
-    return send[connName];
+void ServerNet::ServiceMessage::pushTaskMessage(Base::Message &message) {
+    recv.push(message);
 }
 
-void ServerNet::ServiceMessage::pushTaskMessage(Base::Message &message, std::string connName) {
+bool ServerNet::ServiceMessage::tryGetTaskMessage(Base::Message &message) {
+    return recv.tryPop(message);
+}
+
+bool ServerNet::ServiceMessage::tryGetTaskMessage(Base::Message &message, long milliseconds) {
+    return recv.tryPopFor(message, milliseconds);
+}
+
+void ServerNet::ServiceMessage::clear() {
     Poco::Mutex::ScopedLock lock(mutex);
-    recv[connName].push(message);
-}
-
-bool ServerNet::ServiceMessage::tryGetTaskMessage(Base::Message &message, std::string &connName) {
-    Poco::Mutex::ScopedLock lock(mutex);
-    for (auto & it : recv) {
-        if (it.second.tryPop(message)) {
-            connName = it.first;
-            return true;
-        }
-    }
-    return false;
-}
-
-void ServerNet::ServiceMessage::clear(std::string &connName) {
-    Poco::Mutex::ScopedLock lock(mutex);
-    send.erase(connName);
-    recv.erase(connName);
+    send.clear();
+    recv.clear();
 }

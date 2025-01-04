@@ -13,26 +13,23 @@
 namespace ServerNet {
 
 using ServiceMessageQueue = Base::BlockingQueue<Base::Message>;
-using ServiceMessageQueueMap = std::unordered_map<std::string, ServiceMessageQueue>;
 
 class ServiceMessage {
 public:
-    static ServiceMessage* getInstance();
+    void sendServiceResult(Base::Message &message);
+    void pushTaskMessage(Base::Message &message);
+    bool tryGetTaskMessage(Base::Message &message);
+    bool tryGetTaskMessage(Base::Message &message, long milliseconds);
+    void clear();
 
-    // 每个tcp连接都应该有一个发送队列和接收队列
-    ServiceMessageQueue& getSendQueue(std::string& connName);
-    void pushTaskMessage(Base::Message &message, std::string connName);
-    bool tryGetTaskMessage(Base::Message &message, std::string& connName);
-    void clear(std::string& connName);
-
-private:
     ServiceMessage() = default;
 
-    ServiceMessageQueueMap send;
-    ServiceMessageQueueMap recv;
+private:
 
-    static ServiceMessage* serviceMessage;
-    static Poco::Mutex mutex;
+    ServiceMessageQueue send;
+    ServiceMessageQueue recv;
+
+    Poco::Mutex mutex;
 };
 
 }

@@ -27,6 +27,9 @@ Base::MessagePtr Base::Message::getMessage(ByteBuffer &data) {
     uint32_t readCount = 0;
     unsigned char *pBuffer = data.begin();
 
+    if (data.empty())
+        return nullptr;
+
     // 读取消息头
     std::copy(pBuffer, pBuffer + sizeof(pMessage->length), &pMessage->length);
     pBuffer += sizeof(pMessage->length);

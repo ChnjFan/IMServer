@@ -10,7 +10,6 @@
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
 #include "ApplicationConfig.h"
-#include "ServerWorker.h"
 #include "ServiceProvider.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
@@ -21,15 +20,6 @@ protected:
             ServerNet::ApplicationConfig config("conn_server_config.ini");
 
             // TODO:订阅组件内服务
-
-            // 启动工作线程
-            Poco::ThreadPool threadPool;
-            std::vector<std::shared_ptr<ServerNet::ServerWorker>> workers;
-            for (int i = 0; i < DEFAULT_WORKER_THREAD_NUM; ++i) {
-                std::shared_ptr<ServerNet::ServerWorker> pWorker = std::make_shared<ServerNet::ServerWorker>();
-                threadPool.start(*pWorker);
-                workers.push_back(pWorker);
-            }
 
             // 初始化消息转发器
             MsgDispatcher::init();
