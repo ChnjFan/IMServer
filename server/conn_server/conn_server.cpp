@@ -30,7 +30,7 @@ protected:
 
             ServerNet::ServiceProvider server;
             // TODO:注册服务
-            server.run(config);
+            server.run<MsgDispatcher>(config);
 
             waitForTerminationRequest();
 

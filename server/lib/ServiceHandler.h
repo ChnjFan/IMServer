@@ -12,8 +12,6 @@
 
 namespace ServerNet {
 
-class ServiceProvider;
-
 class ServiceHandler {
 public:
     ServiceHandler(Poco::Net::StreamSocket& socket, Poco::Net::SocketReactor &reactor);
@@ -24,6 +22,8 @@ public:
     void onShutdown(Poco::Net::ShutdownNotification *pNotification);
     void onTimeout(Poco::Net::TimeoutNotification *pNotification);
     void onError(Poco::Net::ErrorNotification *pNotification);
+
+    ServiceMessage& getServiceMessage();
 
     Poco::BasicEvent<Poco::Net::StreamSocket> closeEvent;
 

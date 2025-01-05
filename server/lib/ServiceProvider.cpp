@@ -5,9 +5,10 @@
 #include "ServiceProvider.h"
 #include "google/protobuf/descriptor.h"
 #include "Poco/Delegate.h"
-#include "Poco/BasicEvent.h"
+#include "Poco/ThreadPool.h"
 #include "ApplicationConfig.h"
 #include "ServerConnectionLimiter.h"
+#include "ServiceAcceptor.h"
 
 void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pService) {
     ServiceInfo serviceInfo;
@@ -30,17 +31,7 @@ void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pServ
     serviceMap.insert({serviceName, serviceInfo});
 }
 
-void ServerNet::ServiceProvider::run(ServerNet::ApplicationConfig& config) {
-    std::string ip = config.getConfig()->getString("server.listen_ip");
-    uint16_t port = config.getConfig()->getUInt16("server.listen_port");
-    // TODO: 向 zookeeper 发布服务
-
-    // 流量控制开关
-    connectionLimiter(config);
-
-    // TODO:启动工作线程，遍历客户端请求
-
-    // 启动网络服务
+void ServerNet::ServiceProvider::startServiceNet(uint16_t port) {
     Poco::Net::ServerSocket serverSocket(port);
     Poco::Net::SocketReactor reactor;
     ServerNet::ServiceAcceptor<ServerNet::ServiceHandler, Poco::Net::SocketReactor> acceptor(serverSocket, reactor, this);

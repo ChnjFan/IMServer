@@ -20,6 +20,14 @@ bool ServerNet::ServiceMessage::tryGetTaskMessage(Base::Message &message, long m
     return recv.tryPopFor(message, milliseconds);
 }
 
+bool ServerNet::ServiceMessage::tryGetResultMessage(Base::Message &message) {
+    return send.tryPop(message);
+}
+
+bool ServerNet::ServiceMessage::tryGetResultMessage(Base::Message &message, long milliseconds) {
+    return send.tryPopFor(message, milliseconds);
+}
+
 void ServerNet::ServiceMessage::clear() {
     Poco::Mutex::ScopedLock lock(mutex);
     send.clear();

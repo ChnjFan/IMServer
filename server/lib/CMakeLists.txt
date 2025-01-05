@@ -4,7 +4,9 @@ project(server_lib)
 include_directories(. ../base)
 aux_source_directory(./ SRC_LIST)
 
-add_library(server_lib SHARED ${SRC_LIST})
+add_library(server_lib SHARED ${SRC_LIST}
+        ServiceWorker.h
+        ServiceAcceptor.h)
 
 find_package(Poco REQUIRED COMPONENTS Net Util XML JSON)
 find_package(protobuf REQUIRED PATHS ${THIRD_PARTY_PATH}/protobuf/lib)

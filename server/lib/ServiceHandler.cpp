@@ -66,8 +66,7 @@ void ServerNet::ServiceHandler::onWritable(Poco::Net::WritableNotification *pNot
 
     try {
         Base::Message message;
-        std::string connName = pNotification->name();
-        while (_message.tryGetTaskMessage(message, 100)) {
+        while (_message.tryGetResultMessage(message, 100)) {
             if (message.getTypeName() == "ServerNet::CloseConn") {
                 close();
                 delete this;
@@ -107,6 +106,10 @@ void ServerNet::ServiceHandler::onError(Poco::Net::ErrorNotification *pNotificat
     std::cout << "Something wrong, connection " << pNotification->name() << " shutdown..." << std::endl;
     close();
     delete this;
+}
+
+ServerNet::ServiceMessage &ServerNet::ServiceHandler::getServiceMessage() {
+    return _message;
 }
 
 void ServerNet::ServiceHandler::setTaskMessage(Poco::Net::ReadableNotification *pNotification) {

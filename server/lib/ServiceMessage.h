@@ -20,6 +20,8 @@ public:
     void pushTaskMessage(Base::Message &message);
     bool tryGetTaskMessage(Base::Message &message);
     bool tryGetTaskMessage(Base::Message &message, long milliseconds);
+    bool tryGetResultMessage(Base::Message &message);
+    bool tryGetResultMessage(Base::Message &message, long milliseconds);
     void clear();
 
     ServiceMessage() = default;
