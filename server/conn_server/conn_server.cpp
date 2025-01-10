@@ -9,8 +9,7 @@
 #include "Exception.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
-#include "ApplicationConfig.h"
-#include "ServiceProvider.h"
+#include "ZookeeperClient.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
@@ -20,6 +19,8 @@ protected:
             ServerNet::ApplicationConfig config("conn_server_config.ini");
 
             // TODO:订阅组件内服务
+            ServerNet::ZookeeperClient zookeeperClient;
+            zookeeperClient.start(config);
 
             // 初始化消息转发器
             MsgDispatcher::init();
