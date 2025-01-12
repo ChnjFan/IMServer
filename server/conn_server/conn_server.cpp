@@ -9,7 +9,7 @@
 #include "Exception.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
-#include "ZookeeperClient.h"
+#include "IM.AccountServer.pb.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
@@ -29,7 +29,7 @@ protected:
             HeartBeatHandlerImpl heartBeatTask;
             heartBeatTask.start();
 
-            ServerNet::ServiceProvider server;
+            ServerNet::ServiceProvider server(zookeeperClient);
             // TODO:注册服务
             server.run<MsgDispatcher>(config);
 

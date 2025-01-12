@@ -17,6 +17,8 @@ public:
     ServiceHandler(Poco::Net::StreamSocket& socket, Poco::Net::SocketReactor &reactor);
     ~ServiceHandler();
 
+    std::string getUid();
+
     void onReadable(Poco::Net::ReadableNotification *pNotification);
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onShutdown(Poco::Net::ShutdownNotification *pNotification);
@@ -30,9 +32,11 @@ public:
 private:
     void setTaskMessage(Poco::Net::ReadableNotification *pNotification);
     void close();
+    void generateUid();
 
     static constexpr int SOCKET_BUFFER_LEN = 1024;
 
+    std::string               _uid;
     Poco::Net::StreamSocket   _socket;
     Poco::Net::SocketReactor& _reactor;
     Base::ByteBuffer          _buffer;

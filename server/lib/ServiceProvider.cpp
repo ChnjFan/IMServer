@@ -5,10 +5,13 @@
 #include "ServiceProvider.h"
 #include "google/protobuf/descriptor.h"
 #include "Poco/Delegate.h"
-#include "Poco/ThreadPool.h"
 #include "ApplicationConfig.h"
 #include "ServerConnectionLimiter.h"
 #include "ServiceAcceptor.h"
+
+ServerNet::ServiceProvider::ServiceProvider(ServerNet::ZookeeperClient &zkClient) : clientsVersion(0), zkClient(zkClient) {
+
+}
 
 void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pService) {
     ServiceInfo serviceInfo;
@@ -17,8 +20,6 @@ void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pServ
     const google::protobuf::ServiceDescriptor *pServiceDesc = pService->GetDescriptor();
     std::string serviceName = pServiceDesc->name();
     int methodNum = pServiceDesc->method_count();
-
-    std::cout << "Publish service: " << serviceName << std::endl;
 
     // 保存服务名和服务方法
     for (int i = 0; i < methodNum; ++i) {
@@ -39,20 +40,37 @@ void ServerNet::ServiceProvider::startServiceNet(uint16_t port) {
 }
 
 void ServerNet::ServiceProvider::onClientConnected(ServerNet::ServiceHandler *pClientHandler) {
-    clients.insert(pClientHandler);
+    clients.insert({pClientHandler->getUid(), pClientHandler});
     pClientHandler->closeEvent += Poco::delegate(this, &ServerNet::ServiceProvider::onClientRemoved);
 }
 
 void ServerNet::ServiceProvider::onClientRemoved(const void* pSender, Poco::Net::StreamSocket &socket) {
     for (auto it = clients.begin(); it != clients.end(); ) {
-        ServerNet::ServiceHandler *pClient = *it;
+        ServerNet::ServiceHandler *pClient = it->second;
         if (pClient == pSender) {
             ((ServerNet::ServiceHandler *)pClient)->closeEvent += Poco::delegate(this, &ServerNet::ServiceProvider::onClientRemoved);
+            clientsVersion++;
             delete pClient;
             it = clients.erase(it);
         }
         else {
             ++it;
+        }
+    }
+}
+
+void ServerNet::ServiceProvider::getTaskMsg(ServiceWorker*pWorker, ServerNet::ServiceProvider::ServiceWorkerCallback workerMsg) {
+    uint32_t ver = clientsVersion;
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        Poco::Mutex::ScopedLock lock(mutex);
+
+        if (ver != clientsVersion) {
+            break;
+        }
+
+        Base::Message taskMessage;
+        if (it->second->getServiceMessage().tryGetTaskMessage(taskMessage, 500)) {
+            workerMsg(pWorker, it->second, taskMessage);
         }
     }
 }
@@ -67,5 +85,14 @@ void ServerNet::ServiceProvider::connectionLimiter(ServerNet::ApplicationConfig&
     }
     catch (...) {
         ServerNet::ServerConnectionLimiter::getInstance()->setLimiter(false);
+    }
+}
+
+void ServerNet::ServiceProvider::registerService(std::string& ip, uint16_t port) {
+    for (const auto& service : serviceMap) {
+        std::string path = "/" + service.first;
+        std::string data = ip + ":" + std::to_string(port);
+        zkClient.create(path.c_str(), data.c_str(), data.size());
+        std::cout << "Service: " << path << "register success in " << data << std::endl;
     }
 }

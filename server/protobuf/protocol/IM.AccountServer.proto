@@ -6,6 +6,20 @@ import "IM.BaseType.proto";
 
 option optimize_for = LITE_RUNTIME;
 
+message ImAccountRequestMsg {
+    oneof message_type {
+        ImMsgLoginReq login_req = 1;
+        ImMsgRegisterReq register_req = 2;
+    }
+}
+
+message ImAccountResponseMsg {
+    oneof message_type {
+        ImMsgLoginRes login_res = 1;
+        ImMsgRegisterRes register_res = 2;
+    }
+}
+
 // 用户状态
 message ImMsgUserStatus {
     string acc_id = 1;

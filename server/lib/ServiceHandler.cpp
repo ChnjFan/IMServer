@@ -4,6 +4,7 @@
 
 #include "ServiceHandler.h"
 #include "Poco/Net/NetException.h"
+#include "Poco/UUIDGenerator.h"
 #include "ServiceMessage.h"
 #include "Exception.h"
 
@@ -23,6 +24,9 @@ ServerNet::ServiceHandler::ServiceHandler(Poco::Net::StreamSocket &socket, Poco:
     _reactor.addEventHandler(_socket, _os);
     _reactor.addEventHandler(_socket, _or);
     _reactor.addEventHandler(_socket, _ow);
+
+    // 为客户端连接生成唯一ID
+    generateUid();
 }
 
 ServerNet::ServiceHandler::~ServiceHandler() {
@@ -31,6 +35,10 @@ ServerNet::ServiceHandler::~ServiceHandler() {
     _reactor.removeEventHandler(_socket, _os);
     _reactor.removeEventHandler(_socket, _or);
     _reactor.removeEventHandler(_socket, _ow);
+}
+
+std::string ServerNet::ServiceHandler::getUid() {
+    return _uid;
 }
 
 void ServerNet::ServiceHandler::onReadable(Poco::Net::ReadableNotification *pNotification) {
@@ -126,4 +134,12 @@ void ServerNet::ServiceHandler::close() {
     _socket.shutdown();
     _socket.close();
     _reactor.stop();
+}
+
+void ServerNet::ServiceHandler::generateUid() {
+    Poco::Net::SocketAddress peerAddr = _socket.peerAddress();
+    std::string clientAddr = peerAddr.host().toString() + ":" + std::to_string(peerAddr.port());
+    Poco::UUIDGenerator& generator = Poco::UUIDGenerator::defaultGenerator();
+    Poco::UUID uuid = generator.createFromName(Poco::UUID::dns(), clientAddr);
+    _uid = uuid.toString();
 }

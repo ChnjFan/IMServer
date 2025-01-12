@@ -6,16 +6,13 @@
 #include "ServiceHandler.h"
 
 void ServerNet::ServiceWorker::run() {
-    for (auto client : server->clients) {
-        Base::Message taskMessage;
-        if (client->getServiceMessage().tryGetTaskMessage(taskMessage, 100)) {
-            request(client, taskMessage);
-        }
+    while (true) {
+        server->getTaskMsg(this, &ServerNet::ServiceWorker::request);
     }
 }
 
 void ServerNet::ServiceWorker::request(ServerNet::ServiceHandler* pClient, Base::Message &taskMessage) {
-
+    std::cout << "Service request by: " << pClient->getUid() << ". Message type: " << taskMessage.getTypeName() << std::endl;
 }
 
 void ServerNet::ServiceWorker::response(ServerNet::ServiceHandler* pClient, Base::Message &resMessage) {

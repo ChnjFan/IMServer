@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package IM.Account;
+
+option optimize_for = LITE_RUNTIME;
+
+// IMServer 响应消息
+message ImResponseMsg {
+    string uid = 1;
+}
