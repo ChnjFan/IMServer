@@ -5,6 +5,7 @@
 #include "ServiceHandler.h"
 #include "Poco/Net/NetException.h"
 #include "Poco/UUIDGenerator.h"
+#include "IM.BaseType.pb.h"
 #include "ServiceMessage.h"
 #include "Exception.h"
 
@@ -27,6 +28,8 @@ ServerNet::ServiceHandler::ServiceHandler(Poco::Net::StreamSocket &socket, Poco:
 
     // 为客户端连接生成唯一ID
     generateUid();
+    // 建立连接后回复客户端 UID
+    responseUid();
 }
 
 ServerNet::ServiceHandler::~ServiceHandler() {
@@ -120,6 +123,11 @@ ServerNet::ServiceMessage &ServerNet::ServiceHandler::getServiceMessage() {
     return _message;
 }
 
+void ServerNet::ServiceHandler::updateTimeTick() {
+    Poco::Timestamp now;
+    _timeTick = now;
+}
+
 void ServerNet::ServiceHandler::setTaskMessage(Poco::Net::ReadableNotification *pNotification) {
     while (true) {
         Base::MessagePtr pMessage = Base::Message::getMessage(_buffer);
@@ -142,4 +150,18 @@ void ServerNet::ServiceHandler::generateUid() {
     Poco::UUIDGenerator& generator = Poco::UUIDGenerator::defaultGenerator();
     Poco::UUID uuid = generator.createFromName(Poco::UUID::dns(), clientAddr);
     _uid = uuid.toString();
+}
+
+void ServerNet::ServiceHandler::responseUid() {
+    IM::BaseType::ImMsgTcpConn connResMsg;
+    Poco::Timestamp now;
+    connResMsg.set_time_stamp(now.epochMicroseconds());
+    connResMsg.set_uid(_uid);
+
+    int size = connResMsg.ByteSizeLong();
+    unsigned char *pBuf = new unsigned char[size];
+    connResMsg.SerializePartialToArray(pBuf, size);
+    Base::ByteBuffer buffer(pBuf, size);
+    Base::Message message(buffer, connResMsg.GetTypeName());
+    _message.sendServiceResult(message);
 }

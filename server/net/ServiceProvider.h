@@ -27,8 +27,10 @@ public:
 
     explicit ServiceProvider(ZookeeperClient& zkClient);
 
-    // 服务启动
+    // 服务订阅发布
     void publishService(google::protobuf::Service *pService);
+    void subscribeService(const std::string pService);
+    // 启动服务
     void startServiceNet(uint16_t port);
 
     template<class Worker>
@@ -56,8 +58,9 @@ public:
     void onClientConnected(ServerNet::ServiceHandler *pClientHandler);
     void onClientRemoved(const void* pSender, Poco::Net::StreamSocket &socket);
 
-    // 执行客户端请求消息
-    void getTaskMsg(ServiceWorker*pWorker, ServiceWorkerCallback workerMsg);
+    // 客户端消息
+    void procClientRequestMsg(ServiceWorker*pWorker, ServiceWorkerCallback workerMsg);
+    void procClientResponseMsg(ServiceWorker*pWorker, ServiceWorkerCallback workerMsg);
 
 
     uint32_t clientsVersion;

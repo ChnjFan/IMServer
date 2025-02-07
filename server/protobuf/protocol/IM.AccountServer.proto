@@ -6,18 +6,9 @@ import "IM.BaseType.proto";
 
 option optimize_for = LITE_RUNTIME;
 
-message ImAccountRequestMsg {
-    oneof message_type {
-        ImMsgLoginReq login_req = 1;
-        ImMsgRegisterReq register_req = 2;
-    }
-}
-
-message ImAccountResponseMsg {
-    oneof message_type {
-        ImMsgLoginRes login_res = 1;
-        ImMsgRegisterRes register_res = 2;
-    }
+service AccountService {
+    rpc Register (ImMsgRegisterReq) returns (ImMsgRegisterRes);
+    rpc Login (ImMsgLoginReq) returns (ImMsgLoginRes);
 }
 
 // 用户状态

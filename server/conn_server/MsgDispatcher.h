@@ -51,6 +51,7 @@ public:
     static void exec(ServerNet::ServiceHandler *pClient, Base::Message& message);
 
     void request(ServerNet::ServiceHandler* pClient, Base::Message& taskMessage) override;
+    void response(ServerNet::ServiceHandler* pClient, Base::Message& resMessage) override;
 
 };
 
