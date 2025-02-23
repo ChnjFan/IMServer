@@ -15,9 +15,9 @@
 namespace Base {
 
 /**
- * @class ByteStream
- * @brief For TCP connections to send and receive data.
- * Byte stream buffer is used to save the data without providing message encoding and decoding.
+ * @class Exception
+ * @brief A custom exception class for handling errors.
+ * This class extends the standard exception class to provide custom error messages.
  */
 class Exception : public std::exception {
 public:
