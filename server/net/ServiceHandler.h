@@ -29,10 +29,14 @@ public:
 
     Poco::BasicEvent<Poco::Net::StreamSocket> closeEvent;
 
+    // 更新客户端心跳时间
+    void updateTimeTick();
+
 private:
     void setTaskMessage(Poco::Net::ReadableNotification *pNotification);
     void close();
     void generateUid();
+    void responseUid();
 
     static constexpr int SOCKET_BUFFER_LEN = 1024;
 
@@ -41,6 +45,7 @@ private:
     Poco::Net::SocketReactor& _reactor;
     Base::ByteBuffer          _buffer;
     ServiceMessage            _message;
+    Poco::Timestamp           _timeTick;
 
     Poco::Observer<ServiceHandler, Poco::Net::ReadableNotification> _or;
     Poco::Observer<ServiceHandler, Poco::Net::WritableNotification> _ow;

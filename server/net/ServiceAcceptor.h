@@ -10,6 +10,11 @@
 
 namespace ServerNet {
 
+/**
+ * @class ServiceAcceptor
+ * @brief 服务连接类
+ * @note
+ */
 template<class ServiceHandler, class SR>
 class ServiceAcceptor : public Poco::Net::ParallelSocketAcceptor<ServiceHandler, SR> {
 public:

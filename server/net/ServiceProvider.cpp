@@ -32,6 +32,16 @@ void ServerNet::ServiceProvider::publishService(google::protobuf::Service *pServ
     serviceMap.insert({serviceName, serviceInfo});
 }
 
+void ServerNet::ServiceProvider::subscribeService(const std::string pService) {
+    std::string path = "/" + pService;
+    std::string serviceAddress = zkClient.getData(path.c_str());
+    if (serviceAddress.empty()) {
+        // TODO：后续支持重连
+        return;
+    }
+
+}
+
 void ServerNet::ServiceProvider::startServiceNet(uint16_t port) {
     Poco::Net::ServerSocket serverSocket(port);
     Poco::Net::SocketReactor reactor;
@@ -40,6 +50,7 @@ void ServerNet::ServiceProvider::startServiceNet(uint16_t port) {
 }
 
 void ServerNet::ServiceProvider::onClientConnected(ServerNet::ServiceHandler *pClientHandler) {
+    std::cout << "Client " << pClientHandler->getUid() << " connect success." << std::endl;
     clients.insert({pClientHandler->getUid(), pClientHandler});
     pClientHandler->closeEvent += Poco::delegate(this, &ServerNet::ServiceProvider::onClientRemoved);
 }
@@ -59,7 +70,7 @@ void ServerNet::ServiceProvider::onClientRemoved(const void* pSender, Poco::Net:
     }
 }
 
-void ServerNet::ServiceProvider::getTaskMsg(ServiceWorker*pWorker, ServerNet::ServiceProvider::ServiceWorkerCallback workerMsg) {
+void ServerNet::ServiceProvider::procClientRequestMsg(ServiceWorker*pWorker, ServiceWorkerCallback workerMsg) {
     uint32_t ver = clientsVersion;
     for (auto it = clients.begin(); it != clients.end(); ++it) {
         Poco::Mutex::ScopedLock lock(mutex);
@@ -70,6 +81,23 @@ void ServerNet::ServiceProvider::getTaskMsg(ServiceWorker*pWorker, ServerNet::Se
 
         Base::Message taskMessage;
         if (it->second->getServiceMessage().tryGetTaskMessage(taskMessage, 500)) {
+            workerMsg(pWorker, it->second, taskMessage);
+        }
+    }
+}
+
+void ServerNet::ServiceProvider::procClientResponseMsg(ServerNet::ServiceWorker *pWorker,
+                                                       ServerNet::ServiceProvider::ServiceWorkerCallback workerMsg) {
+    uint32_t ver = clientsVersion;
+    for (auto it = clients.begin(); it != clients.end(); ++it) {
+        Poco::Mutex::ScopedLock lock(mutex);
+
+        if (ver != clientsVersion) {
+            break;
+        }
+
+        Base::Message taskMessage;
+        if (it->second->getServiceMessage().tryGetResultMessage(taskMessage, 500)) {
             workerMsg(pWorker, it->second, taskMessage);
         }
     }

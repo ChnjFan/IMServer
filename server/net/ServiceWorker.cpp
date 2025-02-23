@@ -7,7 +7,8 @@
 
 void ServerNet::ServiceWorker::run() {
     while (true) {
-        server->getTaskMsg(this, &ServerNet::ServiceWorker::request);
+        server->procClientRequestMsg(this, &ServerNet::ServiceWorker::request);
+        server->procClientResponseMsg(this, &ServerNet::ServiceWorker::response);
     }
 }
 

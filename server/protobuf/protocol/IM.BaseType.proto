@@ -23,6 +23,12 @@ enum ResultType {
     RESULT_TYPE_REQUEST_ERR = 998;
 }
 
+// 客户端连接消息
+message ImMsgTcpConn {
+    uint64 time_stamp = 1;
+    string uid = 2;
+}
+
 // 心跳包
 message ImMsgHeartBeat {
     uint64 time_stamp = 1;
@@ -37,4 +43,5 @@ message ImMsgError {
 // 消息信息
 message ImMsgInfo {
     uint32 seq = 1;
+    string uid = 2;
 }

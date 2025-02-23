@@ -9,7 +9,8 @@
 #include "Exception.h"
 #include "MsgDispatcher.h"
 #include "HeartBeatHandler.h"
-#include "IM.AccountServer.pb.h"
+
+#include "IM.AccountServer.grpc.pb.h"
 
 class ConnServer : public Poco::Util::ServerApplication {
 protected:
@@ -31,6 +32,8 @@ protected:
 
             ServerNet::ServiceProvider server(zookeeperClient);
             // TODO:注册服务
+            IM::Account::AccountService::Service accountService;
+            server.publishService(accountService);
             server.run<MsgDispatcher>(config);
 
             waitForTerminationRequest();

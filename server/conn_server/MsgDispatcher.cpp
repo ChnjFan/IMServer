@@ -39,6 +39,7 @@ void MsgHandlerCallbackMap::registerCallback(const char *typeName, MsgHandlerCal
 void MsgHandlerCallbackMap::handleHeartBeatMsg(ServerNet::ServiceHandler *pClient, Base::Message& message) {
     //收到客户端心跳消息后要回复，并记录收到心跳的 time_tick
     std::cout << "Session "  << " recv heart beat" << std::endl;
+    pClient->updateTimeTick();
 }
 
 void MsgHandlerCallbackMap::handleLoginMsg(ServerNet::ServiceHandler *pClient, Base::Message& message) {
@@ -55,5 +56,11 @@ void MsgDispatcher::exec(ServerNet::ServiceHandler *pClient, Base::Message& mess
 
 void MsgDispatcher::request(ServerNet::ServiceHandler *pClient, Base::Message& taskMessage) {
     exec(pClient, taskMessage);
+}
+
+void MsgDispatcher::response(ServerNet::ServiceHandler *pClient, Base::Message &resMessage) {
+    // 向客户端发送消息
+    std::cout << "Response to :" << pClient->getUid() << std::endl;
+    ServiceWorker::response(pClient, resMessage);
 }
 

@@ -18,7 +18,7 @@ public:
     void run() override;
 
     virtual void request(ServerNet::ServiceHandler* pClient, Base::Message& taskMessage);
-    void response(ServerNet::ServiceHandler* pClient, Base::Message& resMessage);
+    virtual void response(ServerNet::ServiceHandler* pClient, Base::Message& resMessage);
 
 private:
     ServiceProvider* server;
