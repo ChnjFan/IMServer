@@ -21,7 +21,7 @@ namespace Base {
  */
 class Exception : public std::exception {
 public:
-    explicit Exception(const std::string what) : message(std::move(what)) { }
+    explicit Exception(const std::string what) : message(what) { }
 
     ~Exception() noexcept override = default;
 

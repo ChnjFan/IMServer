@@ -9,7 +9,13 @@
 #include <Poco/SHA1Engine.h>
 
 namespace Base {
-    /* 根据登录请求生成token */
+    /**
+     * Generates a token based on the login request.
+     * 
+     * @param tokenBase The base string used for generating the token.
+     * @param secretKey The secret key used to enhance security.
+     * @return A string representing the generated token.
+     */
     std::string generateToken(const std::string& tokenBase, const std::string& secretKey) {
         // 使用SHA1哈希算法生成签名
         Poco::SHA1Engine sha1;
