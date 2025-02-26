@@ -7,12 +7,15 @@
 #include "Poco/ThreadPool.h"
 #include "Poco/Util/ServerApplication.h"
 #include "Exception.h"
+#include "MessageService.h"
 
 class ImServer : public Poco::Util::ServerApplication {
 protected:
     int main(const std::vector<std::string>& args) override {
         try {
+            MessageService server(10001);
 
+            server.start();
             waitForTerminationRequest();
 
             return Application::EXIT_OK;
@@ -26,7 +29,6 @@ protected:
     }
 
 private:
-    static constexpr int DEFAULT_WORKER_THREAD_NUM = 8;
 };
 
 POCO_SERVER_MAIN(ImServer)
