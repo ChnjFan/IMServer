@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 package IM.ServerMsg;
-option optimize_for = LITE_RUNTIME;
 
 message RegisterRequest {
     string account_id = 1;
