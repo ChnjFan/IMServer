@@ -7,12 +7,14 @@
 
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/SocketReactor.h"
+#include "Buffer.h"
 
 class MessageHandler {
 public:
     MessageHandler(Poco::Net::StreamSocket& socket, Poco::Net::SocketReactor& reactor);
 
 private:
+    void onConnection();
     void onReadable(Poco::Net::ReadableNotification *pNotification);
     void onWritable(Poco::Net::WritableNotification *pNotification);
     void onShutdown(Poco::Net::ShutdownNotification *pNotification);
@@ -20,6 +22,7 @@ private:
 private:
     Poco::Net::StreamSocket socket;
     Poco::Net::SocketReactor& reactor;
+    Base::Buffer buffer;
 
     Poco::Observer<MessageHandler, Poco::Net::ReadableNotification> readObserver;
     Poco::Observer<MessageHandler, Poco::Net::WritableNotification> writeObserver;

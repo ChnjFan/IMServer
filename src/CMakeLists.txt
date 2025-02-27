@@ -5,8 +5,7 @@ include_directories(.)
 
 aux_source_directory(./ SRC_LIST)
 
-add_executable(im_server ${SRC_LIST}
-        Message)
+add_executable(im_server ${SRC_LIST})
 set_target_properties(im_server PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/debug
 )
