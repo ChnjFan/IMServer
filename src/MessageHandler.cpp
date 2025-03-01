@@ -32,7 +32,10 @@ void MessageHandler::onReadable(Poco::Net::ReadableNotification *pNotification) 
                 return;
             }
 
-//            Base::MessagePtr messagePtr = Base::Message::getMessage()
+            Base::MessagePtr messagePtr = Base::Message::getMessage(buffer);
+            if (nullptr != messagePtr) {
+
+            }
         }
     }
     catch(Poco::Net::NetException& e) {

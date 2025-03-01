@@ -29,6 +29,7 @@ public:
         assert(readableBytes() >= sizeof(int32_t));
         int32_t num = 0;
         memcpy(&num, peek(), sizeof(int32_t));
+        return Poco::ByteOrder::fromNetwork(num);
     }
 
     int32_t readInt32() {
@@ -52,6 +53,16 @@ public:
         append(&netNum, sizeof(int32_t));
     }
 
+    void retrieve(size_t size) {
+        assert(size <= readableBytes());
+        if (size < readableBytes()) {
+            readerIndex += size;
+        }
+        else {
+            retrieveAll();
+        }
+    }
+
 private:
     char* begin() { return &*buffer.begin(); }
 
@@ -62,16 +73,6 @@ private:
     void retrieveAll() {
         readerIndex = 0;
         writerIndex = 0;
-    }
-
-    void retrieve(size_t size) {
-        assert(size <= readableBytes());
-        if (size < readableBytes()) {
-            readerIndex += size;
-        }
-        else {
-            retrieveAll();
-        }
     }
 
     void retrieveInt32() {
