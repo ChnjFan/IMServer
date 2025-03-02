@@ -6,20 +6,14 @@
 #define IMSERVER_MESSAGESERVICE_H
 
 #include <string>
-#include "Poco/Net/ServerSocket.h"
-#include "Poco/Net/SocketReactor.h"
-#include "Poco/Net/SocketAcceptor.h"
-#include "MessageHandler.h"
+#include "Poco/Mutex.h"
 
 class MessageService {
 public:
-    explicit MessageService(unsigned short port);
-    void start();
+    explicit MessageService();
 
 private:
-    Poco::Net::ServerSocket socket;
-    Poco::Net::SocketReactor reactor;
-    Poco::Net::SocketAcceptor<MessageHandler> acceptor;
+    mutable Poco::Mutex mutex_;
 };
 
 

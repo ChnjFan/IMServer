@@ -4,10 +4,7 @@
 
 #include "MessageService.h"
 
-MessageService::MessageService(unsigned short port) : socket(port), reactor(), acceptor(socket, reactor) {
+MessageService::MessageService() {
 
 }
 
-void MessageService::start() {
-    reactor.run();
-}

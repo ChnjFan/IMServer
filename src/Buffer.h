@@ -23,7 +23,7 @@ public:
 
     const char* beginWrite() const { return begin() + writerIndex; }
 
-    const char* peek() const { return begin(); }
+    const char* peek() const { return begin() + readerIndex; }
 
     int32_t peekInt32() const {
         assert(readableBytes() >= sizeof(int32_t));
@@ -63,6 +63,10 @@ public:
         }
     }
 
+    void retrieveInt32() {
+        retrieve(sizeof(int32_t));
+    }
+
 private:
     char* begin() { return &*buffer.begin(); }
 
@@ -73,10 +77,6 @@ private:
     void retrieveAll() {
         readerIndex = 0;
         writerIndex = 0;
-    }
-
-    void retrieveInt32() {
-        retrieve(sizeof(int32_t));
     }
 
     void ensureWritableBytes(size_t size) {

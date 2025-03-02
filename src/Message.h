@@ -10,6 +10,8 @@
 #include "Poco/Checksum.h"
 #include "Buffer.h"
 
+#include "IM.ServerMsg.pb.h"
+
 namespace Base {
 
 class Message;
@@ -42,23 +44,26 @@ public:
         buffer.retrieve(size + MESSAGE_HEADER_SIZE);
         Poco::Checksum crc32(Poco::Checksum::TYPE_CRC32);
         crc32.update(data, size);
-        if (crc32.checksum() != buffer.peekInt32()) {
+        int32_t expectCheckSum = buffer.peekInt32();
+        if (crc32.checksum() != (uint32_t)expectCheckSum) {
             throw Base::Exception("Error message, checksum is: "
-                    + std::to_string(buffer.peekInt32()) + ", but is: "
-                    + std::to_string(crc32.checksum()));
+                    + std::to_string(buffer.peekInt32()));
         }
-        MessagePtr result = std::make_shared<Message>(size, crc32.checksum(), pMsg);
+        buffer.retrieveInt32();
+        MessagePtr result = std::make_shared<Message>(size, expectCheckSum, pMsg);
+        return result;
     }
 
 private:
     /*解析protobuf消息*/
     static google::protobuf::Message* parse(const char *data, int size) {
         const char* type = data;
-        int typeSize = strlen(type) + 1;
+        int typeSize = (int)strlen(type) + 1;
 
         if (typeSize >= size) {
             throw Base::Exception("Error message: typeName size: " + std::to_string(typeSize));
         }
+        IM::ServerMsg::LoginRequest login;
 
         google::protobuf::Message *pMsg = createMessage(type);
         if (pMsg) {
@@ -87,7 +92,7 @@ private:
 
     static bool checkMessage(Buffer &buffer) {
         size_t size = buffer.peekInt32();
-        if (size + MESSAGE_HEADER_SIZE + MESSAGE_CHECKSUM_SIZE < buffer.readableBytes()) {
+        if (size + MESSAGE_HEADER_SIZE + MESSAGE_CHECKSUM_SIZE > buffer.readableBytes()) {
             return false;
         }
 

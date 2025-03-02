@@ -6,6 +6,7 @@
 #include "Poco/Net/NetException.h"
 #include "Exception.h"
 #include "Message.h"
+#include "ImServer.h"
 
 MessageHandler::MessageHandler(Poco::Net::StreamSocket &socket, Poco::Net::SocketReactor &reactor)
         : socket(socket)
@@ -28,13 +29,15 @@ void MessageHandler::onConnection() {
 void MessageHandler::onReadable(Poco::Net::ReadableNotification *pNotification) {
     try {
         while (socket.available()) {
-            if (socket.receiveBytes(buffer.beginWrite(), Base::Buffer::DEFAULT_BUFFER_SIZE) <= 0) {
+            char buf[Base::Buffer::DEFAULT_BUFFER_SIZE] = {0};
+            if (socket.receiveBytes(buf, Base::Buffer::DEFAULT_BUFFER_SIZE) <= 0) {
                 return;
             }
 
+            buffer.append(buf, Base::Buffer::DEFAULT_BUFFER_SIZE);
             Base::MessagePtr messagePtr = Base::Message::getMessage(buffer);
             if (nullptr != messagePtr) {
-
+                ServerHandle::getInstance().setTask(messagePtr);
             }
         }
     }
