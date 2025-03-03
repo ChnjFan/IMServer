@@ -28,9 +28,12 @@ public:
     Base::MessagePtr getTask();
     Base::MessagePtr getTask(long milliseconds);
 
+    void sendResponse(Base::MessagePtr &message);
+    Base::MessagePtr getResponse(long milliseconds);
+
     static unsigned short port_;
 private:
-    explicit ServerHandle(unsigned short port) : socket(port), reactor(), acceptor(socket, reactor), task() { }
+    explicit ServerHandle(unsigned short port) : socket(port), reactor(), acceptor(socket, reactor), task(), response() { }
 
     ServerHandle(const ServerHandle&) = delete;
     ServerHandle& operator=(const ServerHandle&) = delete;
@@ -39,6 +42,7 @@ private:
     Poco::Net::SocketReactor reactor;
     Poco::Net::SocketAcceptor<MessageHandler> acceptor;
     Base::BlockingQueue<Base::MessagePtr> task;
+    Base::BlockingQueue<Base::MessagePtr> response;
 };
 
 /**

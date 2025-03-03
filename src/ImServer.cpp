@@ -27,6 +27,16 @@ Base::MessagePtr ServerHandle::getTask(long milliseconds) {
     return message;
 }
 
+Base::MessagePtr ServerHandle::getResponse(long milliseconds) {
+    Base::MessagePtr message;
+    response.tryPopFor(message, milliseconds);
+    return message;
+}
+
+void ServerHandle::sendResponse(Base::MessagePtr &message) {
+    response.push(message);
+}
+
 void startServer(unsigned short port)
 {
     ServerHandle::port_ = port;

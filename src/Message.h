@@ -29,7 +29,7 @@ public:
         message_.reset(pMsg);
     }
 
-    static MessagePtr getMessage(Buffer &buffer) {
+    static MessagePtr parseMessage(Buffer &buffer) {
         if (!checkMessage(buffer)) {
             return nullptr;
         }
@@ -52,6 +52,43 @@ public:
         buffer.retrieveInt32();
         MessagePtr result = std::make_shared<Message>(size, expectCheckSum, pMsg);
         return result;
+    }
+
+    static Buffer serializeMessage(MessagePtr message) {
+        Buffer buffer;
+        if (message == nullptr)
+            return buffer;
+        buffer.appendInt32(message->getSize());
+        std::string type = message->getMessage()->GetTypeName();
+        buffer.append(type.c_str(), type.length() + 1);
+        message->getMessage()->SerializeToArray(buffer.beginWrite(), (int)buffer.writableBytes());
+        buffer.appendInt32(message->getCheckSum());
+
+        return buffer;
+    }
+
+    int32_t getSize() const {
+        return size_;
+    }
+
+    void setSize(int32_t size) {
+        size_ = size;
+    }
+
+    int32_t getCheckSum() const {
+        return checkSum_;
+    }
+
+    void setCheckSum(int32_t checkSum) {
+        checkSum_ = checkSum;
+    }
+
+    const std::shared_ptr<google::protobuf::Message> &getMessage() const {
+        return message_;
+    }
+
+    void setMessage(const std::shared_ptr<google::protobuf::Message> &message) {
+        message_ = message;
     }
 
 private:

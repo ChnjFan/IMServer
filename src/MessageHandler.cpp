@@ -35,7 +35,7 @@ void MessageHandler::onReadable(Poco::Net::ReadableNotification *pNotification) 
             }
 
             buffer.append(buf, Base::Buffer::DEFAULT_BUFFER_SIZE);
-            Base::MessagePtr messagePtr = Base::Message::getMessage(buffer);
+            Base::MessagePtr messagePtr = Base::Message::parseMessage(buffer);
             if (nullptr != messagePtr) {
                 ServerHandle::getInstance().setTask(messagePtr);
             }
@@ -52,7 +52,23 @@ void MessageHandler::onReadable(Poco::Net::ReadableNotification *pNotification) 
 }
 
 void MessageHandler::onWritable(Poco::Net::WritableNotification *pNotification) {
-
+    try {
+        Base::MessagePtr message;
+        // 从响应队列中获取消息发送给客户端
+        while ((message = ServerHandle::getInstance().getResponse(500)) != nullptr) {
+            Base::Buffer sendBuffer = Base::Message::serializeMessage(message);
+            assert(sendBuffer.readableBytes() != 0);
+            socket.sendBytes(sendBuffer.peek(), (int)sendBuffer.readableBytes());
+        }
+    }
+    catch(Poco::Net::NetException& e) {
+        std::cerr << "socket read exception: " << e.displayText() << std::endl;
+        delete this;
+    }
+    catch(Base::Exception& e) {
+        std::cerr << "[Server inner error] " << e.what() << std::endl;
+        delete this;
+    }
 }
 
 void MessageHandler::onShutdown(Poco::Net::ShutdownNotification *pNotification) {
