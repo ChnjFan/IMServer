@@ -8,12 +8,31 @@
 </head>
 <body>
     <div class="login-container">
-        <h2>Login</h2>
-        <form>
-            <input type="text" placeholder="Username" required>
-            <input type="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
+        <!-- 插入产品 logo -->
+        <div class="logo-container">
+            <img src="your-logo.png" alt="Product Logo">
+        </div>
+        <div class="form-container">
+            <h2>Login</h2>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
     </div>
+    <script>
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const credentials = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+    
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.send('perform-login', credentials);
+        });
+    </script>
 </body>
 </html>
