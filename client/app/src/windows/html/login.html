@@ -13,6 +13,7 @@
             <img src="your-logo.png" alt="Product Logo">
         </div>
         <div class="form-container">
+            <div id="error-message" style="display: none;"></div>
             <h2>Login</h2>
             <form id="login-form">
                 <input type="text" id="username" placeholder="Username" required>
@@ -22,6 +23,9 @@
         </div>
     </div>
     <script>
+        const { ipcRenderer } = require('electron');
+        const errorElement = document.getElementById('error-message');
+
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -32,6 +36,18 @@
     
             const { ipcRenderer } = require('electron');
             ipcRenderer.send('perform-login', credentials);
+
+            // 监听网络错误
+            ipcRenderer.on('connection-error', (event, message) => {
+                errorElement.textContent = `服务器网络异常：${message}`;
+                errorElement.style.display = 'block';
+            });
+
+            // 监听登录失败
+            ipcRenderer.on('login-failed', (event, message) => {
+                errorElement.textContent = `登录失败：${message}`;
+                errorElement.style.display = 'block';
+            });
         });
     </script>
 </body>

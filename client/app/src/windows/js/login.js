@@ -59,13 +59,17 @@ class LoginWindow {
 
                 // 错误处理
                 client.on('error', (err) => {
-                    event.sender.send('connection-error', err.message);
+                    let message = '网络连接异常';
+                    if (err.code === 'ECONNREFUSED') {
+                        message = '无法连接服务器，请检查：\n1. 服务器地址是否正确\n2. 服务是否启动';
+                    }
+                    event.sender.send('connection-error', message);
                     client.destroy();
                 });
 
                 // 超时处理
                 client.on('timeout', () => {
-                    event.sender.send('connection-error', 'Connection timeout');
+                    event.sender.send('connection-error', '服务器响应超时，请检查网络状况');
                     client.destroy();
                 });
             });
