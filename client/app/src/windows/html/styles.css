@@ -29,6 +29,12 @@ body {
     text-align: right;
 }
 
+.error-alert {
+    color: rgb(110, 105, 105);
+    font-size: 12px;
+    margin-top: 15px;
+}
+
 .login-container h2 {
     margin-bottom: 20px;
     text-align: center;

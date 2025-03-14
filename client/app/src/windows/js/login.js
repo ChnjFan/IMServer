@@ -41,9 +41,12 @@ class LoginWindow {
 
                 // 设置响应超时（5秒）
                 client.setTimeout(5000);
-                
+                let hasHandled = false;
                 // 接收服务端响应
                 client.on('data', (data) => {
+                    if (hasHandled) return;
+                    hasHandled = true;
+                    console.log('Received data:', data.toString());
                     try {
                         const response = JSON.parse(data.toString());
                         if (response.success) {
@@ -54,23 +57,30 @@ class LoginWindow {
                     } catch (e) {
                         event.sender.send('login-failed', 'Invalid server response');
                     }
-                    client.destroy();
+                    client.end(() => {
+                        client.destroy();
+                    });
                 });
 
                 // 错误处理
-                client.on('error', (err) => {
-                    let message = '网络连接异常';
-                    if (err.code === 'ECONNREFUSED') {
-                        message = '无法连接服务器，请检查：\n1. 服务器地址是否正确\n2. 服务是否启动';
-                    }
+                client.on('error', () => {
+                    if (hasHandled) return;
+                    hasHandled = true;
+                    let message = '服务器响应超时，请检查网络状况';
                     event.sender.send('connection-error', message);
-                    client.destroy();
+                    client.end(() => {
+                        client.destroy();
+                    });
                 });
 
                 // 超时处理
                 client.on('timeout', () => {
+                    if (hasHandled) return;
+                    hasHandled = true;
                     event.sender.send('connection-error', '服务器响应超时，请检查网络状况');
-                    client.destroy();
+                    client.end(() => {
+                        client.destroy();
+                    });
                 });
             });
         });
