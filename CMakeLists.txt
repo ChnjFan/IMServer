@@ -17,42 +17,34 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 # Add include directories
 include_directories(include ${Boost_INCLUDE_DIRS})
 
-# Collect source files
-file(GLOB_RECURSE CORE_SOURCES "src/core/*.cpp")
-file(GLOB_RECURSE NETWORK_SOURCES "src/network/*.cpp")
-file(GLOB_RECURSE PROTOCOL_SOURCES "src/protocol/*.cpp")
-file(GLOB_RECURSE STORAGE_SOURCES "src/storage/*.cpp")
-file(GLOB_RECURSE UTILS_SOURCES "src/utils/*.cpp")
-file(GLOB_RECURSE MAIN_SOURCES "src/main/*.cpp")
-
-# Combine all sources
-set(SOURCES 
-    ${CORE_SOURCES}
-    ${NETWORK_SOURCES}
-    ${PROTOCOL_SOURCES}
-    ${STORAGE_SOURCES}
-    ${UTILS_SOURCES}
-    ${MAIN_SOURCES}
-)
-
-# Create executable
-add_executable(imserver ${SOURCES})
-
-# Link Boost libraries
-target_link_libraries(imserver ${Boost_LIBRARIES})
-
 # Add compiler warnings
 if(MSVC)
-    target_compile_options(imserver PRIVATE /W4 /WX)
+    add_compile_options(/W4 /WX)
 else()
-    target_compile_options(imserver PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
 # Add debug symbols
 set(CMAKE_BUILD_TYPE Debug)
 
-# Install target
-install(TARGETS imserver DESTINATION bin)
+# 各个模块作为单独进程构建
+# 网络模块
+add_subdirectory(src/network)
+
+# 其他模块将在各自目录中配置为单独进程
+# 核心模块（需要时添加）
+# add_subdirectory(src/core)
+
+# 存储模块（需要时添加）
+# add_subdirectory(src/storage)
+
+# 工具模块（需要时添加）
+# add_subdirectory(src/utils)
+
+# 主程序（需要时添加）
+# add_subdirectory(src/main)
+
+# Install configuration
 install(DIRECTORY config/ DESTINATION etc/imserver)
 
 # Add tests
