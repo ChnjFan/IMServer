@@ -1,6 +1,8 @@
-#include "event_loop.h"
+#include "EventSystem.h"
+#include "TcpServer.h"
 #include <iostream>
 #include <chrono>
+#include <string>
 
 /**
  * @brief network模块的main函数
@@ -12,22 +14,52 @@ int main() {
     try {
         std::cout << "=== IMServer Network Module Starting ===" << std::endl;
         
-        // 创建EventLoop实例，使用4个线程
-        im::network::EventLoop event_loop(4);
+        // 获取EventSystem单例实例
+        auto& event_system = im::network::EventSystem::getInstance();
         
-        // 启动事件循环
-        event_loop.start();
+        // 启动EventSystem
+        event_system.start();
+        std::cout << "EventSystem is running" << std::endl;
         
-        std::cout << "Network Module EventLoop is running with " 
-                  << event_loop.getThreadPoolSize() << " threads" << std::endl;
+        // 创建TCP服务器
+        im::network::TcpServer tcp_server(event_system, "0.0.0.0", 8000);
         
-        // 模拟网络模块运行（实际应用中会有网络服务启动逻辑）
+        // 设置消息处理回调
+        tcp_server.setMessageHandler([](im::network::Connection::Ptr conn, const std::vector<char>& data) {
+            // 处理接收到的消息
+            std::string message(data.begin(), data.end());
+            auto remote_endpoint = conn->getRemoteEndpoint();
+            std::cout << "[TCP] Received from " << remote_endpoint.address().to_string() 
+                      << ":" << remote_endpoint.port() << ": " << message << std::endl;
+            
+            // 回显消息
+            std::string response = "Echo: " + message;
+            conn->send(std::vector<char>(response.begin(), response.end()));
+        });
+        
+        // 设置连接关闭回调
+        tcp_server.setCloseHandler([](im::network::Connection::Ptr conn) {
+            auto remote_endpoint = conn->getRemoteEndpoint();
+            std::cout << "[TCP] Connection closed from " << remote_endpoint.address().to_string() 
+                      << ":" << remote_endpoint.port() << std::endl;
+        });
+        
+        // 启动TCP服务器
+        tcp_server.start();
+        std::cout << "TCP Server is listening on port 8000" << std::endl;
+        
+        // 保持进程运行
         std::cout << "Network Module is ready for handling network events..." << std::endl;
         
-        // 保持进程运行（实际应用中会有更复杂的逻辑）
-        while (event_loop.isRunning()) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        // 等待用户输入退出命令
+        std::cout << "Press Enter to stop the network module..." << std::endl;
+        std::cin.get();
+        
+        // 停止TCP服务器
+        tcp_server.stop();
+        
+        // 停止EventSystem
+        event_system.stop();
         
         std::cout << "=== IMServer Network Module Stopped ===" << std::endl;
         return 0;
