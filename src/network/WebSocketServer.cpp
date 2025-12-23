@@ -5,7 +5,9 @@
 #include <sstream>
 #include <iomanip>
 #include <openssl/sha.h>
-#include <openssl/base64.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
 
 namespace network {
 
@@ -94,9 +96,28 @@ void WebSocketServer::removeConnection(Connection::Ptr conn) {
 }
 
 std::string base64_encode(const unsigned char* data, size_t len) {
-    int encoded_len = EVP_EncodeBlock(nullptr, data, len);
-    std::string encoded(encoded_len, 0);
-    EVP_EncodeBlock(reinterpret_cast<unsigned char*>(&encoded[0]), data, len);
+    // 使用OpenSSL的BIO方法进行Base64编码
+    BIO* bio = BIO_new(BIO_f_base64());
+    BIO* bmem = BIO_new(BIO_s_mem());
+    bio = BIO_push(bio, bmem);
+    
+    // 关闭换行符添加
+    BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+    
+    // 写入数据并刷新
+    BIO_write(bio, data, len);
+    BIO_flush(bio);
+    
+    // 读取编码后的数据
+    BUF_MEM* bptr;
+    BIO_get_mem_ptr(bio, &bptr);
+    
+    // 创建结果字符串
+    std::string encoded(bptr->data, bptr->data + bptr->length);
+    
+    // 释放资源
+    BIO_free_all(bio);
+    
     return encoded;
 }
 
@@ -104,7 +125,7 @@ void WebSocketServer::handleWebSocketHandshake(Connection::Ptr conn, const std::
     std::string request(data.begin(), data.end());
     
     // 解析Sec-WebSocket-Key
-    std::regex key_regex("Sec-WebSocket-Key: ([^\n]+)");
+    std::regex key_regex("Sec-WebSocket-Key: ([^\n]+)");
     std::smatch key_match;
     if (!std::regex_search(request, key_match, key_regex)) {
         conn->close();

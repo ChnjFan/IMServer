@@ -9,7 +9,7 @@
 
 namespace network {
 
-class WebSocketServer {
+class WebSocketServer : public std::enable_shared_from_this<WebSocketServer> {
 private:
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
