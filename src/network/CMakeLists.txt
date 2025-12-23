@@ -1,31 +1,32 @@
-# network模块的CMakeLists.txt配置
+# network module CMakeLists.txt
 
-# 设置C++标准
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+# 设置源文件
+set(SOURCES
+    EventLoop.cpp
+    Connection.cpp
+    TcpServer.cpp
+    WebSocketServer.cpp
+)
 
-# 查找Boost库
-find_package(Boost REQUIRED COMPONENTS system thread)
+# 设置头文件
+set(HEADERS
+    EventLoop.h
+    Connection.h
+    TcpServer.h
+    WebSocketServer.h
+)
 
-# 收集源文件
-file(GLOB_RECURSE NETWORK_SOURCES "*.cpp")
-file(GLOB_RECURSE NETWORK_HEADERS "*.h")
+# 创建静态库
+add_library(network STATIC ${SOURCES} ${HEADERS})
 
-# 创建可执行文件（作为单独进程）
-add_executable(network_module ${NETWORK_SOURCES} ${NETWORK_HEADERS})
-
-# 包含头文件目录
-target_include_directories(network_module PUBLIC ${Boost_INCLUDE_DIRS})
+# 添加头文件搜索路径
+target_include_directories(network PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # 链接Boost库
-target_link_libraries(network_module ${Boost_LIBRARIES})
+target_link_libraries(network PRIVATE Boost::asio Boost::system Boost::thread)
 
-# 添加编译选项
-if(MSVC)
-    target_compile_options(network_module PRIVATE /W4 /WX)
-else()
-    target_compile_options(network_module PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
+# 链接OpenSSL库（用于WebSocket的SHA-1和Base64编码）
+target_link_libraries(network PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
-# 安装配置
-install(TARGETS network_module DESTINATION bin)
+# 设置C++标准
+target_compile_features(network PRIVATE cxx_std_17)

@@ -1,112 +1,96 @@
-/**
- * @file Connection.cpp
- * @brief 连接管理类的实现
- */
 #include "Connection.h"
 #include <iostream>
 
-namespace im {
 namespace network {
 
-Connection::Connection() {
-    // 注册连接事件
-    connectionListenerId_ = EventSystem::getInstance().subscribe<ConnectionEvent>(
-        [this](const std::shared_ptr<ConnectionEvent>& event) {
-            // 触发链接事件后开始异步读取数据
-            startRead(event->getSocket());
-        });
+Connection::Connection(boost::asio::ip::tcp::socket socket)
+    : socket_(std::move(socket)),
+      read_buffer_(1024),
+      closed_(false) {
 }
 
-void Connection::startRead(boost::asio::ip::tcp::socket& socket) {
-    socket.async_read_some(boost::asio::buffer(read_buffer_),
-        [this, self](const boost::system::error_code& ec, size_t bytes_transferred) {
-            handleRead(ec, bytes_transferred);
-        });
+Connection::~Connection() {
+    close();
 }
 
-void Connection::handleRead(const boost::system::error_code& ec, size_t bytes_transferred) {
-    if (!ec) {
-        // 读取成功，处理接收到的数据
-        std::vector<char> data(read_buffer_.begin(), read_buffer_.begin() + bytes_transferred);
-        message_handler_(shared_from_this(), data);
-        
-        // 继续读取下一批数据
-        startRead();
-    } else {
-        // 发生错误，关闭连接
-        std::cerr << "[Connection] Read error: " << ec.message() << std::endl;
-        close();
+void Connection::start() {
+    doRead();
+}
+
+void Connection::close() {
+    if (!closed_) {
+        closed_ = true;
+        boost::system::error_code ec;
+        socket_.close(ec);
+        if (close_handler_) {
+            close_handler_(shared_from_this());
+        }
     }
 }
 
 void Connection::send(const std::vector<char>& data) {
-    auto self(shared_from_this());
+    if (closed_) return;
+    
     bool write_in_progress = false;
-    
-    // 向写入队列添加数据
     {
-        write_queue_.push(data);
-        write_in_progress = writing_;
-        writing_ = true;
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        write_in_progress = !write_buffer_.empty();
+        write_buffer_.insert(write_buffer_.end(), data.begin(), data.end());
     }
     
-    // 如果当前没有写入操作，开始写入
     if (!write_in_progress) {
-        startWrite();
-    }
-}
-
-void Connection::startWrite() {
-    auto self(shared_from_this());
-    
-    // 开始异步写入队列中的第一个数据
-    boost::asio::async_write(socket_, boost::asio::buffer(write_queue_.front()),
-        [this, self](const boost::system::error_code& ec, size_t bytes_transferred) {
-            handleWrite(ec, bytes_transferred);
-        });
-}
-
-void Connection::handleWrite(const boost::system::error_code& ec, size_t bytes_transferred) {
-    if (!ec) {
-        // 写入成功，移除已写入的数据
-        write_queue_.pop();
-        
-        // 如果队列中还有数据，继续写入
-        if (!write_queue_.empty()) {
-            startWrite();
-        } else {
-            writing_ = false;
-        }
-    } else {
-        // 发生错误，关闭连接
-        std::cerr << "[Connection] Write error: " << ec.message() << std::endl;
-        close();
-    }
-}
-
-void Connection::close() {
-    // 关闭socket
-    boost::system::error_code ec;
-    socket_.close(ec);
-    
-    if (ec) {
-        std::cerr << "[Connection] Close error: " << ec.message() << std::endl;
-    }
-    
-    // 调用关闭处理程序
-    if (close_handler_) {
-        close_handler_(shared_from_this());
+        doWrite();
     }
 }
 
 boost::asio::ip::tcp::endpoint Connection::getRemoteEndpoint() const {
-    try {
-        return socket_.remote_endpoint();
-    } catch (const boost::system::system_error& e) {
-        std::cerr << "[Connection] Get remote endpoint error: " << e.what() << std::endl;
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
         return boost::asio::ip::tcp::endpoint();
     }
+    return endpoint;
+}
+
+void Connection::setMessageHandler(MessageHandler handler) {
+    message_handler_ = handler;
+}
+
+void Connection::setCloseHandler(CloseHandler handler) {
+    close_handler_ = handler;
+}
+
+bool Connection::isClosed() const {
+    return closed_;
+}
+
+void Connection::doRead() {
+    auto self = shared_from_this();
+    socket_.async_read_some(boost::asio::buffer(read_buffer_),
+        [this, self](boost::system::error_code ec, std::size_t length) {
+            if (!ec) {
+                std::vector<char> data(read_buffer_.begin(), read_buffer_.begin() + length);
+                if (message_handler_) {
+                    message_handler_(self, data);
+                }
+                doRead();
+            } else {
+                close();
+            }
+        });
+}
+
+void Connection::doWrite() {
+    auto self = shared_from_this();
+    boost::asio::async_write(socket_, boost::asio::buffer(write_buffer_),
+        [this, self](boost::system::error_code ec, std::size_t /*length*/) {
+            if (!ec) {
+                std::lock_guard<std::mutex> lock(write_mutex_);
+                write_buffer_.clear();
+            } else {
+                close();
+            }
+        });
 }
 
 } // namespace network
-} // namespace im

@@ -1,55 +1,60 @@
-/**
- * @file Connection.h
- * @brief 连接管理类，用于管理单个客户端连接
- * 
- * Connection类基于boost::asio::ip::tcp::socket，支持异步读写操作，
- * 自动处理连接生命周期和缓冲区管理。
- */
-#ifndef CONNECTION_H
-#define CONNECTION_H
+#pragma once
 
-#include "EventSystem.h"
 #include <boost/asio.hpp>
-#include <memory>
-#include <array>
-#include <queue>
+#include <vector>
 #include <functional>
+#include <memory>
+#include <mutex>
+#include <atomic>
 
-namespace im {
 namespace network {
-
-class ConnectionEvent : public Event {
-public:
-    ConnectionEvent(boost::asio::ip::tcp::socket socket) : socket_(std::move(socket)) {}
-
-    boost::asio::ip::tcp::socket& getSocket() { return socket_; }   
-
-    std::type_index getType() const override { return typeid(ConnectionEvent); }
-    std::string getName() const override { return "ConnectionEvent"; }
-
-private:
-    boost::asio::ip::tcp::socket socket_;
-};
 
 class Connection : public std::enable_shared_from_this<Connection> {
 public:
-    Connection();
+    using Ptr = std::shared_ptr<Connection>;
+    using MessageHandler = std::function<void(const Ptr&, const std::vector<char>&)>;
+    using CloseHandler = std::function<void(const Ptr&)>;
     
-    void send(const std::vector<char>& data);
+private:
+    boost::asio::ip::tcp::socket socket_;
+    std::vector<char> read_buffer_;
+    std::vector<char> write_buffer_;
+    std::mutex write_mutex_;
+    MessageHandler message_handler_;
+    CloseHandler close_handler_;
+    std::atomic<bool> closed_;
+
+public:
+    explicit Connection(boost::asio::ip::tcp::socket socket);
+    ~Connection();
+    
+    // 启动连接
+    void start();
+    
+    // 关闭连接
     void close();
     
+    // 发送数据
+    void send(const std::vector<char>& data);
+    
+    // 获取远程端点信息
     boost::asio::ip::tcp::endpoint getRemoteEndpoint() const;
-
+    
+    // 设置消息处理回调
+    void setMessageHandler(MessageHandler handler);
+    
+    // 设置关闭处理回调
+    void setCloseHandler(CloseHandler handler);
+    
+    // 连接状态检查
+    bool isClosed() const;
+    
 private:
-    void startRead();
-    void handleRead(const boost::system::error_code& ec, size_t bytes_transferred);
-    void startWrite();
-    void handleWrite(const boost::system::error_code& ec, size_t bytes_transferred);
-
-    size_t connectionListenerId_;
+    // 异步读取数据
+    void doRead();
+    
+    // 异步写入数据
+    void doWrite();
 };
 
 } // namespace network
-} // namespace im
-
-#endif // CONNECTION_H

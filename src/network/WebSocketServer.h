@@ -9,7 +9,7 @@
 
 namespace network {
 
-class TcpServer {
+class WebSocketServer {
 private:
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
@@ -20,8 +20,8 @@ private:
     std::mutex connections_mutex_;
 
 public:
-    TcpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
-    ~TcpServer();
+    WebSocketServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    ~WebSocketServer();
     
     // 启动服务器
     void start();
@@ -47,6 +47,12 @@ private:
     
     // 移除连接
     void removeConnection(Connection::Ptr conn);
+    
+    // WebSocket握手处理
+    void handleWebSocketHandshake(Connection::Ptr conn, const std::vector<char>& data);
+    
+    // WebSocket数据帧处理
+    void handleWebSocketFrame(Connection::Ptr conn, const std::vector<char>& data);
 };
 
 } // namespace network

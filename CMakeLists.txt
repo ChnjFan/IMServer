@@ -14,8 +14,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Find Boost library
 find_package(Boost REQUIRED COMPONENTS system thread)
 
+# Find OpenSSL library
+find_package(OpenSSL REQUIRED)
+
 # Add include directories
-include_directories(include ${Boost_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
 
 # Add compiler warnings
 if(MSVC)
