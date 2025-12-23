@@ -23,7 +23,7 @@ add_library(network STATIC ${SOURCES} ${HEADERS})
 target_include_directories(network PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 # 链接Boost库
-target_link_libraries(network PRIVATE Boost::asio Boost::system Boost::thread)
+target_link_libraries(network PRIVATE Boost::system)
 
 # 链接OpenSSL库（用于WebSocket的SHA-1和Base64编码）
 target_link_libraries(network PRIVATE OpenSSL::SSL OpenSSL::Crypto)
