@@ -6,6 +6,7 @@ set(SOURCES
     Connection.cpp
     TcpServer.cpp
     WebSocketServer.cpp
+    HttpServer.cpp
 )
 
 # 设置头文件
@@ -14,6 +15,7 @@ set(HEADERS
     Connection.h
     TcpServer.h
     WebSocketServer.h
+    HttpServer.h
 )
 
 # 创建静态库
@@ -30,3 +32,4 @@ target_link_libraries(network PRIVATE OpenSSL::SSL OpenSSL::Crypto)
 
 # 设置C++标准
 target_compile_features(network PRIVATE cxx_std_17)
+

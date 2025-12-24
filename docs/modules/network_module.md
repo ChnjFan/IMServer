@@ -2,7 +2,7 @@
 
 ## 1. 模块概述
 
-网络层是IMServer的通信基础，负责处理底层网络通信，支持多种协议（WebSocket、TCP），提供高性能、可靠的连接管理和数据传输服务。该模块采用Boost::asio作为核心网络库，基于事件驱动的IO模型，能够高效处理大量并发连接。
+网络层是IMServer的通信基础，负责处理底层网络通信，支持多种协议（WebSocket、TCP、HTTP/HTTPS），提供高性能、可靠的连接管理和数据传输服务。该模块采用Boost::asio作为核心网络库，基于事件驱动的IO模型，能够高效处理大量并发连接。
 
 ## 2. 核心组件设计
 
@@ -217,6 +217,100 @@ private:
     // WebSocket数据帧处理
     void handleWebSocketFrame(Connection::Ptr conn, const std::vector<char>& data);
 };
+
+### 2.5 HttpServer
+
+#### 2.5.1 功能描述
+HTTP服务器负责处理HTTP/HTTPS请求，主要用于接收登录认证等一次性请求，提供RESTful API接口服务。该服务器采用无状态设计，适用于处理短期请求，与长连接的WebSocket形成互补。
+
+#### 2.5.2 实现细节
+- 基于Boost::asio的acceptor实现
+- 支持HTTP/HTTPS协议
+- 提供请求解析和响应构建功能
+- 支持GET、POST、PUT、DELETE等HTTP方法
+- 支持静态文件服务（可选）
+- 支持请求路由和处理函数绑定
+
+```cpp
+class HttpServer {
+private:
+    boost::asio::io_context& io_context_;
+    boost::asio::ip::tcp::acceptor acceptor_;
+    std::atomic<bool> running_;
+    std::unordered_set<Connection::Ptr> connections_;
+    std::mutex connections_mutex_;
+    
+    // 请求处理函数类型
+    using RequestHandler = std::function<void(Connection::Ptr, const HttpRequest&, HttpResponse&)>;
+    std::unordered_map<std::string, RequestHandler> route_handlers_;
+    std::mutex route_mutex_;
+
+public:
+    HttpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    ~HttpServer();
+    
+    // 启动服务器
+    void start();
+    
+    // 停止服务器
+    void stop();
+    
+    // 服务器状态检查
+    bool isRunning() const;
+    
+    // 注册路由处理函数
+    template<typename Handler>
+    void registerRoute(const std::string& path, Handler handler) {
+        std::lock_guard<std::mutex> lock(route_mutex_);
+        route_handlers_[path] = handler;
+    }
+    
+    // 启用HTTPS
+    void enableHttps(const std::string& cert_file, const std::string& private_key_file);
+    
+private:
+    // 异步接受连接
+    void doAccept();
+    
+    // 处理新连接
+    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
+    
+    // 移除连接
+    void removeConnection(Connection::Ptr conn);
+    
+    // HTTP请求处理
+    void handleHttpRequest(Connection::Ptr conn, const std::vector<char>& data);
+    
+    // HTTP请求解析
+    HttpRequest parseHttpRequest(const std::vector<char>& data);
+    
+    // HTTP响应构建
+    std::vector<char> buildHttpResponse(const HttpResponse& response);
+};
+
+// HTTP请求结构
+struct HttpRequest {
+    std::string method;
+    std::string path;
+    std::string version;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+    std::unordered_map<std::string, std::string> query_params;
+};
+
+// HTTP响应结构
+struct HttpResponse {
+    std::string version;
+    int status_code;
+    std::string status_message;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+    
+    HttpResponse() : version("HTTP/1.1"), status_code(200), status_message("OK") {
+        headers["Content-Type"] = "text/plain; charset=utf-8";
+        headers["Connection"] = "close";
+    }
+};
 ```
 
 ## 3. 数据流和交互流程
@@ -281,7 +375,7 @@ private:
 - 优雅的关闭流程
 
 ### 4.3 灵活性
-- 支持多种协议（TCP、WebSocket）
+- 支持多种协议（TCP、WebSocket、HTTP/HTTPS）
 - 可扩展的事件处理机制
 - 灵活的配置选项
 - 易于集成到不同的应用架构中
@@ -388,6 +482,74 @@ int main() {
     
     // 停止WebSocket服务器
     ws_server.stop();
+    
+    // 停止事件循环
+    event_loop.stop();
+    
+    return 0;
+}
+```
+
+### 5.3 HTTP服务器使用示例
+
+```cpp
+#include "network/EventLoop.h"
+#include "network/HttpServer.h"
+
+int main() {
+    // 创建事件循环
+    network::EventLoop event_loop;
+    
+    // 创建HTTP服务器
+    network::HttpServer http_server(event_loop.getIoContext(), "0.0.0.0", 8080);
+    
+    // 注册登录路由处理函数
+    http_server.registerRoute("/api/login", [](network::Connection::Ptr conn, const network::HttpRequest& req, network::HttpResponse& resp) {
+        // 处理登录请求
+        std::cout << "Login request received" << std::endl;
+        
+        // 示例：解析请求体（假设是JSON格式）
+        std::string username, password;
+        // 实际应用中应该解析JSON获取用户名和密码
+        
+        // 模拟登录验证
+        if (username == "admin" && password == "password") {
+            // 登录成功
+            resp.status_code = 200;
+            resp.status_message = "OK";
+            resp.headers["Content-Type"] = "application/json";
+            resp.body = "{\"success\": true, \"token\": \"jwt_token_here\"}";
+        } else {
+            // 登录失败
+            resp.status_code = 401;
+            resp.status_message = "Unauthorized";
+            resp.headers["Content-Type"] = "application/json";
+            resp.body = "{\"success\": false, \"message\": \"Invalid credentials\"}";
+        }
+    });
+    
+    // 注册其他API路由
+    http_server.registerRoute("/api/info", [](network::Connection::Ptr conn, const network::HttpRequest& req, network::HttpResponse& resp) {
+        resp.status_code = 200;
+        resp.status_message = "OK";
+        resp.headers["Content-Type"] = "application/json";
+        resp.body = "{\"version\": \"1.0.0\", \"name\": \"IMServer API\"}";
+    });
+    
+    // 启动事件循环
+    event_loop.start();
+    
+    // 启动HTTP服务器
+    http_server.start();
+    
+    std::cout << "HTTP Server is running on port 8080" << std::endl;
+    
+    // 等待用户输入
+    std::string input;
+    std::cin >> input;
+    
+    // 停止HTTP服务器
+    http_server.stop();
     
     // 停止事件循环
     event_loop.stop();
