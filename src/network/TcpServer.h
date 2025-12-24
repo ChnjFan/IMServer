@@ -7,6 +7,53 @@
 #include <mutex>
 #include <atomic>
 
+/**
+ * Create a TCP server bound to the specified address and port using the provided IO context.
+ * @param io_context ASIO IO context used for asynchronous operations.
+ * @param address IP address or host interface to bind the server to.
+ * @param port TCP port to listen on.
+ */
+/**
+ * Clean up server resources and close any active connections.
+ */
+
+/**
+ * Start accepting incoming TCP connections and begin managing active connections.
+ */
+
+/**
+ * Stop accepting new connections and close all active connections.
+ */
+
+/**
+ * Register a callback invoked when a connection receives a message.
+ * @param handler Callback to handle incoming messages from connections.
+ */
+
+/**
+ * Register a callback invoked when a connection is closed.
+ * @param handler Callback to handle connection closure events.
+ */
+
+/**
+ * Check whether the server is currently running.
+ * @returns `true` if the server is running, `false` otherwise.
+ */
+
+/**
+ * Initiate or continue asynchronous acceptance of new TCP connections.
+ */
+
+/**
+ * Handle completion of an asynchronous accept operation and integrate the accepted socket.
+ * @param ec Error code indicating the result of the accept operation.
+ * @param socket The accepted TCP socket for the new connection.
+ */
+
+/**
+ * Remove a connection from the server's active connection set.
+ * @param conn Shared pointer to the connection to remove.
+ */
 namespace network {
 
 class TcpServer : public std::enable_shared_from_this<TcpServer> {

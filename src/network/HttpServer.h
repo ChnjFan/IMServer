@@ -7,7 +7,45 @@
 #include <mutex>
 #include <functional>
 
-namespace network {
+/**
+     * @brief Represents an HTTP request.
+     *
+     * Contains the method, request target, protocol version, header fields,
+     * optional body, and parsed query parameters.
+     *
+     * Member details:
+     * - method: HTTP method (e.g., "GET", "POST").
+     * - path: Request path (the URI path component, excluding query string).
+     * - version: HTTP protocol version (e.g., "HTTP/1.1").
+     * - headers: Map of header names to values.
+     * - body: Request body payload.
+     * - query_params: Map of query parameter names to values parsed from the request URI.
+     */
+    
+    /**
+     * @brief Represents an HTTP response.
+     *
+     * Holds the protocol version, status code and message, response headers,
+     * and optional body. The default constructor initializes a typical
+     * successful response with sensible default headers.
+     *
+     * Member details:
+     * - version: HTTP protocol version (default "HTTP/1.1").
+     * - status_code: Numeric HTTP status code (default 200).
+     * - status_message: Human-readable status reason (default "OK").
+     * - headers: Map of header names to values.
+     * - body: Response body payload.
+     */
+    
+    /**
+     * @brief Initializes an HttpResponse with default status and headers.
+     *
+     * Sets version to "HTTP/1.1", status_code to 200, status_message to "OK",
+     * and adds default headers:
+     * - Content-Type: "text/plain; charset=utf-8"
+     * - Connection: "close"
+     */
+    namespace network {
 
 // HTTP请求结构
 struct HttpRequest {
@@ -33,7 +71,63 @@ struct HttpResponse {
     }
 };
 
-// HTTP服务器类
+/**
+ * Construct an HttpServer that listens on the specified address and port using the provided io_context.
+ * @param io_context Reference to the Boost.Asio io_context used for asynchronous operations.
+ * @param address IP address or hostname to bind the server to.
+ * @param port TCP port to listen on.
+ */
+/**
+ * Destroy the HttpServer and release any associated resources.
+ */
+/**
+ * Start accepting incoming connections and processing HTTP requests.
+ */
+/**
+ * Stop the server, close active connections, and cease accepting new connections.
+ */
+/**
+ * Check whether the server is currently running.
+ * @return `true` if the server is running, `false` otherwise.
+ */
+/**
+ * Register a request handler for a specific request path.
+ * The handler will be invoked with a Connection pointer, the parsed HttpRequest, and a mutable HttpResponse to fill.
+ * @param path Request path to register the handler for.
+ * @param handler Callable that handles requests for the given path.
+ */
+/**
+ * Enable HTTPS using the provided certificate and private key files.
+ * @param cert_file Filesystem path to the TLS certificate file (PEM format).
+ * @param private_key_file Filesystem path to the TLS private key file (PEM format).
+ */
+/**
+ * Begin an asynchronous accept operation to receive new incoming TCP connections.
+ */
+/**
+ * Handle the completion of an asynchronous accept operation.
+ * @param ec Error code indicating the result of the accept operation.
+ * @param socket The newly accepted TCP socket.
+ */
+/**
+ * Remove a connection from the server's active connection set and perform any needed cleanup.
+ * @param conn Connection pointer to remove.
+ */
+/**
+ * Process raw data received from a connection as an HTTP request and dispatch to the appropriate route handler.
+ * @param conn Connection that provided the data.
+ * @param data Raw bytes received from the connection.
+ */
+/**
+ * Parse raw HTTP request bytes into an HttpRequest structure.
+ * @param data Raw HTTP request bytes.
+ * @return Parsed HttpRequest object.
+ */
+/**
+ * Serialize an HttpResponse into raw bytes suitable for sending over the network.
+ * @param response HttpResponse to serialize.
+ * @return Vector of bytes containing the serialized HTTP response.
+ */
 class HttpServer {
 private:
     boost::asio::io_context& io_context_;

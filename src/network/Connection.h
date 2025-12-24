@@ -7,6 +7,55 @@
 #include <mutex>
 #include <atomic>
 
+/**
+ * Create a Connection that takes ownership of an established TCP socket.
+ * @param socket The connected Boost.Asio TCP socket to manage.
+ */
+ 
+/**
+ * Release Connection resources and ensure the underlying socket is closed.
+ */
+ 
+/**
+ * Begin asynchronous read/write processing for the connection and enable callbacks.
+ */
+ 
+/**
+ * Close the connection immediately and invoke the close handler if set.
+ */
+ 
+/**
+ * Queue data for sending to the remote endpoint; data is appended to the internal write buffer.
+ * @param data Bytes to send to the remote peer.
+ */
+ 
+/**
+ * Return the remote endpoint associated with the connection's socket.
+ * @returns The remote TCP endpoint.
+ */
+ 
+/**
+ * Register a callback to be invoked when a complete message is received.
+ * @param handler Function called with the connection pointer and the received byte vector.
+ */
+ 
+/**
+ * Register a callback to be invoked when the connection is closed.
+ * @param handler Function called with the connection pointer when the connection closes.
+ */
+ 
+/**
+ * Report whether the connection has been closed.
+ * @returns `true` if the connection is closed, `false` otherwise.
+ */
+ 
+/**
+ * Perform an asynchronous read operation to receive incoming data and dispatch received messages.
+ */
+ 
+/**
+ * Perform an asynchronous write operation to flush the internal write buffer to the socket.
+ */
 namespace network {
 
 class Connection : public std::enable_shared_from_this<Connection> {

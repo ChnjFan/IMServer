@@ -11,16 +11,36 @@
 
 namespace network {
 
+/**
+ * @brief Construct a WebSocketServer bound to the given address and port using the provided io_context.
+ *
+ * Initializes the server's IO context and TCP acceptor so the instance is ready to start accepting connections.
+ *
+ * @param io_context Reference to the Boost.Asio IO context used for asynchronous operations.
+ * @param address IP address or interface to bind the acceptor to (e.g., "0.0.0.0" or "127.0.0.1").
+ * @param port TCP port to listen on.
+ */
 WebSocketServer::WebSocketServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port)
     : io_context_(io_context),
       acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port)),
       running_(false) {
 }
 
+/**
+ * @brief Cleans up the WebSocketServer by stopping it and closing the acceptor and all active connections.
+ *
+ * Ensures the server is shut down and resources used for accepting and managing connections are released.
+ */
 WebSocketServer::~WebSocketServer() {
     stop();
 }
 
+/**
+ * @brief Starts the WebSocket server accept loop.
+ *
+ * If the server is not already running, marks it as running and begins accepting incoming TCP connections.
+ * Has no effect if the server is already running.
+ */
 void WebSocketServer::start() {
     if (!running_) {
         running_ = true;
@@ -28,6 +48,13 @@ void WebSocketServer::start() {
     }
 }
 
+/**
+ * @brief Stops the WebSocket server and closes all active connections.
+ *
+ * Sets the running state to false, closes the listening acceptor (errors ignored),
+ * and closes and clears all active connections. The connections set is modified
+ * under its mutex to ensure thread-safe shutdown.
+ */
 void WebSocketServer::stop() {
     if (running_) {
         running_ = false;
@@ -42,18 +69,43 @@ void WebSocketServer::stop() {
     }
 }
 
+/**
+ * @brief Install the callback to be invoked when a complete WebSocket message payload is received.
+ *
+ * @param handler Callable that will be called for each complete message; it will be provided the originating connection and the message payload.
+ */
 void WebSocketServer::setMessageHandler(Connection::MessageHandler handler) {
     message_handler_ = handler;
 }
 
+/**
+ * @brief Installs a callback to be invoked when a connection is closed.
+ *
+ * The provided handler will be called whenever a connection managed by this
+ * server transitions to a closed state.
+ *
+ * @param handler Callable invoked on connection close; it receives the closed connection as its argument.
+ */
 void WebSocketServer::setCloseHandler(Connection::CloseHandler handler) {
     close_handler_ = handler;
 }
 
+/**
+ * @brief Indicates whether the WebSocket server is currently running.
+ *
+ * @return `true` if the server is running and accepting connections, `false` otherwise.
+ */
 bool WebSocketServer::isRunning() const {
     return running_;
 }
 
+/**
+ * @brief Starts an asynchronous accept loop that listens for new TCP connections.
+ *
+ * Initiates a single asynchronous accept operation; when a connection is accepted successfully and the server
+ * is currently running, the accepted socket is passed to handleAccept() and another accept is scheduled to
+ * continue the loop.
+ */
 void WebSocketServer::doAccept() {
     acceptor_.async_accept(
         [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
@@ -64,6 +116,18 @@ void WebSocketServer::doAccept() {
         });
 }
 
+/**
+ * @brief Handle completion of an asynchronous accept operation.
+ *
+ * On successful accept, creates a Connection from the accepted socket, configures
+ * an initial message handler to perform the WebSocket handshake, sets a close
+ * handler that removes the connection and invokes the user-provided close
+ * callback (if any), stores the connection in the server's connection set
+ * (protected by a mutex), and starts the connection.
+ *
+ * @param ec The result of the accept operation; when not an error, the socket is used.
+ * @param socket The accepted TCP socket; ownership is moved into the new Connection.
+ */
 void WebSocketServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
     if (!ec) {
         auto conn = std::make_shared<Connection>(std::move(socket));
@@ -90,11 +154,26 @@ void WebSocketServer::handleAccept(boost::system::error_code ec, boost::asio::ip
     }
 }
 
+/**
+ * @brief Remove a connection from the server's set of active connections.
+ *
+ * Performs a thread-safe removal of the provided connection pointer from the internal
+ * connections set. This does not close or otherwise modify the connection itself.
+ *
+ * @param conn Shared pointer to the Connection to remove.
+ */
 void WebSocketServer::removeConnection(Connection::Ptr conn) {
     std::lock_guard<std::mutex> lock(connections_mutex_);
     connections_.erase(conn);
 }
 
+/**
+ * @brief Encodes binary data to Base64 without inserting newline characters.
+ *
+ * @param data Pointer to the input bytes to encode.
+ * @param len Number of bytes pointed to by `data`.
+ * @return std::string Base64-encoded representation of the input data.
+ */
 std::string base64_encode(const unsigned char* data, size_t len) {
     // 使用OpenSSL的BIO方法进行Base64编码
     BIO* bio = BIO_new(BIO_f_base64());
@@ -121,6 +200,18 @@ std::string base64_encode(const unsigned char* data, size_t len) {
     return encoded;
 }
 
+/**
+ * @brief Processes an incoming HTTP WebSocket handshake and upgrades the connection to WebSocket.
+ *
+ * Extracts the `Sec-WebSocket-Key` from the provided HTTP request bytes, computes the
+ * `Sec-WebSocket-Accept` value, sends the HTTP 101 Switching Protocols response, and
+ * reconfigures the connection to handle WebSocket frames.
+ *
+ * @param conn Connection to operate on.
+ * @param data Raw bytes of the HTTP handshake request.
+ *
+ * If the `Sec-WebSocket-Key` header is not present or cannot be parsed, the connection is closed.
+ */
 void WebSocketServer::handleWebSocketHandshake(Connection::Ptr conn, const std::vector<char>& data) {
     std::string request(data.begin(), data.end());
     
@@ -162,6 +253,18 @@ void WebSocketServer::handleWebSocketHandshake(Connection::Ptr conn, const std::
     });
 }
 
+/**
+ * @brief Parse a single WebSocket frame from a raw buffer and handle it.
+ *
+ * Parses the provided buffer as one WebSocket frame (FIN, opcode, payload length,
+ * extended lengths, and masking). If the buffer does not contain a complete frame
+ * the function returns without action. For text (opcode 0x01) and binary (opcode 0x02)
+ * frames the decoded payload is forwarded to the configured message handler. For a
+ * close frame (opcode 0x08) the connection is closed.
+ *
+ * @param conn Shared pointer to the connection that sent the frame.
+ * @param data Raw bytes containing the WebSocket frame to parse and process.
+ */
 void WebSocketServer::handleWebSocketFrame(Connection::Ptr conn, const std::vector<char>& data) {
     if (data.size() < 2) return;
     
