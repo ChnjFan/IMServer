@@ -87,9 +87,15 @@ WebSocket协议使用标准的WebSocket帧结构，消息内容采用JSON格式�
 
 ## 4. 消息格式定义
 
-### 4.1 登录请求 (1001)
+### 4.1 HTTP登录接口
 
-```json
+#### 4.1.1 HTTP登录请求
+
+```
+POST /api/login HTTP/1.1
+Content-Type: application/json
+Content-Length: 123
+
 {
     "username": "testuser",
     "password": "password123",
@@ -101,9 +107,13 @@ WebSocket协议使用标准的WebSocket帧结构，消息内容采用JSON格式�
 }
 ```
 
-### 4.2 登录响应 (1002)
+#### 4.1.2 HTTP登录响应
 
-```json
+```
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Length: 456
+
 {
     "code": 0,
     "message": "success",
@@ -112,201 +122,250 @@ WebSocket协议使用标准的WebSocket帧结构，消息内容采用JSON格式�
         "username": "testuser",
         "nickname": "测试用户",
         "avatar_url": "http://example.com/avatar.jpg",
-        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-        "expire_time": 1627843200
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMDAxIiwiZXhwIjoxNjI3ODQzMjAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        "expire_time": 1627843200,
+        "tcp_endpoint": {
+            "host": "192.168.1.100",
+            "port": 8888
+        }
     }
 }
 ```
 
-### 4.3 单聊消息 (2001)
-
-```json
-{
-    "message_id": "msg123456",
-    "session_id": "session123",
-    "from_user_id": 1001,
-    "to_user_id": 1002,
-    "type": 0, // 0: 文本, 1: 图片, 2: 语音, 3: 视频, 4: 文件
-    "content": "你好，这是一条测试消息",
-    "timestamp": 1627843200,
-    "extra": {
-        "push": true
-    }
-}
-```
-
-### 4.4 群聊消息 (2002)
-
-```json
-{
-    "message_id": "msg123457",
-    "session_id": "session124",
-    "group_id": 2001,
-    "from_user_id": 1001,
-    "type": 0,
-    "content": "大家好，这是一条群消息",
-    "timestamp": 1627843300,
-    "extra": {
-        "mention_users": [1002, 1003]
-    }
-}
-```
-
-### 4.5 消息确认 (2003)
-
-```json
-{
-    "message_id": "msg123456",
-    "status": 2, // 1: 已发送, 2: 已接收, 3: 已读
-    "timestamp": 1627843250
-}
-```
-
-### 4.6 用户状态更新 (3001)
-
-```json
-{
-    "user_id": 1001,
-    "status": 1, // 0: 离线, 1: 在线, 2: 忙碌, 3: 离开
-    "timestamp": 1627843200
-}
-```
-
-### 4.7 会话列表请求 (3002)
-
-```json
-{
-    "page": 1,
-    "page_size": 20
-}
-```
-
-### 4.8 会话列表响应 (3003)
-
-```json
-{
-    "code": 0,
-    "message": "success",
-    "data": {
-        "total": 10,
-        "page": 1,
-        "page_size": 20,
-        "sessions": [
-            {
-                "session_id": "session123",
-                "type": 0, // 0: 单聊, 1: 群聊
-                "user_id": 1002,
-                "nickname": "好友1",
-                "avatar_url": "http://example.com/avatar1.jpg",
-                "last_message": "你好",
-                "last_message_time": 1627843200,
-                "unread_count": 2
-            },
-            {
-                "session_id": "session124",
-                "type": 1,
-                "group_id": 2001,
-                "group_name": "测试群",
-                "avatar_url": "http://example.com/group1.jpg",
-                "last_message": "大家好",
-                "last_message_time": 1627843300,
-                "unread_count": 1
-            }
-        ]
-    }
-}
-```
-
-### 4.9 消息历史请求 (3004)
-
-```json
-{
-    "session_id": "session123",
-    "last_message_id": "msg123450",
-    "count": 20
-}
-```
-
-### 4.10 消息历史响应 (3005)
-
-```json
-{
-    "code": 0,
-    "message": "success",
-    "data": {
-        "session_id": "session123",
-        "messages": [
-            {
-                "message_id": "msg123441",
-                "from_user_id": 1002,
-                "to_user_id": 1001,
-                "type": 0,
-                "content": "你好吗？",
-                "timestamp": 1627843000,
-                "status": 3 // 已读
-            },
-            {
-                "message_id": "msg123442",
-                "from_user_id": 1001,
-                "to_user_id": 1002,
-                "type": 0,
-                "content": "我很好，谢谢！",
-                "timestamp": 1627843100,
-                "status": 3
-            }
-        ]
-    }
-}
-```
-
-### 4.11 错误消息 (9001)
-
-```json
-{
-    "code": 1001,
-    "message": "User not found",
-    "timestamp": 1627843200
-}
-```
-
-### 4.12 心跳请求 (9002)
-
-```json
-{
-    "timestamp": 1627843200
-}
-```
-
-### 4.13 心跳响应 (9003)
-
-```json
-{
-    "timestamp": 1627843200
-}
-```
-
-## 4. 通信流程
-
-### 4.1 登录流程
+### 4.2 完整登录流程
 
 ```
 客户端                                      服务器
   |                                          |
-  | 登录请求 (1001)                           |
+  | 1. HTTP登录请求                           |
   |----------------------------------------->|
   |                                          |
-  |                                          | 验证用户身份
+  |                                          | 验证用户名密码
+  |                                          | 生成JWT token
+  |                                          | 分配用户ID
+  |                                          | 记录TCP端点
   |                                          |
-  |                                          | 生成令牌
-  |                                          |
-  | 登录响应 (1002)                           |
+  | 2. HTTP登录响应 (包含token和TCP端点)      |
   |<-----------------------------------------|
   |                                          |
-  | 用户状态更新 (3001) - 在线                 |
+  | 3. 建立TCP长连接                          |
+  |==================TCP连接==================|
+  |                                          |
+  | 4. 发送Token认证消息 (1001)               |
+  |----------------------------------------->|
+  |                                          |
+  |                                          | 验证token有效性
+  |                                          | 解析用户ID
+  |                                          | 绑定用户ID到TCP连接
+  |                                          | 更新用户状态为在线
+  |                                          |
+  | 5. 认证成功响应 (1002)                    |
+  |<-----------------------------------------|
+  |                                          |
+  | 6. 用户状态更新 (3001) - 在线             |
   |<-----------------------------------------|
 ```
 
-### 4.2 单聊消息流程
+### 4.3 TCP认证消息格式
+
+#### 4.3.1 Token认证请求 (1001)
+
+```json
+{
+    "auth_type": "token",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMDAxIiwiZXhwIjoxNjI3ODQzMjAwfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+    "client_info": {
+        "platform": "android",
+        "version": "1.0.0",
+        "device_id": "device123"
+    }
+}
+```
+
+#### 4.3.2 认证成功响应 (1002)
+
+```json
+{
+    "code": 0,
+    "message": "Authentication successful",
+    "data": {
+        "user_id": 1001,
+        "username": "testuser",
+        "nickname": "测试用户",
+        "session_key": "session_key_123456",
+        "online_status": 1
+    }
+}
+```
+
+#### 4.3.3 认证失败响应 (1002)
+
+```json
+{
+    "code": 1004,
+    "message": "Invalid token",
+    "data": {
+        "user_id": null,
+        "username": null,
+        "nickname": null,
+        "session_key": null,
+        "online_status": 0
+    }
+}
+```
+
+### 4.4 用户ID与TCP连接绑定机制
+
+#### 4.4.1 绑定数据结构
+
+```cpp
+struct UserConnection {
+    uint32_t user_id;              // 用户ID
+    std::string username;          // 用户名
+    tcp::socket* socket;           // TCP连接socket指针
+    std::chrono::steady_clock::time_point last_active; // 最后活跃时间
+    uint8_t status;                // 在线状态：0-离线，1-在线，2-忙碌，3-离开
+    std::string device_id;         // 设备ID
+    std::string client_version;    // 客户端版本
+};
+```
+
+#### 4.4.2 绑定流程
+
+1. **Token验证**: 服务器验证JWT token的有效性
+2. **用户识别**: 从token中提取用户ID和相关信息
+3. **连接绑定**: 将用户ID与TCP socket建立映射关系
+4. **状态更新**: 将用户状态更新为在线
+5. **会话管理**: 为该连接分配会话密钥，用于后续消息加密
+
+#### 4.4.3 消息路由机制
+
+当服务器需要向特定用户发送消息时：
+
+1. **查找连接**: 根据用户ID在连接映射表中查找对应的TCP连接
+2. **验证状态**: 确认用户当前在线状态
+3. **发送消息**: 通过找到的TCP连接发送消息
+4. **失败处理**: 如果用户离线，消息将转入离线消息队列
+
+```cpp
+// 消息发送示例
+bool sendMessageToUser(uint32_t user_id, uint16_t message_type, const std::string& message_body) {
+    auto it = user_connections_.find(user_id);
+    if (it == user_connections_.end()) {
+        // 用户离线，存入离线消息队列
+        saveOfflineMessage(user_id, message_type, message_body);
+        return false;
+    }
+    
+    if (it->second.status != 1) {  // 用户不在线
+        saveOfflineMessage(user_id, message_type, message_body);
+        return false;
+    }
+    
+    // 发送消息到TCP连接
+    return sendTcpMessage(*it->second.socket, message_type, message_body);
+}
+```
+
+### 4.5 登录流程详细时序图
+
+```mermaid
+sequenceDiagram
+    participant C as 客户端
+    participant H as HTTP服务器
+    participant T as TCP服务器
+    participant DB as 数据库
+    participant Cache as 缓存
+
+    C->>H: 1. HTTP登录请求
+    H->>DB: 2. 验证用户名密码
+    DB-->>H: 3. 用户信息
+    H->>Cache: 4. 生成JWT Token
+    Cache-->>H: 5. Token
+    H->>DB: 6. 记录登录信息
+    H-->>C: 7. HTTP登录响应(Token+TCP端点)
+    
+    C->>T: 8. 建立TCP连接
+    T-->>C: 9. TCP连接建立成功
+    
+    C->>T: 10. 发送Token认证消息
+    T->>Cache: 11. 验证Token有效性
+    Cache-->>T: 12. Token验证结果
+    T->>DB: 13. 获取用户详细信息
+    DB-->>T: 14. 用户信息
+    T->>T: 15. 绑定用户ID到TCP连接
+    T->>Cache: 16. 更新用户在线状态
+    Cache-->>T: 17. 状态更新成功
+    
+    T-->>C: 18. 认证成功响应
+    T->>C: 19. 用户状态更新(在线)
+    
+    Note over C,T: 登录完成，可以进行即时通讯
+```
+
+### 4.6 错误处理和重试机制
+
+#### 4.6.1 HTTP登录失败
+
+| 错误码 | HTTP状态码 | 描述 | 客户端处理 |
+|--------|------------|------|------------|
+| 1001 | 404 | 用户不存在 | 提示用户注册 |
+| 1002 | 401 | 密码错误 | 提示重新输入密码 |
+| 1003 | 409 | 用户已在线 | 强制下线或提示多端登录 |
+| 5001 | 500 | 服务器内部错误 | 稍后重试 |
+
+#### 4.6.2 TCP认证失败
+
+| 错误码 | 描述 | 客户端处理 |
+|--------|------|------------|
+| 1004 | 无效的Token | 重新进行HTTP登录 |
+| 1005 | Token已过期 | 重新进行HTTP登录 |
+| 1006 | 连接已存在 | 关闭旧连接，建立新连接 |
+| 5003 | TCP服务不可用 | 提示稍后重试 |
+
+#### 4.6.3 重连机制
+
+```cpp
+// 客户端重连逻辑示例
+class LoginManager {
+public:
+    void handleLoginFailure(int error_code) {
+        switch (error_code) {
+            case 1004: // Token无效
+            case 1005: // Token过期
+                // 重新进行HTTP登录
+                retryHttpLogin();
+                break;
+            case 5003: // 服务不可用
+                // 指数退避重试
+                scheduleReconnectWithBackoff();
+                break;
+            default:
+                // 其他错误，提示用户
+                showErrorToUser(error_code);
+                break;
+        }
+    }
+    
+private:
+    void retryHttpLogin() {
+        // 清除本地token，重新登录
+        localStorage.remove("auth_token");
+        performHttpLogin();
+    }
+    
+    void scheduleReconnectWithBackoff() {
+        int delay = std::min(30000, 1000 * std::pow(2, reconnect_attempts_));
+        std::thread([this, delay]() {
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+            reconnect_attempts_++;
+            establishTcpConnection();
+        }).detach();
+    }
+};
+```
+
+### 4.7 单聊消息流程
 
 ```
 客户端A                                     服务器                                     客户端B
@@ -335,7 +394,7 @@ WebSocket协议使用标准的WebSocket帧结构，消息内容采用JSON格式�
   |<-----------------------------------------|
 ```
 
-### 4.3 心跳流程
+### 4.8 心跳流程
 
 ```
 客户端                                      服务器
@@ -347,7 +406,7 @@ WebSocket协议使用标准的WebSocket帧结构，消息内容采用JSON格式�
   |<-----------------------------------------|
 ```
 
-### 4.4 离线消息流程
+### 4.9 离线消息流程
 
 ```
 客户端A                                     服务器                                     客户端B
