@@ -13,8 +13,6 @@ class TcpServer : public std::enable_shared_from_this<TcpServer> {
 private:
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    Connection::MessageHandler message_handler_;
-    Connection::CloseHandler close_handler_;
     std::atomic<bool> running_;
     std::unordered_set<Connection::Ptr> connections_;
     std::mutex connections_mutex_;
@@ -28,12 +26,6 @@ public:
     
     // 停止服务器
     void stop();
-    
-    // 设置消息处理回调
-    void setMessageHandler(Connection::MessageHandler handler);
-    
-    // 设置连接关闭回调
-    void setCloseHandler(Connection::CloseHandler handler);
     
     // 服务器状态检查
     bool isRunning() const;

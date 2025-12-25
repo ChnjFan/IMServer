@@ -34,14 +34,6 @@ void TcpServer::stop() {
     }
 }
 
-void TcpServer::setMessageHandler(Connection::MessageHandler handler) {
-    message_handler_ = handler;
-}
-
-void TcpServer::setCloseHandler(Connection::CloseHandler handler) {
-    close_handler_ = handler;
-}
-
 bool TcpServer::isRunning() const {
     return running_;
 }
@@ -59,14 +51,15 @@ void TcpServer::doAccept() {
 void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
     if (!ec) {
         auto conn = std::make_shared<Connection>(std::move(socket));
-        conn->setMessageHandler(message_handler_);
+        conn->setMessageHandler([this, self](Connection::Ptr conn, const std::vector<char>& data) {
+            //todo 处理收到的消息
+            std::cout << "Received message: " << std::string(data.begin(), data.end()) << std::endl;
+        });
         
         auto self = shared_from_this();
         conn->setCloseHandler([this, self](Connection::Ptr conn) {
             removeConnection(conn);
-            if (close_handler_) {
-                close_handler_(conn);
-            }
+            //todo 处理连接关闭事件
         });
         
         {

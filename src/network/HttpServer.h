@@ -1,139 +1,143 @@
 #pragma once
 
-#include "Connection.h"
-#include <boost/asio.hpp>
-#include <unordered_map>
-#include <string>
-#include <mutex>
+#include <boost/beast/http.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/awaitable.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <functional>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include <chrono>
+#include <map>
 
 namespace network {
+namespace http {
+
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace net = boost::asio;
 
 // HTTP请求结构
-struct HttpRequest {
-    std::string method;          // HTTP方法（GET、POST等）
-    std::string path;            // 请求路径
-    std::string version;         // HTTP版本
-    std::unordered_map<std::string, std::string> headers;  // 请求头
-    std::string body;            // 请求体
-    std::unordered_map<std::string, std::string> query_params;  // 查询参数
-};
+using HttpRequest = http::request<http::string_body>;
+using HttpResponse = http::response<http::string_body>;
 
-// HTTP响应结构
-struct HttpResponse {
-    std::string version;         // HTTP版本
-    int status_code;             // 状态码
-    std::string status_message;  // 状态消息
-    std::unordered_map<std::string, std::string> headers;  // 响应头
-    std::string body;            // 响应体
-    
-    HttpResponse() : version("HTTP/1.1"), status_code(200), status_message("OK") {
-        headers["Content-Type"] = "text/plain; charset=utf-8";
-        headers["Connection"] = "close";
-    }
-};
+// HTTP处理器函数类型
+using HttpRequestHandler = std::function<void(const HttpRequest&, HttpResponse&)>;
 
 // HTTP服务器类
 class HttpServer {
-private:
-    boost::asio::io_context& io_context_;
-    boost::asio::ip::tcp::acceptor acceptor_;
-    std::atomic<bool> running_;
-    std::unordered_set<Connection::Ptr> connections_;
-    std::mutex connections_mutex_;
-    
-    // 请求处理函数类型
-    using RequestHandler = std::function<void(Connection::Ptr, const HttpRequest&, HttpResponse&)>;
-    std::unordered_map<std::string, RequestHandler> route_handlers_;
-    std::mutex route_mutex_;
-
 public:
-    /**
-     * @brief 构造函数
-     * @param io_context io_context对象引用
-     * @param address 监听地址
-     * @param port 监听端口
-     */
-    HttpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
-    
-    /**
-     * @brief 析构函数
-     */
+    using address = net::ip::address;
+    using tcp = net::ip::tcp;
+
+    explicit HttpServer(net::io_context& io_context);
     ~HttpServer();
-    
-    /**
-     * @brief 启动服务器
-     */
-    void start();
-    
-    /**
-     * @brief 停止服务器
-     */
+
+    // 启动服务器
+    void start(const address& addr, uint16_t port);
+
+    // 停止服务器
     void stop();
-    
-    /**
-     * @brief 服务器状态检查
-     * @return 服务器是否正在运行
-     */
+
+    // 检查是否正在运行
     bool isRunning() const;
-    
-    /**
-     * @brief 注册路由处理函数
-     * @param path 请求路径
-     * @param handler 处理函数
-     */
-    template<typename Handler>
-    void registerRoute(const std::string& path, Handler handler) {
-        std::lock_guard<std::mutex> lock(route_mutex_);
-        route_handlers_[path] = handler;
-    }
-    
-    /**
-     * @brief 启用HTTPS
-     * @param cert_file 证书文件路径
-     * @param private_key_file 私钥文件路径
-     */
-    void enableHttps(const std::string& cert_file, const std::string& private_key_file);
-    
+
+    // 注册路由处理器
+    void registerRoute(const std::string& method, const std::string& path, HttpRequestHandler handler);
+
+    // 注册GET/POST/PUT/DELETE等特定方法的路由
+    void get(const std::string& path, HttpRequestHandler handler);
+    void post(const std::string& path, HttpRequestHandler handler);
+    void put(const std::string& path, HttpRequestHandler handler);
+    void del(const std::string& path, HttpRequestHandler handler);
+
+    // 设置静态文件目录
+    void setStaticFileDirectory(const std::string& directory);
+
+    // 设置跨域处理
+    void enableCORS(const std::string& origin = "*");
+
 private:
-    /**
-     * @brief 异步接受连接
-     */
+    // HTTP会话类
+    class HttpSession : public std::enable_shared_from_this<HttpSession> {
+    public:
+        HttpSession(tcp::socket socket, HttpServer* server);
+        ~HttpSession();
+
+        // 启动会话
+        void start();
+
+        // 发送响应
+        void sendResponse(const HttpResponse& response);
+
+    private:
+        // 异步读取请求
+        void doRead();
+
+        // 异步写入响应
+        void doWrite(const HttpResponse& response);
+
+        // 处理读取完成的回调
+        void onRead(beast::error_code ec, std::size_t bytes_transferred);
+
+        // 处理写入完成的回调
+        void onWrite(beast::error_code ec, std::size_t bytes_transferred, bool close);
+
+        // 处理请求
+        void handleRequest(const HttpRequest& request);
+
+        // 路由匹配
+        HttpRequestHandler findHandler(const std::string& method, const std::string& path);
+
+        // 发送错误响应
+        void sendError(http::status status, const std::string& message);
+
+        // 发送文件响应
+        void sendFile(const std::string& file_path);
+
+        // 获取MIME类型
+        std::string getMimeType(const std::string& file_path);
+
+        tcp::socket socket_;
+        beast::flat_buffer buffer_;
+        HttpRequest request_;
+        HttpResponse response_;
+        HttpServer* server_;
+        bool is_writing_;
+
+        // 超时定时器
+        net::steady_timer timeout_timer_;
+    };
+
+    // 接受器
+    tcp::acceptor acceptor_;
+    tcp::socket socket_;
+
+    // 运行状态
+    bool running_;
+
+    // 优化的路由表结构
+    // 第一层：按HTTP方法分组
+    // 第二层：按路径存储处理器（使用unordered_map实现O(1)查找）
+    using PathHandlerMap = std::unordered_map<std::string, HttpRequestHandler>;
+    std::unordered_map<std::string, PathHandlerMap> route_tables_;
+
+    // 静态文件目录
+    std::string static_file_directory_;
+
+    // CORS设置
+    bool cors_enabled_;
+    std::string cors_origin_;
+
+    // 异步接受连接
     void doAccept();
-    
-    /**
-     * @brief 处理新连接
-     * @param ec 错误码
-     * @param socket 新连接的socket
-     */
-    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
-    
-    /**
-     * @brief 移除连接
-     * @param conn 要移除的连接对象
-     */
-    void removeConnection(Connection::Ptr conn);
-    
-    /**
-     * @brief HTTP请求处理
-     * @param conn 连接对象
-     * @param data 接收到的数据
-     */
-    void handleHttpRequest(Connection::Ptr conn, const std::vector<char>& data);
-    
-    /**
-     * @brief HTTP请求解析
-     * @param data 原始请求数据
-     * @return 解析后的HttpRequest对象
-     */
-    HttpRequest parseHttpRequest(const std::vector<char>& data);
-    
-    /**
-     * @brief HTTP响应构建
-     * @param response HttpResponse对象
-     * @return 构建后的响应数据
-     */
-    std::vector<char> buildHttpResponse(const HttpResponse& response);
+
+    // 路由表管理辅助方法
+    void addRouteToTable(const std::string& method, const std::string& path, HttpRequestHandler handler);
+    HttpRequestHandler findHandlerInTable(const std::string& method, const std::string& path);
 };
 
+} // namespace http
 } // namespace network
