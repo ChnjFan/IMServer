@@ -1,7 +1,9 @@
+// 在WebSocketServer.h中添加is_open()方法到WebSocketSession类中
 #pragma once
 
 #include <boost/beast.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/beast/http.hpp>
 #include <boost/asio.hpp>
 #include <string>
 #include <unordered_set>
@@ -9,10 +11,12 @@
 #include <atomic>
 #include <functional>
 #include <memory>
+#include <queue>
 
 namespace network {
 namespace beast = boost::beast;
 namespace websocket = beast::websocket;
+namespace http = beast::http;
 namespace asio = boost::asio;
 
 // WebSocket连接会话类
@@ -27,10 +31,16 @@ private:
     beast::flat_buffer buffer_;
     MessageHandler message_handler_;
     CloseHandler close_handler_;
+    std::queue<std::vector<char>> write_queue_;
 
 public:
     WebSocketSession(asio::ip::tcp::socket socket);
     ~WebSocketSession();
+
+    // 检查连接是否打开
+    bool is_open() const {
+        return ws_.next_layer().is_open();
+    }
 
     // 启动会话（执行WebSocket握手）
     void start();
@@ -69,8 +79,7 @@ private:
     // 异步关闭连接
     void doClose();
 
-    // 处理连接关闭
-    void onClose(beast::error_code ec);
+    void onAccept(beast::error_code ec);
 };
 
 // WebSocket服务器类
