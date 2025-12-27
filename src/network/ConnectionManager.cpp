@@ -1,7 +1,6 @@
 #include "ConnectionManager.h"
 #include <algorithm>
 #include <iostream>
-#include <ranges>
 
 namespace network {
 
@@ -335,16 +334,16 @@ void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) 
     {
         std::shared_lock lock(connections_mutex_);
         
-        // std::ranges投影使用ranges算法处理数据前先对每个元素应用投影函数，用转换后的结果参与算法逻辑
-        std::ranges::copy_if(connections_.begin(), connections_.end(),
-                    std::back_inserter(idle_connection_ids),
+        std::for_each(connections_.begin(), connections_.end(),
                     [now, idle_timeout](const auto& pair) {
                         const auto& [id, connection] = pair;
-                        return connection && 
-                               !connection->isActive() && 
-                               std::chrono::duration_cast<std::chrono::seconds>(
-                                   now - connection->getStats().last_activity_time) >= idle_timeout;
-                    }, &std::pair<const ConnectionId, Connection::Ptr>::first);
+                        if (connection
+                             && !connection->isActive()
+                             && std::chrono::duration_cast<std::chrono::seconds>(
+                                now - connection->getStats().last_activity_time) >= idle_timeout) {
+                            idle_connection_ids.push_back(id);
+                        }
+                    });
     }
 
     std::for_each(idle_connection_ids.begin(), idle_connection_ids.end(),
