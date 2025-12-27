@@ -26,7 +26,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 # 源文件
 set(SOURCES
-    *.cpp
+    ConnectionManager.cpp
+    EventLoop.cpp
+    HttpServer.cpp
+    TcpServer.cpp
+    WebSocketServer.cpp
 )
 
 # 创建静态库
