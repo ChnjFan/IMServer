@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../tool/IdGenerator.h"
 #include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/awaitable.hpp>
