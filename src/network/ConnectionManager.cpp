@@ -342,7 +342,7 @@ void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) 
                                !connection->isActive() && 
                                std::chrono::duration_cast<std::chrono::seconds>(
                                    now - connection->getStats().last_activity_time) >= idle_timeout;
-                    });
+                    }, &std::pair<const ConnectionId, Connection::Ptr>::first); // 投影提取key
     }
 
     std::for_each(idle_connection_ids.begin(), idle_connection_ids.end(),
