@@ -75,12 +75,11 @@ public:
 
     /**
      * @brief 生成基于时间戳的唯一ID
-     * @param prefix 前缀字符串，用于区分不同类型的ID
      * @return 基于时间戳的ID (TimestampId)
      * 
      * @note 该方法结合时间戳和计数器生成ID，适合分布式场景
      */
-    TimestampId generateTimestampId(const std::string& prefix = "");
+    TimestampId generateTimestampId();
 
     /**
      * @brief 生成UUID格式的字符串ID

@@ -35,13 +35,14 @@ int main() {
     
     std::vector<std::thread> threads;
     std::vector<ConnectionId> thread_ids;
+    std::mutex ids_mutex;
     
     // 创建多个线程同时生成ID
     for (int i = 0; i < 10; ++i) {
-        threads.emplace_back([&id_gen, &thread_ids]() {
+        threads.emplace_back([&id_gen, &thread_ids, &ids_mutex]() {
             for (int j = 0; j < 100; ++j) {
                 auto id = id_gen.generateConnectionId();
-                std::lock_guard<std::mutex> lock(/* 需要一个共享锁来保护 thread_ids */);
+                std::lock_guard<std::mutex> lock(ids_mutex);
                 thread_ids.push_back(id);
             }
         });

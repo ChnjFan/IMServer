@@ -375,7 +375,7 @@ void ConnectionManager::setEnableStatistics(bool enable) {
 }
 
 void ConnectionManager::setConnectionEventHandler(
-    std::function<void(ConnectionId, const std::string&)> handler) {
+    std::function<void(ConnectionId, ConnectionEvent)> handler) {
     event_handler_ = std::move(handler);
 }
 

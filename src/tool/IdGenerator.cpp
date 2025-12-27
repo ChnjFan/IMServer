@@ -6,6 +6,14 @@
 #include <array>
 #include <algorithm>
 
+// 跨平台进程ID获取支持
+#ifdef _WIN32
+    #include <windows.h>
+    #include <process.h>
+#elif defined(__linux__) || defined(__APPLE__)
+    #include <unistd.h>
+#endif
+
 namespace imserver {
 namespace tool {
 
@@ -54,7 +62,7 @@ IdGenerator::SessionId IdGenerator::generateSessionId() {
     return id;
 }
 
-IdGenerator::TimestampId IdGenerator::generateTimestampId(const std::string& prefix) {
+IdGenerator::TimestampId IdGenerator::generateTimestampId() {
     std::lock_guard<std::mutex> lock(mutex_);
     
     auto now = std::chrono::steady_clock::now();
@@ -176,8 +184,17 @@ uint64_t IdGenerator::getCurrentTimestamp() const {
 }
 
 uint32_t IdGenerator::getProcessId() const {
+#ifdef _WIN32
     // Windows下的进程ID获取
     return static_cast<uint32_t>(GetCurrentProcessId());
+#elif defined(__linux__) || defined(__APPLE__)
+    // Linux/macOS下的进程ID获取
+    return static_cast<uint32_t>(getpid());
+#else
+    // 其他不支持的平台，抛出异常或返回默认值
+    static_assert(false, "Unsupported operating system for process ID retrieval");
+    return 0;
+#endif
 }
 
 uint64_t IdGenerator::generateRandom(uint64_t min, uint64_t max) const {

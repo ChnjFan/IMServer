@@ -182,6 +182,20 @@ protected:
  * 该类负责管理所有连接会话，包括添加、移除、查询连接，以及处理连接状态变更和关闭事件。
  */
 class ConnectionManager {
+public:
+    struct GlobalStats {
+        size_t total_connections = 0;
+        size_t active_connections = 0;
+        size_t tcp_connections = 0;
+        size_t websocket_connections = 0;
+        size_t http_connections = 0;
+        uint64_t total_bytes_sent = 0;
+        uint64_t total_bytes_received = 0;
+        uint64_t total_messages_sent = 0;
+        uint64_t total_messages_received = 0;
+        std::chrono::steady_clock::time_point start_time;
+    };
+
 private:
     // 线程安全的连接存储
     mutable std::shared_mutex connections_mutex_;
@@ -230,20 +244,6 @@ public:
     void closeAllConnections();
     void closeConnectionsByType(ConnectionType type);
     void closeIdleConnections(std::chrono::seconds idle_timeout);
-    
-    // 全局统计信息
-    struct GlobalStats {
-        size_t total_connections = 0;
-        size_t active_connections = 0;
-        size_t tcp_connections = 0;
-        size_t websocket_connections = 0;
-        size_t http_connections = 0;
-        uint64_t total_bytes_sent = 0;
-        uint64_t total_bytes_received = 0;
-        uint64_t total_messages_sent = 0;
-        uint64_t total_messages_received = 0;
-        std::chrono::steady_clock::time_point start_time;
-    };
     
     const GlobalStats& getGlobalStats() const { return global_stats_; }
     
