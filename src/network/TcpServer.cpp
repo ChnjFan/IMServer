@@ -146,6 +146,8 @@ void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp:
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
         auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
         
+        // TCP连接后立即接收数据，校验Token才能建立连接
+        conn->setState(ConnectionState::Connecting);
         conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理收到的消息
             std::cout << "Received message from connection " << conn_id << ": " 

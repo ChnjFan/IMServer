@@ -196,6 +196,8 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
     if (ec) {
         std::cerr << "Accept error: " << ec.message() << std::endl;
     } else {
+        // todo 建立连接后，从请求中获取token直接校验
+
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
         auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
 

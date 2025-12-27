@@ -96,12 +96,10 @@ void ConnectionManager::scheduleCleanupTask() {
     cleanup_timer_->expires_after(std::chrono::seconds(30));
     cleanup_timer_->async_wait([this](const boost::system::error_code& ec) {
         if (!ec) {
-            // 执行清理任务
             cleanupClosedConnections();
             checkIdleConnections();
             updateGlobalStats();
             
-            // 继续下一轮清理
             scheduleCleanupTask();
         }
     });
@@ -115,17 +113,14 @@ void ConnectionManager::addConnection(Connection::Ptr connection) {
     std::unique_lock lock(connections_mutex_);
     ConnectionId id = connection->getId();
     
-    // 检查连接数限制
     if (connections_.size() >= max_connections_) {
         throw std::runtime_error("Maximum connections limit reached");
     }
     
-    // 检查连接ID是否已存在
     if (connections_.find(id) != connections_.end()) {
         throw std::runtime_error("Connection ID already exists: " + std::to_string(id));
     }
     
-    // 添加连接
     connections_[id] = connection;
     
     // 更新统计信息
@@ -333,32 +328,31 @@ void ConnectionManager::closeConnectionsByType(ConnectionType type) {
 }
 
 void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) {
+    auto now = std::chrono::steady_clock::now();
     std::vector<ConnectionId> idle_connection_ids;
-    
+
     {
         std::shared_lock lock(connections_mutex_);
         
-        for (const auto& [id, connection] : connections_) {
-            if (connection && !connection->isActive()) {
-                auto now = std::chrono::steady_clock::now();
-                auto idle_duration = std::chrono::duration_cast<std::chrono::seconds>(
-                    now - connection->getStats().last_activity_time);
-                
-                if (idle_duration >= idle_timeout) {
-                    idle_connection_ids.push_back(id);
-                }
+        std::copy_if(connections_.begin(), connections_.end(),
+                    std::back_inserter(idle_connection_ids),
+                    [now, idle_timeout](const auto& pair) {
+                        const auto& [id, connection] = pair;
+                        return connection && 
+                               !connection->isActive() && 
+                               std::chrono::duration_cast<std::chrono::seconds>(
+                                   now - connection->getStats().last_activity_time) >= idle_timeout;
+                    });
+    }
+
+    std::for_each(idle_connection_ids.begin(), idle_connection_ids.end(),
+        [this](ConnectionId id) {
+            auto connection = getConnection(id);
+            if (connection && connection->isConnected()) {
+                connection->close();
             }
-        }
-    }
-    
-    // 关闭空闲连接
-    for (ConnectionId id : idle_connection_ids) {
-        auto connection = getConnection(id);
-        if (connection && connection->isConnected()) {
-            connection->close();
-        }
-    }
-    
+        });
+
     // 事件通知
     if (!idle_connection_ids.empty() && event_handler_) {
         event_handler_(0, ConnectionEvent::Disconnected);
