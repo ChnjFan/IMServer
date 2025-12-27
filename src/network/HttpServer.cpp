@@ -1,4 +1,5 @@
 #include "HttpServer.h"
+#include "../tool/IdGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -143,8 +144,13 @@ void HttpServer::doAccept() {
                     std::cerr << "Accept error: " << ec.message() << std::endl;
                 }
             } else {
+                // 使用工具层的IdGenerator生成全局唯一连接ID
+                auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+                
                 // 创建新的HTTP会话
-                auto session = std::make_shared<HttpSession>(std::move(socket), this);
+                auto session = std::make_shared<HttpSession>(connection_id, std::move(socket), this);
+                
+                std::cout << "HTTP connection " << connection_id << " established" << std::endl;
                 session->start();
             }
 
@@ -156,8 +162,9 @@ void HttpServer::doAccept() {
 }
 
 // HttpSession实现
-HttpSession::HttpSession(tcp::socket socket, HttpServer* server)
-    : socket_(std::move(socket))
+HttpSession::HttpSession(ConnectionId id, tcp::socket socket, HttpServer* server)
+    : connection_id_(id)
+    , socket_(std::move(socket))
     , server_(server)
     , is_writing_(false)
     , timeout_timer_(socket_.get_executor()) {

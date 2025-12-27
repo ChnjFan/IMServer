@@ -1,12 +1,13 @@
 #include "WebSocketServer.h"
+#include "IdGenerator.h"
 #include <iostream>
 #include <memory>
 
 namespace network {
 
 // WebSocketSession实现
-WebSocketSession::WebSocketSession(asio::ip::tcp::socket socket)
-    : ws_(std::move(socket)) {
+WebSocketConnection::WebSocketConnection(ConnectionId id, asio::ip::tcp::socket socket)
+    : Connection(id, ConnectionType::WebSocket), ws_(std::move(socket)) {
     // 设置WebSocket选项
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
     ws_.set_option(websocket::stream_base::decorator(
@@ -16,85 +17,88 @@ WebSocketSession::WebSocketSession(asio::ip::tcp::socket socket)
 }
 
 // 在WebSocketSession析构函数中
-WebSocketSession::~WebSocketSession() {
-    // 检查底层socket是否打开
-    if (ws_.next_layer().is_open()) {
-        beast::error_code ec;
-        ws_.close(websocket::close_code::normal, ec);
-    }
+WebSocketConnection::~WebSocketConnection() {
+    forceClose();// 析构函数强制关闭连接
 }
 
-// 在doClose()方法中
-void WebSocketSession::doClose() {
-    // 检查底层socket是否打开
-    if (ws_.next_layer().is_open()) {
-        ws_.async_close(websocket::close_code::normal,
-                       [self = shared_from_this()](beast::error_code ec) {
-                           if (ec && ec != websocket::error::closed) {
-                               std::cerr << "WebSocket close error: " << ec.message() << std::endl;
-                           }
-                           
-                           if (self->close_handler_) {
-                               self->close_handler_(self);
-                           }
-                       });
-    }
-}
-
-void WebSocketSession::start() {
+void WebSocketConnection::start() {
     // 执行WebSocket握手
     ws_.async_accept(
         [self = shared_from_this()](beast::error_code ec) {
             if (ec) {
                 std::cerr << "WebSocket accept error: " << ec.message() << std::endl;
-                self->doClose();
+                self->close();
                 return;
             }
 
-            // 握手成功，开始读取消息
+            running_ = true;
             self->doRead();
         });
 }
 
-void WebSocketSession::sendText(const std::string& message) {
-    send(std::vector<char>(message.begin(), message.end()));
+void WebSocketConnection::close() {
+    if (ws_.next_layer().is_open() && running_) {
+        running_ = false;
+        ws_.async_close(websocket::close_code::normal,
+            [self = shared_from_this()](beast::error_code ec) {
+                if (ec && ec != websocket::error::closed) {
+                    std::cerr << "WebSocket close error: " << ec.message() << std::endl;
+                }
+                
+                if (self->close_handler_) {
+                    self->close_handler_(self->getId(), ec);
+                }
+            });
+    }
 }
 
-void WebSocketSession::sendBinary(const std::vector<char>& data) {
-    send(data);
+void WebSocketConnection::forceClose()
+{
+    if (ws_.next_layer().is_open()) {
+        running_ = false;
+        beast::error_code ec;
+        ws_.close(websocket::close_code::normal, ec);
+    }
 }
 
-void WebSocketSession::send(const std::vector<char>& data) {
-    // 检查是否正在写入，如果是则加入队列
-    if (!write_queue_.empty()) {
-        write_queue_.push(data);
-        return;
+void WebSocketConnection::send(const std::vector<char>& data) {
+    if (!running_) return;
+
+    bool write_in_progress = false;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        write_in_progress = !write_queue_.empty();
+        if (write_in_progress) {    // 如果当前有正在进行的写入操作，直接将数据加入写入缓冲区
+            write_queue_.push(data);
+        }
     }
 
-    // 开始异步写入
-    doWrite(data);
+    if (!write_in_progress) {
+        doWrite(data);
+    }
 }
 
-void WebSocketSession::close() {
-    doClose();
+boost::asio::ip::tcp::endpoint WebSocketConnection::getRemoteEndpoint() const
+{
+    boost::system::error_code ec;
+    auto endpoint = ws_.next_layer().remote_endpoint(ec);
+    if (ec) {
+        return boost::asio::ip::tcp::endpoint();
+    }
+    return endpoint;
 }
 
-void WebSocketSession::setMessageHandler(MessageHandler handler) {
-    message_handler_ = handler;
+bool WebSocketConnection::isConnected() const
+{
+    return ws_.next_layer().is_open();
 }
 
-void WebSocketSession::setCloseHandler(CloseHandler handler) {
-    close_handler_ = handler;
-}
-
-void WebSocketSession::doRead() {
-    // 读取下一条消息
+void WebSocketConnection::doRead() {
     ws_.async_read(
         buffer_,
         [self = shared_from_this(), &buffer = buffer_](beast::error_code ec, std::size_t bytes_transferred) {
             if (ec) {
                 if (ec == websocket::error::closed) {
-                    // 连接正常关闭
                     if (self->close_handler_) {
                         self->close_handler_(self);
                     }
@@ -105,32 +109,22 @@ void WebSocketSession::doRead() {
                 return;
             }
 
-            // 获取消息数据
             std::vector<char> data(
                 boost::asio::buffer_cast<const char*>(buffer.data()),
                 boost::asio::buffer_cast<const char*>(buffer.data()) + buffer.size());
 
-            // 清空缓冲区
-            buffer.consume(buffer.size());
-
-            // 调用消息处理器
-            if (self->message_handler_) {
-                self->message_handler_(self, data);
-            }
-
-            // 继续读取下一条消息
+            buffer.consume(triggerMessageHandler(data));
             self->doRead();
         });
 }
 
-void WebSocketSession::doWrite(const std::vector<char>& data) {
-    // 创建写操作
+void WebSocketConnection::doWrite(std::vector<char>&& data) {
     ws_.async_write(
         boost::asio::buffer(data),
-        [self = shared_from_this(), data](beast::error_code ec, std::size_t bytes_transferred) {
+        [self = shared_from_this(), data = std::move(data)](beast::error_code ec, std::size_t bytes_transferred) {
             if (ec) {
                 std::cerr << "WebSocket write error: " << ec.message() << std::endl;
-                self->doClose();
+                self->close();
                 return;
             }
 
@@ -143,37 +137,11 @@ void WebSocketSession::doWrite(const std::vector<char>& data) {
         });
 }
 
-void WebSocketSession::doClose() {
-    if (ws_.is_open()) {
-        ws_.async_close(websocket::close_code::normal,
-                       [self = shared_from_this()](beast::error_code ec) {
-                           if (ec && ec != websocket::error::closed) {
-                               std::cerr << "WebSocket close error: " << ec.message() << std::endl;
-                           }
-                           
-                           if (self->close_handler_) {
-                               self->close_handler_(self);
-                           }
-                       });
-    }
-}
-
-void WebSocketSession::onAccept(beast::error_code ec)
-{
-    if (ec) {
-        std::cerr << "WebSocket accept error: " << ec.message() << std::endl;
-        doClose();
-        return;
-    }
-
-    // 握手成功，开始读取消息
-    doRead();
-}
-
 // WebSocketServer实现
-WebSocketServer::WebSocketServer(asio::io_context& io_context, const std::string& address, uint16_t port)
+WebSocketServer::WebSocketServer(asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
     : io_context_(io_context),
       acceptor_(io_context, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
+      connection_manager_(connection_manager),
       running_(false) {
 }
 
@@ -191,17 +159,10 @@ void WebSocketServer::start() {
 void WebSocketServer::stop() {
     if (running_) {
         running_ = false;
-        
-        // 关闭acceptor
         beast::error_code ec;
         acceptor_.close(ec);
         
-        // 关闭所有连接
-        std::lock_guard<std::mutex> lock(connections_mutex_);
-        for (auto& conn : connections_) {
-            conn->close();
-        }
-        connections_.clear();
+        connection_manager_.closeConnectionsByType(ConnectionType::WebSocket);
     }
 }
 
@@ -209,75 +170,53 @@ bool WebSocketServer::isRunning() const {
     return running_;
 }
 
-void WebSocketServer::broadcastText(const std::string& message) {
-    auto data = std::vector<char>(message.begin(), message.end());
-    broadcastBinary(data);
-}
-
-void WebSocketServer::broadcastBinary(const std::vector<char>& data) {
-    std::lock_guard<std::mutex> lock(connections_mutex_);
-    
-    // 遍历所有连接，发送消息
-    for (auto it = connections_.begin(); it != connections_.end();) {
-        auto session = *it;
-        if (session && session->is_open()) {
-            session->send(data);
-            ++it;
-        } else {
-            // 移除无效连接
-            it = connections_.erase(it);
-        }
-    }
-}
-
 void WebSocketServer::doAccept() {
     if (!running_) return;
-
-    // 异步接受新连接
     acceptor_.async_accept(
         [self = shared_from_this()](beast::error_code ec, asio::ip::tcp::socket socket) {
-            if (ec) {
-                std::cerr << "Accept error: " << ec.message() << std::endl;
-            } else {
-                // 创建新的WebSocket会话
-                auto session = std::make_shared<WebSocketSession>(std::move(socket));
-                
-                // 设置消息处理器（示例：简单回显）
-                session->setMessageHandler([this](WebSocketSession::Ptr session, const std::vector<char>& data) {
-                    // 处理接收到的消息
-                    std::cout << "Received message: " << std::string(data.begin(), data.end()) << std::endl;
-                    
-                    // 回显消息
-                    session->send(data);
-                });
-                
-                // 设置关闭处理器
-                session->setCloseHandler([this](WebSocketSession::Ptr session) {
-                    self->removeConnection(session);
-                });
-                
-                // 添加到连接集合
-                self->addConnection(session);
-                
-                // 启动会话
-                session->start();
-            }
-
-            // 继续接受下一个连接
-            if (self->running_) {
+            if (!ec && self->running_) {
+                self->handleAccept(ec, std::move(socket));
                 self->doAccept();
             }
         });
 }
 
-void WebSocketServer::addConnection(WebSocketSession::Ptr session) {
-    std::lock_guard<std::mutex> lock(connections_mutex_);
-    connections_.insert(session);
-}
+/**
+ * @brief 处理新的WebSocket连接
+ * 
+ * 该函数在新的WebSocket连接被接受时被调用。它负责创建新的连接会话、分配连接ID、
+ * 注册消息处理函数、状态变更处理函数和关闭处理函数，并将新连接添加到连接管理器中。
+ * 
+ * @param ec 异步操作的错误码
+ * @param socket 新的TCP socket，用于与客户端通信
+ */
+void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket socket) {
+    if (ec) {
+        std::cerr << "Accept error: " << ec.message() << std::endl;
+    } else {
+        auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+        auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
 
-void WebSocketServer::removeConnection(WebSocketSession::Ptr session) {
-    std::lock_guard<std::mutex> lock(connections_mutex_);
-    connections_.erase(session);
+        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
+            //todo 处理消息
+            incrementMessagesReceived();
+            updateBytesReceived(data.size());
+            std::cout << "Received message from WebSocket connection " << conn_id << ": " 
+                        << std::string(data.begin(), data.end()) << std::endl;
+            return data.size();
+        });
+
+        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
+            std::cout << "Connection " << conn_id << " state changed from " << old_state << " to " << new_state << std::endl;
+        });
+        
+        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
+            std::cout << "WebSocket connection " << conn_id << " closed: " << ec.message() << std::endl;
+        });
+
+        connection_manager_.addConnection(conn);
+        conn->start();
+    }
 }
 
 } // namespace network

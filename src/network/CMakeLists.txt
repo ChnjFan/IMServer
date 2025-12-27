@@ -14,14 +14,19 @@ find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 # 查找OpenSSL
 find_package(OpenSSL REQUIRED)
 
+# 设置头文件目录
+set(HEADER_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tool/    # 包含工具层头文件
+)
+
 # 包含目录
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${HEADER_DIR})
 include_directories(${Boost_INCLUDE_DIRS})
 
 # 源文件
 set(SOURCES
-    WebSocketServer.cpp
-    HttpServer.cpp
+    *.cpp
 )
 
 # 创建静态库

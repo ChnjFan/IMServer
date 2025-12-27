@@ -35,3 +35,10 @@
 third_party/**
 !third_party/**/*.sh
 server/base/zmq.hpp
+
+# 忽略编译生成的文件
+cmake-build-debug/**
+
+# 忽略隐藏文件
+.*
+

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Connection.h"
+#include "ConnectionManager.h"
+#include "../tool/IdGenerator.h"
 #include <boost/asio.hpp>
 #include <string>
 #include <unordered_set>
@@ -9,36 +10,50 @@
 
 namespace network {
 
+class TcpConnection : public Connection {
+public:
+    using Ptr = std::shared_ptr<TcpConnection>;
+
+private:
+    boost::asio::ip::tcp::socket socket_;
+    std::vector<char> read_buffer_;
+    std::vector<char> write_buffer_;
+    std::mutex write_mutex_;
+    std::atomic<bool> running_;
+
+public:
+    TcpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket);
+    ~TcpConnection();
+    
+    void start() override;
+    void close() override;
+    void send(const std::vector<char>& data) override;
+    
+    boost::asio::ip::tcp::endpoint getRemoteEndpoint() const override;
+    bool isConnected() const override;
+
+private:
+    void doRead();
+};
+
 class TcpServer : public std::enable_shared_from_this<TcpServer> {
 private:
     boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
+    ConnectionManager& connection_manager_;
     std::atomic<bool> running_;
-    std::unordered_set<Connection::Ptr> connections_;
-    std::mutex connections_mutex_;
 
 public:
-    TcpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    TcpServer(boost::asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port);
     ~TcpServer();
     
-    // 启动服务器
     void start();
-    
-    // 停止服务器
     void stop();
-    
-    // 服务器状态检查
     bool isRunning() const;
     
 private:
-    // 异步接受连接
     void doAccept();
-    
-    // 处理新连接
     void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
-    
-    // 移除连接
-    void removeConnection(Connection::Ptr conn);
 };
 
 } // namespace network

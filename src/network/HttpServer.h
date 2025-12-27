@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../tool/IdGenerator.h"
 #include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -63,7 +64,7 @@ private:
     // HTTP会话类
     class HttpSession : public std::enable_shared_from_this<HttpSession> {
     public:
-        HttpSession(tcp::socket socket, HttpServer* server);
+        HttpSession(ConnectionId id, tcp::socket socket, HttpServer* server);
         ~HttpSession();
 
         // 启动会话
@@ -109,6 +110,9 @@ private:
 
         // 超时定时器
         net::steady_timer timeout_timer_;
+        
+        // 连接ID
+        ConnectionId connection_id_;
     };
 
     // 接受器
