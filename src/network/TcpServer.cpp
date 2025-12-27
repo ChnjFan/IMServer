@@ -75,7 +75,9 @@ void TcpConnection::doRead()
 {
     auto self = shared_from_this();
     socket_.async_read_some(boost::asio::buffer(read_buffer_),
-        [this, self](boost::system::error_code ec, std::size_t /*bytes_transferred*/) {
+        [this, self](boost::system::error_code ec, std::size_t bytes_transferred) {
+            incrementMessagesReceived();
+            updateBytesReceived(bytes_transferred);
             if (ec) {
                 close();
                 return;
@@ -146,8 +148,6 @@ void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp:
         
         conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理收到的消息
-            incrementMessagesReceived();
-            updateBytesReceived(data.size());
             std::cout << "Received message from connection " << conn_id << ": " 
                       << std::string(data.begin(), data.end()) << std::endl;
             return data.size();

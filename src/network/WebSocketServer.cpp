@@ -97,6 +97,8 @@ void WebSocketConnection::doRead() {
     ws_.async_read(
         buffer_,
         [self = shared_from_this(), &buffer = buffer_](beast::error_code ec, std::size_t bytes_transferred) {
+            incrementMessagesReceived();
+            updateBytesReceived(bytes_transferred);
             if (ec) {
                 if (ec == websocket::error::closed) {
                     if (self->close_handler_) {
@@ -199,8 +201,6 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
 
         conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理消息
-            incrementMessagesReceived();
-            updateBytesReceived(data.size());
             std::cout << "Received message from WebSocket connection " << conn_id << ": " 
                         << std::string(data.begin(), data.end()) << std::endl;
             return data.size();
