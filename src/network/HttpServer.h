@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ConnectionManager.h"
+#include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -18,6 +19,7 @@ namespace network {
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
+namespace tcp = net::ip::tcp;
 
 // HTTP请求响应结构
 using HttpRequest = http::request<http::string_body>;
@@ -25,6 +27,8 @@ using HttpResponse = http::response<http::string_body>;
 
 // HTTP处理器函数类型
 using HttpRequestHandler = std::function<void(const HttpRequest&, HttpResponse&)>;
+
+class HttpServer;
 
 /**
  * @brief HTTP连接类
