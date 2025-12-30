@@ -333,9 +333,9 @@ void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) 
 
     {
         std::shared_lock lock(connections_mutex_);
-        
+        // Lambda捕获外的变量在内部默认是const的，需要用引用捕获
         std::for_each(connections_.begin(), connections_.end(),
-                    [now, idle_timeout, idle_connection_ids](const auto& pair) {
+                    [now, idle_timeout, &idle_connection_ids](const auto& pair) {
                         const auto& [id, connection] = pair;
                         if (connection
                              && !connection->isActive()
