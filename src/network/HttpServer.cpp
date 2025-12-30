@@ -6,15 +6,323 @@
 #include <thread>
 
 namespace network {
-namespace http {
+    
+HttpConnection::HttpConnection(ConnectionId id, tcp::socket socket, HttpServer* server)
+    : network::Connection(id, ConnectionType::HTTP)
+    , socket_(std::move(socket))
+    , server_(server)
+    , is_writing_(false)
+    , timeout_timer_(socket_.get_executor()) {
+}
+
+HttpConnection::~HttpConnection() {
+    // 取消定时器
+    timeout_timer_.cancel();
+    
+    // 关闭连接
+    close();
+}
+
+void HttpConnection::start() {
+    setState(ConnectionState::Connected);
+    
+    // 设置超时定时器（30秒）
+    timeout_timer_.expires_after(std::chrono::seconds(30));
+    timeout_timer_.async_wait([this](boost::system::error_code ec) {
+        if (!ec && socket_.is_open()) {
+            std::cerr << "HTTP session timeout" << std::endl;
+            socket_.close();
+        }
+        setState(ConnectionState::Disconnected);
+    });
+
+    doRead();
+}
+
+void HttpConnection::close() {
+    if (!isConnected()) {
+        return;
+    }
+    
+    boost::system::error_code ec;
+    socket_.close(ec);
+    
+    if (ec && ec != boost::system::errc::operation_canceled) {
+        std::cerr << "HTTP session close error: " << ec.message() << std::endl;
+    }
+}
+
+void HttpConnection::forceClose() {
+    close();
+}
+
+void HttpConnection::sendResponse(const HttpResponse& response) {
+    doWrite(response);
+}
+
+void HttpConnection::send(const std::vector<char>& data) {
+    // HTTP会话不直接支持原始数据发送，通过HTTP响应机制
+    HttpResponse response;
+    response.result(http::status::ok);
+    response.set(http::field::content_type, "application/octet-stream");
+    response.body() = std::string(data.begin(), data.end());
+    sendResponse(response);
+}
+
+void HttpConnection::send(const std::string& data) {
+    HttpResponse response;
+    response.result(http::status::ok);
+    response.set(http::field::content_type, "text/plain");
+    response.body() = data;
+    sendResponse(response);
+}
+
+void HttpConnection::send(std::vector<char>&& data) {
+    HttpResponse response;
+    response.result(http::status::ok);
+    response.set(http::field::content_type, "application/octet-stream");
+    response.body() = std::string(std::move(data.begin()), std::move(data.end()));
+    sendResponse(response);
+}
+
+std::string HttpConnection::getRemoteAddress() const {
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return "";
+    }
+    return endpoint.address().to_string();
+}
+
+uint16_t HttpConnection::getRemotePort() const {
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return 0;
+    }
+    return endpoint.port();
+}
+
+boost::asio::ip::tcp::endpoint HttpConnection::getRemoteEndpoint() const {
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return boost::asio::ip::tcp::endpoint();
+    }
+    return endpoint;
+}
+
+bool HttpConnection::isConnected() const {
+    return socket_.is_open();
+}
+
+void HttpConnection::doRead() {
+    // 解析HTTP请求
+    http::async_read(socket_, buffer_, request_,
+        [this](boost::system::error_code ec, std::size_t bytes_transferred) {
+            onRead(ec, bytes_transferred);
+        });
+}
+
+void HttpConnection::onRead(boost::system::error_code ec, std::size_t bytes_transferred) {
+    timeout_timer_.expires_after(std::chrono::seconds(30));
+
+    if (ec) {
+        if (ec != http::error::end_of_stream) {
+            std::cerr << "HTTP read error: " << ec.message() << std::endl;
+        }
+        setState(ConnectionState::Disconnected);
+        return;
+    }
+
+    // 更新统计信息
+    updateBytesReceived(bytes_transferred);
+    incrementMessagesReceived();
+
+    // 处理请求
+    handleRequest(request_);
+}
+
+void HttpConnection::doWrite(const HttpResponse& response) {
+    is_writing_ = true;
+
+    // 检查是否需要关闭连接
+    bool close = response.need_eof();
+
+    // 发送响应
+    http::async_write(socket_, response,
+        [this, close](boost::system::error_code ec, std::size_t bytes_transferred) {
+            onWrite(ec, bytes_transferred, close);
+        });
+}
+
+void HttpConnection::onWrite(boost::system::error_code ec, std::size_t bytes_transferred, bool close) {
+    is_writing_ = false;
+
+    if (ec) {
+        std::cerr << "HTTP write error: " << ec.message() << std::endl;
+        setState(ConnectionState::Disconnected);
+        return;
+    }
+
+    // 更新统计信息
+    updateBytesSent(bytes_transferred);
+    incrementMessagesSent();
+
+    // 如果需要关闭连接或者客户端请求关闭
+    if (close || request_.keep_alive() == false) {
+        setState(ConnectionState::Disconnected);
+        socket_.close();
+        return;
+    }
+
+    // 继续读取下一个请求
+    doRead();
+}
+
+void HttpConnection::handleRequest(const HttpRequest& request) {
+    try {
+        // 检查是否是静态文件请求
+        if (!static_file_directory_.empty() && request.method() == "GET") {
+            auto file_path = static_file_directory_ + request.target();
+            
+            // 防止目录遍历攻击
+            if (file_path.find("..") != std::string::npos) {
+                sendError(http::status::forbidden, "Access denied");
+                return;
+            }
+
+            // 如果是目录请求，尝试查找index.html
+            if (std::filesystem::is_directory(file_path)) {
+                file_path += "/index.html";
+            }
+
+            // 检查文件是否存在
+            if (std::filesystem::exists(file_path)) {
+                sendFile(file_path);
+                return;
+            }
+        }
+
+        // 使用高效路由查找机制
+        auto handler = findHandler(request.method_string(), request.target().to_string());
+        
+        if (handler) {
+            // 创建响应对象
+            HttpResponse response;
+            response.version(request.version());
+            response.keep_alive(request.keep_alive());
+
+            // 设置CORS头
+            if (server_->cors_enabled_) {
+                response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+                response.set(http::field::access_control_allow_methods, "GET, POST, PUT, DELETE, OPTIONS");
+                response.set(http::field::access_control_allow_headers, "Content-Type, Authorization");
+            }
+
+            // 调用路由处理器
+            handler(request, response);
+
+            // 发送响应
+            sendResponse(response);
+        } else {
+            // 路由未找到
+            sendError(http::status::not_found, "404 Not Found");
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "HTTP request handling error: " << e.what() << std::endl;
+        sendError(http::status::internal_server_error, "500 Internal Server Error");
+    }
+}
+
+HttpRequestHandler HttpConnection::findHandler(const std::string& method, const std::string& path) {
+    // 使用服务器端的高效路由查找机制
+    return server_->findHandlerInTable(method, path);
+}
+
+void HttpConnection::sendError(http::status status, const std::string& message) {
+    HttpResponse response;
+    response.result(status);
+    response.set(http::field::content_type, "text/plain");
+    response.body() = message;
+
+    if (server_->cors_enabled_) {
+        response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+    }
+
+    response.keep_alive(request_.keep_alive());
+    sendResponse(response);
+}
+
+void HttpConnection::sendFile(const std::string& file_path) {
+    try {
+        std::ifstream file(file_path, std::ios::binary);
+        if (!file) {
+            sendError(http::status::not_found, "File not found");
+            return;
+        }
+
+        // 读取文件内容
+        std::ostringstream ss;
+        ss << file.rdbuf();
+        
+        HttpResponse response;
+        response.result(http::status::ok);
+        response.set(http::field::content_type, getMimeType(file_path));
+        response.body() = ss.str();
+
+        if (server_->cors_enabled_) {
+            response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+        }
+
+        response.keep_alive(request_.keep_alive());
+        sendResponse(response);
+    } catch (const std::exception& e) {
+        std::cerr << "Error sending file: " << e.what() << std::endl;
+        sendError(http::status::internal_server_error, "Error reading file");
+    }
+}
+
+std::string HttpConnection::getMimeType(const std::string& file_path) {
+    static const std::unordered_map<std::string, std::string> mime_types = {
+        {".html", "text/html"},
+        {".htm", "text/html"},
+        {".css", "text/css"},
+        {".js", "application/javascript"},
+        {".json", "application/json"},
+        {".xml", "application/xml"},
+        {".png", "image/png"},
+        {".jpg", "image/jpeg"},
+        {".jpeg", "image/jpeg"},
+        {".gif", "image/gif"},
+        {".svg", "image/svg+xml"},
+        {".ico", "image/x-icon"},
+        {".txt", "text/plain"},
+        {".pdf", "application/pdf"},
+        {".zip", "application/zip"}
+    };
+
+    // 获取文件扩展名
+    auto ext_pos = file_path.find_last_of('.');
+    if (ext_pos != std::string::npos) {
+        std::string ext = file_path.substr(ext_pos);
+        auto it = mime_types.find(ext);
+        if (it != mime_types.end()) {
+            return it->second;
+        }
+    }
+
+    return "application/octet-stream";
+}
 
 // HttpServer实现
-HttpServer::HttpServer(net::io_context& io_context)
-    : acceptor_(io_context),
+HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager)
+    : io_context_(io_context),
+      acceptor_(io_context),
+      connection_manager_(connection_manager),
       running_(false),
       cors_enabled_(false),
-      static_file_directory_(""),
-      socket_(io_context) {
+      static_file_directory_("") {
 }
 
 HttpServer::~HttpServer() {
@@ -147,7 +455,11 @@ void HttpServer::doAccept() {
                 auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
                 
                 // 创建新的HTTP会话
-                auto session = std::make_shared<HttpSession>(connection_id, std::move(socket), this);
+                auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
+                
+                // 添加到连接管理器
+                session->setState(ConnectionState::Connecting);
+                connection_manager_.addConnection(session);
                 
                 std::cout << "HTTP connection " << connection_id << " established" << std::endl;
                 session->start();
@@ -160,225 +472,4 @@ void HttpServer::doAccept() {
         });
 }
 
-// HttpSession实现
-HttpSession::HttpSession(ConnectionId id, tcp::socket socket, HttpServer* server)
-    : connection_id_(id)
-    , socket_(std::move(socket))
-    , server_(server)
-    , is_writing_(false)
-    , timeout_timer_(socket_.get_executor()) {
-}
-
-HttpSession::~HttpSession() {
-    // 取消定时器
-    timeout_timer_.cancel();
-}
-
-void HttpSession::start() {
-    // 设置超时定时器（30秒）
-    timeout_timer_.expires_after(std::chrono::seconds(30));
-    timeout_timer_.async_wait([this](boost::system::error_code ec) {
-        if (!ec && socket_.is_open()) {
-            std::cerr << "HTTP session timeout" << std::endl;
-            socket_.close();
-        }
-    });
-
-    // 开始读取请求
-    doRead();
-}
-
-void HttpSession::sendResponse(const HttpResponse& response) {
-    doWrite(response);
-}
-
-void HttpSession::doRead() {
-    // 解析HTTP请求
-    http::async_read(socket_, buffer_, request_,
-        [this](boost::system::error_code ec, std::size_t bytes_transferred) {
-            onRead(ec, bytes_transferred);
-        });
-}
-
-void HttpSession::onRead(boost::system::error_code ec, std::size_t bytes_transferred) {
-    // 重置超时定时器
-    timeout_timer_.expires_after(std::chrono::seconds(30));
-
-    if (ec) {
-        if (ec != http::error::end_of_stream) {
-            std::cerr << "HTTP read error: " << ec.message() << std::endl;
-        }
-        return;
-    }
-
-    // 处理请求
-    handleRequest(request_);
-}
-
-void HttpSession::doWrite(const HttpResponse& response) {
-    is_writing_ = true;
-
-    // 检查是否需要关闭连接
-    bool close = response.need_eof();
-
-    // 发送响应
-    http::async_write(socket_, response,
-        [this, close](boost::system::error_code ec, std::size_t bytes_transferred) {
-            onWrite(ec, bytes_transferred, close);
-        });
-}
-
-void HttpSession::onWrite(boost::system::error_code ec, std::size_t bytes_transferred, bool close) {
-    is_writing_ = false;
-
-    if (ec) {
-        std::cerr << "HTTP write error: " << ec.message() << std::endl;
-        return;
-    }
-
-    // 如果需要关闭连接或者客户端请求关闭
-    if (close || request_.keep_alive() == false) {
-        return; // 连接将自动关闭
-    }
-
-    // 继续读取下一个请求
-    doRead();
-}
-
-void HttpSession::handleRequest(const HttpRequest& request) {
-    try {
-        // 检查是否是静态文件请求
-        if (!static_file_directory_.empty() && request.method() == "GET") {
-            auto file_path = static_file_directory_ + request.target();
-            
-            // 防止目录遍历攻击
-            if (file_path.find("..") != std::string::npos) {
-                sendError(http::status::forbidden, "Access denied");
-                return;
-            }
-
-            // 如果是目录请求，尝试查找index.html
-            if (std::filesystem::is_directory(file_path)) {
-                file_path += "/index.html";
-            }
-
-            // 检查文件是否存在
-            if (std::filesystem::exists(file_path)) {
-                sendFile(file_path);
-                return;
-            }
-        }
-
-        // 使用高效路由查找机制
-        auto handler = findHandler(request.method_string(), request.target().to_string());
-        
-        if (handler) {
-            // 创建响应对象
-            HttpResponse response;
-            response.version(request.version());
-            response.keep_alive(request.keep_alive());
-
-            // 设置CORS头
-            if (server_->cors_enabled_) {
-                response.set(http::field::access_control_allow_origin, server_->cors_origin_);
-                response.set(http::field::access_control_allow_methods, "GET, POST, PUT, DELETE, OPTIONS");
-                response.set(http::field::access_control_allow_headers, "Content-Type, Authorization");
-            }
-
-            // 调用路由处理器
-            handler(request, response);
-
-            // 发送响应
-            sendResponse(response);
-        } else {
-            // 路由未找到
-            sendError(http::status::not_found, "404 Not Found");
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "HTTP request handling error: " << e.what() << std::endl;
-        sendError(http::status::internal_server_error, "500 Internal Server Error");
-    }
-}
-
-HttpRequestHandler HttpSession::findHandler(const std::string& method, const std::string& path) {
-    // 使用服务器端的高效路由查找机制
-    return server_->findHandlerInTable(method, path);
-}
-
-void HttpSession::sendError(http::status status, const std::string& message) {
-    HttpResponse response;
-    response.result(status);
-    response.set(http::field::content_type, "text/plain");
-    response.body() = message;
-
-    if (server_->cors_enabled_) {
-        response.set(http::field::access_control_allow_origin, server_->cors_origin_);
-    }
-
-    response.keep_alive(request_.keep_alive());
-    sendResponse(response);
-}
-
-void HttpSession::sendFile(const std::string& file_path) {
-    try {
-        std::ifstream file(file_path, std::ios::binary);
-        if (!file) {
-            sendError(http::status::not_found, "File not found");
-            return;
-        }
-
-        // 读取文件内容
-        std::ostringstream ss;
-        ss << file.rdbuf();
-        
-        HttpResponse response;
-        response.result(http::status::ok);
-        response.set(http::field::content_type, getMimeType(file_path));
-        response.body() = ss.str();
-
-        if (server_->cors_enabled_) {
-            response.set(http::field::access_control_allow_origin, server_->cors_origin_);
-        }
-
-        response.keep_alive(request_.keep_alive());
-        sendResponse(response);
-    } catch (const std::exception& e) {
-        std::cerr << "Error sending file: " << e.what() << std::endl;
-        sendError(http::status::internal_server_error, "Error reading file");
-    }
-}
-
-std::string HttpSession::getMimeType(const std::string& file_path) {
-    static const std::unordered_map<std::string, std::string> mime_types = {
-        {".html", "text/html"},
-        {".htm", "text/html"},
-        {".css", "text/css"},
-        {".js", "application/javascript"},
-        {".json", "application/json"},
-        {".xml", "application/xml"},
-        {".png", "image/png"},
-        {".jpg", "image/jpeg"},
-        {".jpeg", "image/jpeg"},
-        {".gif", "image/gif"},
-        {".svg", "image/svg+xml"},
-        {".ico", "image/x-icon"},
-        {".txt", "text/plain"},
-        {".pdf", "application/pdf"},
-        {".zip", "application/zip"}
-    };
-
-    // 获取文件扩展名
-    auto ext_pos = file_path.find_last_of('.');
-    if (ext_pos != std::string::npos) {
-        std::string ext = file_path.substr(ext_pos);
-        auto it = mime_types.find(ext);
-        if (it != mime_types.end()) {
-            return it->second;
-        }
-    }
-
-    return "application/octet-stream";
-}
-
-} // namespace http
 } // namespace network

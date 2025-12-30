@@ -335,7 +335,7 @@ void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) 
         std::shared_lock lock(connections_mutex_);
         
         std::for_each(connections_.begin(), connections_.end(),
-                    [now, idle_timeout](const auto& pair) {
+                    [now, idle_timeout, idle_connection_ids](const auto& pair) {
                         const auto& [id, connection] = pair;
                         if (connection
                              && !connection->isActive()

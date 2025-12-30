@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ConnectionManager.h"
 #include <boost/beast/http.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/awaitable.hpp>
@@ -13,112 +14,126 @@
 #include <map>
 
 namespace network {
-namespace http {
 
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
 
-// HTTP请求结构
+// HTTP请求响应结构
 using HttpRequest = http::request<http::string_body>;
 using HttpResponse = http::response<http::string_body>;
 
 // HTTP处理器函数类型
 using HttpRequestHandler = std::function<void(const HttpRequest&, HttpResponse&)>;
 
-// HTTP服务器类
+/**
+ * @brief HTTP连接类
+ * 
+ * 该类封装了一个HTTP连接，包括连接ID、类型、状态、统计信息等。
+ * 它是所有具体连接类型（如TCP、WebSocket、Http）的基类，提供了统一的接口。
+ */
+class HttpConnection : public network::Connection {
+public:
+    using Ptr = std::shared_ptr<HttpConnection>;
+
+private:
+    tcp::socket socket_;
+    beast::flat_buffer buffer_;
+    HttpRequest request_;
+    HttpResponse response_;
+    HttpServer* server_;
+    bool is_writing_;
+
+    // 超时定时器
+    net::steady_timer timeout_timer_;
+
+public:
+    HttpConnection(ConnectionId id, tcp::socket socket, HttpServer* server);
+    ~HttpConnection();
+
+    void start() override;
+    void close() override;
+    void forceClose() override;
+
+    /**
+     * @brief 发送HTTP响应
+     * 
+     * 该函数用于发送HTTP响应到客户端。它会将响应转换为字符串并发送。
+     * 
+     * @param response 要发送的HTTP响应对象
+     */
+    void sendResponse(const HttpResponse& response);
+    void send(const std::vector<char>& data) override;
+    void send(const std::string& data) override;
+    void send(std::vector<char>&& data) override;
+
+    std::string getRemoteAddress() const override;
+    uint16_t getRemotePort() const override;
+    boost::asio::ip::tcp::endpoint getRemoteEndpoint() const override;
+
+    bool isConnected() const override;
+
+private:
+    /**
+     * @brief 异步读取HTTP请求
+     * 
+     * 该函数用于异步读取客户端发送的HTTP请求。它会将请求解析到request_成员变量中。
+     */
+    void doRead();
+    void onRead(beast::error_code ec, std::size_t bytes_transferred);
+
+    /**
+     * @brief 异步写入HTTP响应
+     * 
+     * 该函数用于异步写入HTTP响应到客户端。它会将响应转换为字符串并发送。
+     * 
+     * @param response 要发送的HTTP响应对象
+     */
+    void doWrite(const HttpResponse& response);
+    void onWrite(beast::error_code ec, std::size_t bytes_transferred, bool close);
+
+    /**
+     * @brief 处理HTTP请求
+     * 
+     * 该函数用于处理客户端发送的HTTP请求。它会根据请求方法和路径调用相应的处理器函数。
+     * 
+     * @param request 客户端发送的HTTP请求对象
+     */
+    void handleRequest(const HttpRequest& request);
+
+    /**
+     * @brief 查找HTTP请求处理器
+     * 
+     * 该函数用于根据请求方法和路径查找对应的处理器函数。
+     * 
+     * @param method HTTP请求方法（如GET、POST等）
+     * @param path HTTP请求路径
+     * @return HttpRequestHandler 找到的处理器函数，若未找到则返回nullptr
+     */
+    HttpRequestHandler findHandler(const std::string& method, const std::string& path);
+
+    void sendError(http::status status, const std::string& message);
+    void sendFile(const std::string& file_path);
+
+    std::string getMimeType(const std::string& file_path);
+};
+
+/**
+ * @brief HTTP服务器类
+ * 
+ * 该类实现了一个基于Boost.Asio的HTTP服务器。它可以监听指定地址和端口，接受客户端连接，
+ * 解析HTTP请求，调用注册的路由处理器函数处理请求，最后发送响应给客户端。
+ */
 class HttpServer {
 public:
     using address = net::ip::address;
     using tcp = net::ip::tcp;
 
-    explicit HttpServer(net::io_context& io_context);
-    ~HttpServer();
-
-    // 启动服务器
-    void start(const address& addr, uint16_t port);
-
-    // 停止服务器
-    void stop();
-
-    // 检查是否正在运行
-    bool isRunning() const;
-
-    // 注册路由处理器
-    void registerRoute(const std::string& method, const std::string& path, HttpRequestHandler handler);
-
-    // 注册GET/POST/PUT/DELETE等特定方法的路由
-    void get(const std::string& path, HttpRequestHandler handler);
-    void post(const std::string& path, HttpRequestHandler handler);
-    void put(const std::string& path, HttpRequestHandler handler);
-    void del(const std::string& path, HttpRequestHandler handler);
-
-    // 设置静态文件目录
-    void setStaticFileDirectory(const std::string& directory);
-
-    // 设置跨域处理
-    void enableCORS(const std::string& origin = "*");
-
 private:
-    // HTTP会话类
-    class HttpSession : public std::enable_shared_from_this<HttpSession> {
-    public:
-        HttpSession(ConnectionId id, tcp::socket socket, HttpServer* server);
-        ~HttpSession();
+    boost::asio::io_context& io_context_;
+    boost::asio::ip::tcp::acceptor acceptor_;
+    ConnectionManager& connection_manager_;
 
-        // 启动会话
-        void start();
-
-        // 发送响应
-        void sendResponse(const HttpResponse& response);
-
-    private:
-        // 异步读取请求
-        void doRead();
-
-        // 异步写入响应
-        void doWrite(const HttpResponse& response);
-
-        // 处理读取完成的回调
-        void onRead(beast::error_code ec, std::size_t bytes_transferred);
-
-        // 处理写入完成的回调
-        void onWrite(beast::error_code ec, std::size_t bytes_transferred, bool close);
-
-        // 处理请求
-        void handleRequest(const HttpRequest& request);
-
-        // 路由匹配
-        HttpRequestHandler findHandler(const std::string& method, const std::string& path);
-
-        // 发送错误响应
-        void sendError(http::status status, const std::string& message);
-
-        // 发送文件响应
-        void sendFile(const std::string& file_path);
-
-        // 获取MIME类型
-        std::string getMimeType(const std::string& file_path);
-
-        tcp::socket socket_;
-        beast::flat_buffer buffer_;
-        HttpRequest request_;
-        HttpResponse response_;
-        HttpServer* server_;
-        bool is_writing_;
-
-        // 超时定时器
-        net::steady_timer timeout_timer_;
-        
-        // 连接ID
-        ConnectionId connection_id_;
-    };
-
-    // 接受器
-    tcp::acceptor acceptor_;
-    tcp::socket socket_;
-
-    // 运行状态
     bool running_;
 
     // 优化的路由表结构
@@ -134,13 +149,54 @@ private:
     bool cors_enabled_;
     std::string cors_origin_;
 
-    // 异步接受连接
+public:
+    explicit HttpServer(net::io_context& io_context, ConnectionManager& connection_manager);
+    ~HttpServer();
+
+    void start(const address& addr, uint16_t port);
+    void stop();
+
+    bool isRunning() const;
+
+    void registerRoute(const std::string& method, const std::string& path, HttpRequestHandler handler);
+
+    /**
+     * @brief 注册路由
+     * 
+     * 该函数用于注册一个路由，当客户端发送指定方法的请求到指定路径时，会调用该路由的处理器函数。
+     * 
+     * @param path HTTP请求路径
+     * @param handler 处理请求的处理器函数
+     */
+    void get(const std::string& path, HttpRequestHandler handler);
+    void post(const std::string& path, HttpRequestHandler handler);
+    void put(const std::string& path, HttpRequestHandler handler);
+    void del(const std::string& path, HttpRequestHandler handler);
+
+    /**
+     * @brief 设置静态文件目录
+     * 
+     * 该函数用于设置服务器的静态文件目录。当客户端请求静态文件时，服务器会从该目录中读取文件内容并发送给客户端。
+     * 
+     * @param directory 静态文件目录的路径
+     */
+    void setStaticFileDirectory(const std::string& directory);
+
+    /**
+     * @brief 启用跨域资源共享（CORS）
+     * 
+     * 该函数用于启用服务器的跨域资源共享功能。当客户端从不同域名或端口请求资源时，
+     * 服务器会根据设置的允许来源（origin）发送适当的CORS响应头。
+     * 
+     * @param origin 允许的来源域名，默认值为"*"，表示允许所有来源
+     */
+    void enableCORS(const std::string& origin = "*");
+
+private:
     void doAccept();
 
-    // 路由表管理辅助方法
     void addRouteToTable(const std::string& method, const std::string& path, HttpRequestHandler handler);
     HttpRequestHandler findHandlerInTable(const std::string& method, const std::string& path);
 };
 
-} // namespace http
 } // namespace network

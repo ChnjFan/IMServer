@@ -66,6 +66,16 @@ boost::asio::ip::tcp::endpoint TcpConnection::getRemoteEndpoint() const
     return endpoint;
 }
 
+std::string TcpConnection::getRemoteAddress() const
+{
+    return socket_.remote_endpoint().address().to_string();
+}
+
+uint16_t TcpConnection::getRemotePort() const
+{
+    return socket_.remote_endpoint().port();
+}
+
 bool TcpConnection::isConnected() const
 {
     return socket_.is_open();
@@ -76,8 +86,8 @@ void TcpConnection::doRead()
     auto self = shared_from_this();
     socket_.async_read_some(boost::asio::buffer(read_buffer_),
         [this, self](boost::system::error_code ec, std::size_t bytes_transferred) {
-            incrementMessagesReceived();
             updateBytesReceived(bytes_transferred);
+            incrementMessagesReceived();
             if (ec) {
                 close();
                 return;

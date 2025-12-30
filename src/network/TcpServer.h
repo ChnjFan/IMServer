@@ -30,6 +30,8 @@ public:
     void send(const std::vector<char>& data) override;
     
     boost::asio::ip::tcp::endpoint getRemoteEndpoint() const override;
+    std::string getRemoteAddress() const override;
+    uint16_t getRemotePort() const override;
     bool isConnected() const override;
 
 private:
