@@ -7,7 +7,7 @@
 
 namespace network {
     
-HttpConnection::HttpConnection(ConnectionId id, tcp::socket socket, HttpServer* server)
+HttpConnection::HttpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server)
     : network::Connection(id, ConnectionType::HTTP)
     , socket_(std::move(socket))
     , server_(server)
@@ -337,7 +337,7 @@ void HttpServer::start(const address& addr, uint16_t port) {
     try {
         // 打开acceptor
         boost::system::error_code ec;
-        acceptor_.open(tcp::v4(), ec);
+        acceptor_.open(boost::asio::ip::tcp::v4(), ec);
         if (ec) {
             throw std::runtime_error("Failed to open acceptor: " + ec.message());
         }
@@ -349,7 +349,7 @@ void HttpServer::start(const address& addr, uint16_t port) {
         }
 
         // 绑定到指定地址和端口
-        acceptor_.bind(tcp::endpoint(addr, port), ec);
+        acceptor_.bind(boost::asio::ip::tcp::endpoint(addr, port), ec);
         if (ec) {
             throw std::runtime_error("Failed to bind to address: " + ec.message());
         }
@@ -445,7 +445,7 @@ void HttpServer::doAccept() {
     if (!running_) return;
 
     acceptor_.async_accept(
-        [this](boost::system::error_code ec, tcp::socket socket) {
+        [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
             if (ec) {
                 if (running_) {
                     std::cerr << "Accept error: " << ec.message() << std::endl;

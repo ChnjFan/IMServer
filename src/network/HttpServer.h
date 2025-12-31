@@ -19,7 +19,6 @@ namespace network {
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
-namespace tcp = net::ip::tcp;
 
 // HTTP请求响应结构
 using HttpRequest = http::request<http::string_body>;
@@ -41,7 +40,7 @@ public:
     using Ptr = std::shared_ptr<HttpConnection>;
 
 private:
-    tcp::socket socket_;
+    boost::asio::ip::tcp::socket socket_;
     beast::flat_buffer buffer_;
     HttpRequest request_;
     HttpResponse response_;
@@ -52,7 +51,7 @@ private:
     net::steady_timer timeout_timer_;
 
 public:
-    HttpConnection(ConnectionId id, tcp::socket socket, HttpServer* server);
+    HttpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server);
     ~HttpConnection();
 
     void start() override;
@@ -131,7 +130,6 @@ private:
 class HttpServer {
 public:
     using address = net::ip::address;
-    using tcp = net::ip::tcp;
 
 private:
     boost::asio::io_context& io_context_;
