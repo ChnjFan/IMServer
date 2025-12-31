@@ -322,8 +322,9 @@ HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connectio
       acceptor_(io_context),
       connection_manager_(connection_manager),
       running_(false),
+      static_file_directory_(""),
       cors_enabled_(false),
-      static_file_directory_("") {
+      cors_origin_("*") {
 }
 
 HttpServer::~HttpServer() {
