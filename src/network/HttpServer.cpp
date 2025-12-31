@@ -215,8 +215,8 @@ void HttpConnection::handleRequest(const HttpRequest& request) {
             response.keep_alive(request.keep_alive());
 
             // 设置CORS头
-            if (server_->cors_enabled_) {
-                response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+            if (server_->isCORSEnabled()) {
+                response.set(http::field::access_control_allow_origin, server_->getCORSOrigin());
                 response.set(http::field::access_control_allow_methods, "GET, POST, PUT, DELETE, OPTIONS");
                 response.set(http::field::access_control_allow_headers, "Content-Type, Authorization");
             }
@@ -471,7 +471,6 @@ void HttpServer::doAccept() {
                 auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
                 
                 // 添加到连接管理器
-                session->setState(ConnectionState::Connecting);
                 connection_manager_.addConnection(session);
                 
                 std::cout << "HTTP connection " << connection_id << " established" << std::endl;
