@@ -1,4 +1,5 @@
 #include "HttpServer.h"
+#include "IdGenerator.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -81,7 +82,7 @@ void HttpConnection::send(std::vector<char>&& data) {
     HttpResponse response;
     response.result(http::status::ok);
     response.set(http::field::content_type, "application/octet-stream");
-    response.body() = std::string(std::move(data.begin()), std::move(data.end()));
+    response.body() = std::string(data.begin(), data.end());
     sendResponse(response);
 }
 
@@ -183,8 +184,8 @@ void HttpConnection::onWrite(boost::system::error_code ec, std::size_t bytes_tra
 void HttpConnection::handleRequest(const HttpRequest& request) {
     try {
         // 检查是否是静态文件请求
-        if (!static_file_directory_.empty() && request.method() == "GET") {
-            auto file_path = static_file_directory_ + request.target();
+        if (!server_->getStaticFileDirectory().empty() && request.method() == http::verb::get) {
+            auto file_path = server_->getStaticFileDirectory() + std::string(request.target());
             
             // 防止目录遍历攻击
             if (file_path.find("..") != std::string::npos) {
@@ -205,7 +206,7 @@ void HttpConnection::handleRequest(const HttpRequest& request) {
         }
 
         // 使用高效路由查找机制
-        auto handler = findHandler(request.method_string(), request.target().to_string());
+        auto handler = findHandler(std::string(request.method_string()), std::string(request.target()));
         
         if (handler) {
             // 创建响应对象
@@ -246,8 +247,8 @@ void HttpConnection::sendError(http::status status, const std::string& message) 
     response.set(http::field::content_type, "text/plain");
     response.body() = message;
 
-    if (server_->cors_enabled_) {
-        response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+    if (server_->isCORSEnabled()) {
+        response.set(http::field::access_control_allow_origin, server_->getCORSOrigin());
     }
 
     response.keep_alive(request_.keep_alive());
@@ -271,8 +272,8 @@ void HttpConnection::sendFile(const std::string& file_path) {
         response.set(http::field::content_type, getMimeType(file_path));
         response.body() = ss.str();
 
-        if (server_->cors_enabled_) {
-            response.set(http::field::access_control_allow_origin, server_->cors_origin_);
+        if (server_->isCORSEnabled()) {
+            response.set(http::field::access_control_allow_origin, server_->getCORSOrigin());
         }
 
         response.keep_alive(request_.keep_alive());
@@ -413,9 +414,21 @@ void HttpServer::setStaticFileDirectory(const std::string& directory) {
     static_file_directory_ = directory;
 }
 
+std::string &HttpServer::getStaticFileDirectory() {
+    return static_file_directory_;
+}
+
 void HttpServer::enableCORS(const std::string& origin) {
     cors_enabled_ = true;
     cors_origin_ = origin;
+}
+
+bool HttpServer::isCORSEnabled() const {
+    return cors_enabled_;
+}
+
+std::string HttpServer::getCORSOrigin() const {
+    return cors_origin_;
 }
 
 // 路由表管理辅助方法实现

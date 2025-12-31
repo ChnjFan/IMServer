@@ -183,6 +183,7 @@ public:
      * @param directory 静态文件目录的路径
      */
     void setStaticFileDirectory(const std::string& directory);
+    std::string &getStaticFileDirectory();
 
     /**
      * @brief 启用跨域资源共享（CORS）
@@ -192,13 +193,16 @@ public:
      * 
      * @param origin 允许的来源域名，默认值为"*"，表示允许所有来源
      */
-    void enableCORS(const std::string& origin = "*");
+    void enableCORS(const std::string &origin = "*");
+    bool isCORSEnabled() const;
+    std::string getCORSOrigin() const;
+
+    HttpRequestHandler findHandlerInTable(const std::string& method, const std::string& path);
 
 private:
     void doAccept();
 
     void addRouteToTable(const std::string& method, const std::string& path, HttpRequestHandler handler);
-    HttpRequestHandler findHandlerInTable(const std::string& method, const std::string& path);
 };
 
 } // namespace network
