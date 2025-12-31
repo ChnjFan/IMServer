@@ -15,6 +15,8 @@ TcpConnection::~TcpConnection() {
 void TcpConnection::start() {
     if (!running_) {
         running_ = true;
+        // 连接成功后，设置状态为Connecting，等待校验Token
+        setState(ConnectionState::Connecting);
         doRead();
     }
 }
@@ -25,7 +27,7 @@ void TcpConnection::close() {
         boost::system::error_code ec;
         socket_.close(ec);
         if (close_handler_) {
-            close_handler_(id, ec);
+            close_handler_(connection_id_, ec);
         }
     }
 }
@@ -98,6 +100,7 @@ void TcpConnection::doRead()
                                       dyn_buffer.data().end());
                 
                 dyn_buffer.consume(triggerMessageHandler(data));
+                //todo 怎么校验Token？
                 
                 doRead();
             }
@@ -108,7 +111,8 @@ void TcpConnection::doRead()
         });
 }
 
-TcpServer::TcpServer(boost::asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
+TcpServer::TcpServer(boost::asio::io_context& io_context, ConnectionManager& connection_manager,
+                     const std::string& address, uint16_t port)
     : io_context_(io_context),
       acceptor_(io_context, boost::asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port)),
       connection_manager_(connection_manager),
@@ -157,7 +161,6 @@ void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp:
         auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
         
         // TCP连接后立即接收数据，校验Token才能建立连接
-        conn->setState(ConnectionState::Connecting);
         conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理收到的消息
             std::cout << "Received message from connection " << conn_id << ": " 
@@ -166,11 +169,13 @@ void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp:
         });
 
         conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
-            std::cout << "Connection " << conn_id << " state changed from " << old_state << " to " << new_state << std::endl;
+            std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state)
+                     << " to " << connectionStateToString(new_state) << std::endl;
         });
         
         conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
-            std::cout << "Connection " << conn_id << " closed: " << ec.message() << std::endl;
+            std::cout << "Connection " << conn_id << " closed: " << connectionEventToString(ConnectionEvent::Disconnected)
+                     << " with error: " << ec.message() << std::endl;
         });
         
         connection_manager_.addConnection(conn);

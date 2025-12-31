@@ -31,6 +31,38 @@ enum class ConnectionState {
 };
 
 /**
+ * @brief 将ConnectionState枚举转换为字符串
+ * 
+ * @param state 连接状态枚举
+ * @return std::string 连接状态的字符串表示
+ */
+inline std::string connectionStateToString(ConnectionState state) {
+    switch (state) {
+        case ConnectionState::Disconnected: return "Disconnected";
+        case ConnectionState::Connecting: return "Connecting";
+        case ConnectionState::Connected: return "Connected";
+        case ConnectionState::Disconnecting: return "Disconnecting";
+        case ConnectionState::Error: return "Error";
+        default: return "Unknown";
+    }
+};
+
+/**
+ * @brief 将ConnectionType枚举转换为字符串
+ * 
+ * @param type 连接类型枚举
+ * @return std::string 连接类型的字符串表示
+ */
+inline std::string connectionTypeToString(ConnectionType type) {
+    switch (type) {
+        case ConnectionType::TCP: return "TCP";
+        case ConnectionType::WebSocket: return "WebSocket";
+        case ConnectionType::HTTP: return "HTTP";
+        default: return "Unknown";
+    }
+}
+
+/**
  * @brief 连接类型枚举
  */
 enum class ConnectionType {
@@ -45,6 +77,22 @@ enum class ConnectionEvent {
     Removed,        // 已移除
     Error,          // 错误
 };
+
+/**
+ * @brief 将ConnectionEvent枚举转换为字符串
+ * 
+ * @param event 连接事件枚举
+ * @return std::string 连接事件的字符串表示
+ */
+inline std::string connectionEventToString(ConnectionEvent event) {
+    switch (event) {
+        case ConnectionEvent::Connected: return "Connected";
+        case ConnectionEvent::Disconnected: return "Disconnected";
+        case ConnectionEvent::Removed: return "Removed";
+        case ConnectionEvent::Error: return "Error";
+        default: return "Unknown";
+    }
+}
 
 /**
  * @brief 连接统计信息

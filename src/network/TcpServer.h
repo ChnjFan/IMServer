@@ -3,6 +3,7 @@
 #include "ConnectionManager.h"
 #include "../tool/IdGenerator.h"
 #include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
 #include <string>
 #include <unordered_set>
 #include <mutex>
