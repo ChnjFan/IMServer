@@ -93,6 +93,51 @@ bool WebSocketConnection::isConnected() const
     return ws_.next_layer().is_open();
 }
 
+// 实现缺失的send方法：发送字符串数据
+void WebSocketConnection::send(const std::string& data) {
+    std::vector<char> char_data(data.begin(), data.end());
+    send(char_data);
+}
+
+// 实现缺失的send方法：发送右值引用数据
+void WebSocketConnection::send(std::vector<char>&& data) {
+    if (!running_) return;
+
+    bool write_in_progress = false;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        write_in_progress = !write_queue_.empty();
+        if (write_in_progress) {
+            // 如果当前有正在进行的写入操作，将数据加入写入缓冲区
+            write_queue_.push(std::move(data));
+        }
+    }
+
+    if (!write_in_progress) {
+        doWrite(std::move(data));
+    }
+}
+
+// 实现缺失的getRemoteAddress方法
+std::string WebSocketConnection::getRemoteAddress() const {
+    boost::system::error_code ec;
+    auto endpoint = ws_.next_layer().remote_endpoint(ec);
+    if (ec) {
+        return "";
+    }
+    return endpoint.address().to_string();
+}
+
+// 实现缺失的getRemotePort方法
+uint16_t WebSocketConnection::getRemotePort() const {
+    boost::system::error_code ec;
+    auto endpoint = ws_.next_layer().remote_endpoint(ec);
+    if (ec) {
+        return 0;
+    }
+    return endpoint.port();
+}
+
 void WebSocketConnection::doRead() {
     ws_.async_read(
         buffer_,

@@ -31,7 +31,10 @@ public:
     
     void start() override;
     void close() override;
+    void forceClose() override;
     void send(const std::vector<char>& data) override;
+    void send(const std::string& data) override;
+    void send(std::vector<char>&& data) override;
     
     ip::tcp::endpoint getRemoteEndpoint() const override;
     std::string getRemoteAddress() const override;

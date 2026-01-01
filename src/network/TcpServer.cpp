@@ -5,7 +5,10 @@
 namespace network {
 
 TcpConnection::TcpConnection(ConnectionId id, ip::tcp::socket socket)
-    : Connection(id, ConnectionType::TCP), socket_(std::move(socket)), read_buffer_(4096), running_(false) {
+    : network::Connection(id, ConnectionType::TCP)
+    , socket_(std::move(socket))
+    , read_buffer_(4096)
+    , running_(false) {
 }
 
 TcpConnection::~TcpConnection() {
@@ -46,7 +49,7 @@ void TcpConnection::send(const std::vector<char> &data)
     
     if (!write_in_progress) {
         auto self = shared_from_this();
-        boost::asio::async_write(socket_, boost::asio::buffer(write_buffer_),
+        asio::async_write(socket_, asio::buffer(write_buffer_),
             [this, self](boost::system::error_code ec, std::size_t /*length*/) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lock(write_mutex_);
@@ -58,24 +61,81 @@ void TcpConnection::send(const std::vector<char> &data)
     }
 }
 
-boost::asio::ip::tcp::endpoint TcpConnection::getRemoteEndpoint() const
+// 实现缺失的send方法：发送字符串数据
+void TcpConnection::send(const std::string& data)
+{
+    std::vector<char> char_data(data.begin(), data.end());
+    send(char_data);
+}
+
+// 实现缺失的send方法：发送右值引用数据
+void TcpConnection::send(std::vector<char>&& data)
+{
+    if (!running_) return;
+
+    bool write_in_progress = false;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        // 如果当前有正在进行的写入操作，将数据加入写入缓冲区
+        write_in_progress = !write_buffer_.empty();
+        if (write_in_progress) {
+            write_buffer_.insert(write_buffer_.end(), data.begin(), data.end());
+        } else {
+            // 没有正在进行的写入操作，直接使用传入的数据
+            write_buffer_.swap(data);
+        }
+    }
+    
+    if (!write_in_progress) {
+        auto self = shared_from_this();
+        asio::async_write(socket_, asio::buffer(write_buffer_),
+            [this, self](boost::system::error_code ec, std::size_t /*length*/) {
+                if (!ec) {
+                    std::lock_guard<std::mutex> lock(write_mutex_);
+                    write_buffer_.clear();
+                } else {
+                    close();
+                }
+            });
+    }
+}
+
+// 实现缺失的forceClose方法
+void TcpConnection::forceClose()
+{
+    running_ = false;
+    socket_.close();
+    setState(ConnectionState::Disconnected);
+}
+
+ip::tcp::endpoint TcpConnection::getRemoteEndpoint() const
 {
     boost::system::error_code ec;
     auto endpoint = socket_.remote_endpoint(ec);
     if (ec) {
-        return boost::asio::ip::tcp::endpoint();
+        return ip::tcp::endpoint();
     }
     return endpoint;
 }
 
 std::string TcpConnection::getRemoteAddress() const
 {
-    return socket_.remote_endpoint().address().to_string();
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return "";
+    }
+    return endpoint.address().to_string();
 }
 
 uint16_t TcpConnection::getRemotePort() const
 {
-    return socket_.remote_endpoint().port();
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return 0;
+    }
+    return endpoint.port();
 }
 
 bool TcpConnection::isConnected() const
@@ -157,22 +217,22 @@ void TcpServer::doAccept() {
 void TcpServer::handleAccept(boost::system::error_code ec, ip::tcp::socket socket) {
     if (!ec) {
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
-        auto conn = std::make_shared<TcpConnection>(static_cast<uint64_t>(connection_id), std::move(socket));
+        auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
         
         // TCP连接后立即接收数据，校验Token才能建立连接
-        conn->setMessageHandler([this](network::ConnectionId conn_id, const std::vector<char>& data) {
+        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理收到的消息
             std::cout << "Received message from connection " << conn_id << ": " 
                       << std::string(data.begin(), data.end()) << std::endl;
             return data.size();
         });
 
-        conn->setStateChangeHandler([this](network::ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
+        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
             std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state)
                      << " to " << connectionStateToString(new_state) << std::endl;
         });
         
-        conn->setCloseHandler([this](network::ConnectionId conn_id, const boost::system::error_code& ec) {
+        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
             std::cout << "Connection " << conn_id << " closed: " << connectionEventToString(ConnectionEvent::Disconnected)
                      << " with error: " << ec.message() << std::endl;
         });

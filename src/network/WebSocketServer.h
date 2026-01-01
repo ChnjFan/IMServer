@@ -45,8 +45,12 @@ public:
     void close() override;
     void forceClose() override;
     void send(const std::vector<char>& data) override;
+    void send(const std::string& data) override;
+    void send(std::vector<char>&& data) override;
 
     boost::asio::ip::tcp::endpoint getRemoteEndpoint() const override;
+    std::string getRemoteAddress() const override;
+    uint16_t getRemotePort() const override;
     bool isConnected() const override;
 
     // 检查连接是否打开
