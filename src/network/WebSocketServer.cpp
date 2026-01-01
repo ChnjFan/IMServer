@@ -6,7 +6,7 @@
 namespace network {
 
 // WebSocketSession实现
-WebSocketConnection::WebSocketConnection(ConnectionId id, asio::ip::tcp::socket socket)
+WebSocketConnection::WebSocketConnection(imserver::tool::ConnectionId id, asio::ip::tcp::socket socket)
     : Connection(id, ConnectionType::WebSocket), ws_(std::move(socket)) {
     // 设置WebSocket选项
     ws_.set_option(websocket::stream_base::timeout::suggested(beast::role_type::server));
@@ -201,18 +201,18 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
         auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
 
-        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
+        conn->setMessageHandler([this](imserver::tool::ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理消息
             std::cout << "Received message from WebSocket connection " << conn_id << ": " 
                         << std::string(data.begin(), data.end()) << std::endl;
             return data.size();
         });
 
-        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
+        conn->setStateChangeHandler([this](imserver::tool::ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
             std::cout << "Connection " << conn_id << " state changed from " << old_state << " to " << new_state << std::endl;
         });
         
-        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
+        conn->setCloseHandler([this](imserver::tool::ConnectionId conn_id, const boost::system::error_code& ec) {
             std::cout << "WebSocket connection " << conn_id << " closed: " << ec.message() << std::endl;
         });
 

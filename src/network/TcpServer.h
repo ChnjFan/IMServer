@@ -1,7 +1,7 @@
 #pragma once
 
+#include "IdGenerator.h"
 #include "ConnectionManager.h"
-#include "../tool/IdGenerator.h"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <string>
@@ -23,7 +23,7 @@ private:
     std::atomic<bool> running_;
 
 public:
-    TcpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket);
+    TcpConnection(imserver::tool::ConnectionId id, boost::asio::ip::tcp::socket socket);
     ~TcpConnection();
     
     void start() override;

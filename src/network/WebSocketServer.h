@@ -38,7 +38,7 @@ private:
     std::atomic<bool> running_;
 
 public:
-    WebSocketConnection(ConnectionId id, asio::ip::tcp::socket socket);
+    WebSocketConnection(imserver::tool::ConnectionId id, asio::ip::tcp::socket socket);
     ~WebSocketConnection();
 
     void start() override;

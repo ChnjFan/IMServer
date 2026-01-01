@@ -1,5 +1,7 @@
 #pragma once
 
+#include "IdGenerator.h"
+
 #include <memory>
 #include <vector>
 #include <functional>
@@ -57,8 +59,6 @@ struct ConnectionStats {
     std::chrono::steady_clock::time_point connected_time; // 连接时间
     std::chrono::steady_clock::time_point last_activity_time; // 最后活动时间
 };
-
-using ConnectionId = uint64_t;
 
 /**
  * @brief 将ConnectionEvent枚举转换为字符串
@@ -118,14 +118,14 @@ class Connection : public std::enable_shared_from_this<Connection> {
 public:
     using Ptr = std::shared_ptr<Connection>;
     // 消息处理回调函数
-    using MessageHandler = std::function<size_t(ConnectionId, const std::vector<char>&)>;
+    using MessageHandler = std::function<size_t(imserver::tool::ConnectionId, const std::vector<char>&)>;
     // 连接状态变更回调函数
-    using StateChangeHandler = std::function<void(ConnectionId, ConnectionState, ConnectionState)>;
+    using StateChangeHandler = std::function<void(imserver::tool::ConnectionId, ConnectionState, ConnectionState)>;
     // 连接关闭回调函数
-    using CloseHandler = std::function<void(ConnectionId, const boost::system::error_code&)>;
+    using CloseHandler = std::function<void(imserver::tool::ConnectionId, const boost::system::error_code&)>;   
 
 protected:
-    ConnectionId connection_id_;            // 连接ID
+    imserver::tool::ConnectionId connection_id_;            // 连接ID
     ConnectionType connection_type_;        // 连接类型
     ConnectionState state_;                 // 连接状态
     ConnectionStats stats_;                 // 连接统计信息
@@ -142,7 +142,7 @@ protected:
     mutable std::shared_mutex state_mutex_;
 
 public:
-    Connection(ConnectionId id, ConnectionType type);
+    Connection(imserver::tool::ConnectionId id, ConnectionType type);
     virtual ~Connection() = default;
 
     // 禁止拷贝和赋值
@@ -150,7 +150,7 @@ public:
     Connection& operator=(const Connection&) = delete;
 
     // 基础信息获取
-    ConnectionId getId() const { return connection_id_; }
+    imserver::tool::ConnectionId getId() const { return connection_id_; }
     ConnectionType getType() const { return connection_type_; }
     ConnectionState getState() const { return state_; }
     
@@ -247,7 +247,7 @@ public:
 private:
     // 线程安全的连接存储
     mutable std::shared_mutex connections_mutex_;
-    std::unordered_map<ConnectionId, Connection::Ptr> connections_;
+    std::unordered_map<imserver::tool::ConnectionId, Connection::Ptr> connections_;
 
     // 全局统计
     mutable std::mutex stats_mutex_;
@@ -259,7 +259,7 @@ private:
     bool enable_statistics_ = true;
     
     // 事件处理器
-    std::function<void(ConnectionId, ConnectionEvent)> event_handler_;
+    std::function<void(imserver::tool::ConnectionId, ConnectionEvent)> event_handler_;
     
     // 清理定时器
     std::unique_ptr<boost::asio::steady_timer> cleanup_timer_;
@@ -274,11 +274,11 @@ public:
 
     // 连接注册和管理
     void addConnection(Connection::Ptr connection);
-    void removeConnection(ConnectionId connection_id);
+    void removeConnection(imserver::tool::ConnectionId connection_id);
     void removeConnection(const Connection::Ptr& connection);
     
     // 连接查询
-    Connection::Ptr getConnection(ConnectionId connection_id) const;
+    Connection::Ptr getConnection(imserver::tool::ConnectionId connection_id) const;
     std::vector<Connection::Ptr> getConnectionsByType(ConnectionType type) const;
     std::vector<Connection::Ptr> getConnectionsByState(ConnectionState state) const;
     std::vector<Connection::Ptr> getAllConnections() const;
@@ -301,7 +301,7 @@ public:
     void setEnableStatistics(bool enable);
     
     // 事件通知
-    void setConnectionEventHandler(std::function<void(ConnectionId, ConnectionEvent)> handler);
+    void setConnectionEventHandler(std::function<void(imserver::tool::ConnectionId, ConnectionEvent)> handler);
     
     // 定时器管理
     void initializeCleanupTimer(boost::asio::io_context& io_context);

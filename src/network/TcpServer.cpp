@@ -4,7 +4,7 @@
 
 namespace network {
 
-TcpConnection::TcpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket)
+TcpConnection::TcpConnection(imserver::tool::ConnectionId id, boost::asio::ip::tcp::socket socket)
     : Connection(id, ConnectionType::TCP), socket_(std::move(socket)), read_buffer_(4096), running_(false) {
 }
 
@@ -95,11 +95,11 @@ void TcpConnection::doRead()
                 return;
             }
             try {
-                boost::asio::dynamic_buffer dyn_buffer(read_buffer_);
-                std::vector<char> data(dyn_buffer.data().begin(), 
-                                      dyn_buffer.data().end());
-                
-                dyn_buffer.consume(triggerMessageHandler(data));
+                size_t processed_bytes = triggerMessageHandler(read_buffer_);
+                read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + processed_bytes);
+                if (read_buffer_.empty()) {
+                    read_buffer_.resize(4096);
+                }
                 //todo 怎么校验Token？
                 
                 doRead();
@@ -161,19 +161,19 @@ void TcpServer::handleAccept(boost::system::error_code ec, boost::asio::ip::tcp:
         auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
         
         // TCP连接后立即接收数据，校验Token才能建立连接
-        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
+        conn->setMessageHandler([this](imserver::tool::ConnectionId conn_id, const std::vector<char>& data) {
             //todo 处理收到的消息
             std::cout << "Received message from connection " << conn_id << ": " 
                       << std::string(data.begin(), data.end()) << std::endl;
             return data.size();
         });
 
-        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
+        conn->setStateChangeHandler([this](imserver::tool::ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
             std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state)
                      << " to " << connectionStateToString(new_state) << std::endl;
         });
         
-        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
+        conn->setCloseHandler([this](imserver::tool::ConnectionId conn_id, const boost::system::error_code& ec) {
             std::cout << "Connection " << conn_id << " closed: " << connectionEventToString(ConnectionEvent::Disconnected)
                      << " with error: " << ec.message() << std::endl;
         });

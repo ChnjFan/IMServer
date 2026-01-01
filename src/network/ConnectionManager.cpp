@@ -6,7 +6,7 @@ namespace network {
 
 // ==================== Connection类实现 ====================
 
-Connection::Connection(ConnectionId id, ConnectionType type)
+Connection::Connection(imserver::tool::ConnectionId id, ConnectionType type)
     : connection_id_(id)
     , connection_type_(type)
     , state_(ConnectionState::Disconnected) {
@@ -111,7 +111,7 @@ void ConnectionManager::addConnection(Connection::Ptr connection) {
     }
 
     std::unique_lock lock(connections_mutex_);
-    ConnectionId id = connection->getId();
+    imserver::tool::ConnectionId id = connection->getId();
     
     if (connections_.size() >= max_connections_) {
         throw std::runtime_error("Maximum connections limit reached");
@@ -148,7 +148,7 @@ void ConnectionManager::addConnection(Connection::Ptr connection) {
     }
 }
 
-void ConnectionManager::removeConnection(ConnectionId connection_id) {
+void ConnectionManager::removeConnection(imserver::tool::ConnectionId connection_id) {
     std::unique_lock lock(connections_mutex_);
     auto it = connections_.find(connection_id);
     if (it == connections_.end()) {
@@ -189,7 +189,7 @@ void ConnectionManager::removeConnection(const Connection::Ptr& connection) {
     }
 }
 
-Connection::Ptr ConnectionManager::getConnection(ConnectionId connection_id) const {
+Connection::Ptr ConnectionManager::getConnection(imserver::tool::ConnectionId connection_id) const {
     std::shared_lock lock(connections_mutex_);
     auto it = connections_.find(connection_id);
     return (it != connections_.end()) ? it->second : nullptr;
@@ -329,7 +329,7 @@ void ConnectionManager::closeConnectionsByType(ConnectionType type) {
 
 void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) {
     auto now = std::chrono::steady_clock::now();
-    std::vector<ConnectionId> idle_connection_ids;
+    std::vector<imserver::tool::ConnectionId> idle_connection_ids;
 
     {
         std::shared_lock lock(connections_mutex_);
@@ -347,7 +347,7 @@ void ConnectionManager::closeIdleConnections(std::chrono::seconds idle_timeout) 
     }
 
     std::for_each(idle_connection_ids.begin(), idle_connection_ids.end(),
-        [this](ConnectionId id) {
+        [this](imserver::tool::ConnectionId id) {
             auto connection = getConnection(id);
             if (connection && connection->isConnected()) {
                 connection->close();
@@ -376,7 +376,7 @@ void ConnectionManager::setEnableStatistics(bool enable) {
 }
 
 void ConnectionManager::setConnectionEventHandler(
-    std::function<void(ConnectionId, ConnectionEvent)> handler) {
+    std::function<void(imserver::tool::ConnectionId, ConnectionEvent)> handler) {
     event_handler_ = std::move(handler);
 }
 
@@ -427,7 +427,7 @@ void ConnectionManager::updateGlobalStats() {
 }
 
 void ConnectionManager::cleanupClosedConnections() {
-    std::vector<ConnectionId> closed_connection_ids;
+    std::vector<imserver::tool::ConnectionId> closed_connection_ids;
     
     {
         std::shared_lock lock(connections_mutex_);
@@ -440,7 +440,7 @@ void ConnectionManager::cleanupClosedConnections() {
     }
     
     // 移除已关闭的连接
-    for (ConnectionId id : closed_connection_ids) {
+    for (auto id : closed_connection_ids) {
         removeConnection(id);
     }
 }
