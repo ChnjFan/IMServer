@@ -23,30 +23,32 @@ WebSocketConnection::~WebSocketConnection() {
 
 void WebSocketConnection::start() {
     // 执行WebSocket握手
+    auto self = shared_from_this();
     ws_.async_accept(
-        [self = shared_from_this()](beast::error_code ec) {
+        [this, self](beast::error_code ec) {
             if (ec) {
                 std::cerr << "WebSocket accept error: " << ec.message() << std::endl;
-                self->close();
+                close();
                 return;
             }
 
             running_ = true;
-            self->doRead();
+            doRead();
         });
 }
 
 void WebSocketConnection::close() {
     if (ws_.next_layer().is_open() && running_) {
         running_ = false;
+        auto self = shared_from_this();
         ws_.async_close(websocket::close_code::normal,
-            [self = shared_from_this()](beast::error_code ec) {
+            [this, self](beast::error_code ec) {
                 if (ec && ec != websocket::error::closed) {
                     std::cerr << "WebSocket close error: " << ec.message() << std::endl;
                 }
                 
-                if (self->close_handler_) {
-                    self->close_handler_(self->getId(), ec);
+                if (close_handler_) {
+                    close_handler_(getId(), ec);
                 }
             });
     }
@@ -139,19 +141,20 @@ uint16_t WebSocketConnection::getRemotePort() const {
 }
 
 void WebSocketConnection::doRead() {
+    auto self = shared_from_this();
     ws_.async_read(
         buffer_,
-        [self = shared_from_this(), &buffer = buffer_](beast::error_code ec, std::size_t bytes_transferred) {
+        [this, self, &buffer = buffer_](beast::error_code ec, std::size_t bytes_transferred) {
             incrementMessagesReceived();
             updateBytesReceived(bytes_transferred);
             if (ec) {
                 if (ec == websocket::error::closed) {
-                    if (self->close_handler_) {
-                        self->close_handler_(self);
+                    if (close_handler_) {
+                        close_handler_(getId(), ec);
                     }
                 } else {
                     std::cerr << "WebSocket read error: " << ec.message() << std::endl;
-                    self->doClose();
+                    doClose();
                 }
                 return;
             }
@@ -161,25 +164,25 @@ void WebSocketConnection::doRead() {
                 boost::asio::buffer_cast<const char*>(buffer.data()) + buffer.size());
 
             buffer.consume(triggerMessageHandler(data));
-            self->doRead();
+            doRead();
         });
 }
 
 void WebSocketConnection::doWrite(std::vector<char>&& data) {
     ws_.async_write(
         boost::asio::buffer(data),
-        [self = shared_from_this(), data = std::move(data)](beast::error_code ec, std::size_t bytes_transferred) {
+        [this, self, data = std::move(data)](beast::error_code ec, std::size_t bytes_transferred) {
             if (ec) {
                 std::cerr << "WebSocket write error: " << ec.message() << std::endl;
-                self->close();
+                close();
                 return;
             }
 
             // 检查是否有更多消息需要发送
-            if (!self->write_queue_.empty()) {
-                auto next_data = std::move(self->write_queue_.front());
-                self->write_queue_.pop();
-                self->doWrite(std::move(next_data));
+            if (!write_queue_.empty()) {
+                auto next_data = std::move(write_queue_.front());
+                write_queue_.pop();
+                doWrite(std::move(next_data));
             }
         });
 }
@@ -254,7 +257,8 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
         });
 
         conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
-            std::cout << "Connection " << conn_id << " state changed from " << old_state << " to " << new_state << std::endl;
+            std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state) 
+                    << " to " << connectionStateToString(new_state) << std::endl;
         });
         
         conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
