@@ -60,7 +60,7 @@ public:
 
 private:
     void doRead();
-    void doWrite(std::vector<char>& data);
+    void doWrite(const std::vector<char>& data);
 };
 
 /**

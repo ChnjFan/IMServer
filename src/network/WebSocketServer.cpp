@@ -166,7 +166,7 @@ void WebSocketConnection::doRead() {
         });
 }
 
-void WebSocketConnection::doWrite(std::vector<char>& data) {
+void WebSocketConnection::doWrite(const std::vector<char>& data) {
     auto self = shared_from_this();
     ws_.async_write(
         boost::asio::buffer(data),
