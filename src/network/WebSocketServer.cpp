@@ -76,7 +76,7 @@ void WebSocketConnection::send(const std::vector<char>& data) {
     }
 
     if (!write_in_progress) {
-        doWrite(std::move(data));
+        doWrite(data);
     }
 }
 
@@ -99,7 +99,7 @@ void WebSocketConnection::send(std::vector<char>&& data) {
     }
 
     if (!write_in_progress) {
-        doWrite(std::move(data));
+        doWrite(data);
     }
 }
 
@@ -181,7 +181,7 @@ void WebSocketConnection::doWrite(std::vector<char>&& data) {
             if (!write_queue_.empty()) {
                 auto next_data = std::move(write_queue_.front());
                 write_queue_.pop();
-                doWrite(std::move(next_data));
+                doWrite(next_data);
             }
         });
 }
