@@ -31,6 +31,52 @@ enum class ConnectionState {
 };
 
 /**
+ * @brief 连接类型枚举
+ */
+enum class ConnectionType {
+    TCP,
+    WebSocket,
+    HTTP
+};
+
+enum class ConnectionEvent {
+    Connected,      // 已连接
+    Disconnected,   // 已断开
+    Removed,        // 已移除
+    Error,          // 错误
+};
+
+/**
+ * @brief 连接统计信息
+ */
+struct ConnectionStats {
+    uint64_t bytes_sent = 0;           // 发送字节数
+    uint64_t bytes_received = 0;       // 接收字节数
+    uint64_t messages_sent = 0;        // 发送消息数
+    uint64_t messages_received = 0;    // 接收消息数
+    std::chrono::steady_clock::time_point connected_time; // 连接时间
+    std::chrono::steady_clock::time_point last_activity_time; // 最后活动时间
+};
+
+using ConnectionId = uint64_t;
+
+/**
+ * @brief 将ConnectionEvent枚举转换为字符串
+ * 
+ * @param event 连接事件枚举
+ * @return std::string 连接事件的字符串表示
+ */
+inline std::string connectionEventToString(ConnectionEvent event) {
+    switch (event) {
+        case ConnectionEvent::Connected: return "Connected";
+        case ConnectionEvent::Disconnected: return "Disconnected";
+        case ConnectionEvent::Removed: return "Removed";
+        case ConnectionEvent::Error: return "Error";
+        default: return "Unknown";
+    }
+}
+
+/**
  * @brief 将ConnectionState枚举转换为字符串
  * 
  * @param state 连接状态枚举
@@ -61,52 +107,6 @@ inline std::string connectionTypeToString(ConnectionType type) {
         default: return "Unknown";
     }
 }
-
-/**
- * @brief 连接类型枚举
- */
-enum class ConnectionType {
-    TCP,
-    WebSocket,
-    HTTP
-};
-
-enum class ConnectionEvent {
-    Connected,      // 已连接
-    Disconnected,   // 已断开
-    Removed,        // 已移除
-    Error,          // 错误
-};
-
-/**
- * @brief 将ConnectionEvent枚举转换为字符串
- * 
- * @param event 连接事件枚举
- * @return std::string 连接事件的字符串表示
- */
-inline std::string connectionEventToString(ConnectionEvent event) {
-    switch (event) {
-        case ConnectionEvent::Connected: return "Connected";
-        case ConnectionEvent::Disconnected: return "Disconnected";
-        case ConnectionEvent::Removed: return "Removed";
-        case ConnectionEvent::Error: return "Error";
-        default: return "Unknown";
-    }
-}
-
-/**
- * @brief 连接统计信息
- */
-struct ConnectionStats {
-    uint64_t bytes_sent = 0;           // 发送字节数
-    uint64_t bytes_received = 0;       // 接收字节数
-    uint64_t messages_sent = 0;        // 发送消息数
-    uint64_t messages_received = 0;    // 接收消息数
-    std::chrono::steady_clock::time_point connected_time; // 连接时间
-    std::chrono::steady_clock::time_point last_activity_time; // 最后活动时间
-};
-
-using ConnectionId = uint64_t;
 
 /**
  * @brief 连接类基类
