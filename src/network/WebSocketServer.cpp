@@ -219,6 +219,17 @@ bool WebSocketServer::isRunning() const {
     return running_;
 }
 
+// 设置连接回调
+void WebSocketServer::setMessageHandler(Connection::MessageHandler handler) {
+    message_handler_ = std::move(handler);
+}
+void WebSocketServer::setStateChangeHandler(Connection::StateChangeHandler handler) {
+    state_change_handler_ = std::move(handler);
+}
+void WebSocketServer::setCloseHandler(Connection::CloseHandler handler) {
+    close_handler_ = std::move(handler);
+}
+
 void WebSocketServer::doAccept() {
     if (!running_) return;
     acceptor_.async_accept(
@@ -248,21 +259,10 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
         auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
 
-        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
-            //todo 处理消息
-            std::cout << "Received message from WebSocket connection " << conn_id << ": " 
-                        << std::string(data.begin(), data.end()) << std::endl;
-            return data.size();
-        });
-
-        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
-            std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state) 
-                    << " to " << connectionStateToString(new_state) << std::endl;
-        });
-        
-        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
-            std::cout << "WebSocket connection " << conn_id << " closed: " << ec.message() << std::endl;
-        });
+        // 设置连接回调
+        conn->setMessageHandler(message_handler_);
+        conn->setStateChangeHandler(state_change_handler_);
+        conn->setCloseHandler(close_handler_);
 
         connection_manager_.addConnection(conn);
         conn->start();
