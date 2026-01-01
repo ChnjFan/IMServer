@@ -8,7 +8,7 @@
 
 namespace network {
     
-HttpConnection::HttpConnection(imserver::tool::ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server)
+HttpConnection::HttpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server)
     : network::Connection(id, ConnectionType::HTTP)
     , socket_(std::move(socket))
     , server_(server)

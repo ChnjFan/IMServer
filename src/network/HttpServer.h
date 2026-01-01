@@ -51,7 +51,7 @@ private:
     net::steady_timer timeout_timer_;
 
 public:
-    HttpConnection(imserver::tool::ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server);
+    HttpConnection(ConnectionId id, boost::asio::ip::tcp::socket socket, HttpServer* server);
     ~HttpConnection();
 
     void start() override;
