@@ -60,7 +60,7 @@ public:
 
 private:
     void doRead();
-    void doWrite(std::vector<char>&& data);
+    void doWrite(std::vector<char>& data);
 };
 
 /**
@@ -72,8 +72,8 @@ class WebSocketServer : public std::enable_shared_from_this<WebSocketServer> {
 private:
     asio::io_context& io_context_;
     asio::ip::tcp::acceptor acceptor_;
-    std::atomic<bool> running_;
     ConnectionManager& connection_manager_;
+    std::atomic<bool> running_;
     std::mutex connections_mutex_;
 
 public:

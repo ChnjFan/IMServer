@@ -80,28 +80,11 @@ void WebSocketConnection::send(const std::vector<char>& data) {
     }
 }
 
-boost::asio::ip::tcp::endpoint WebSocketConnection::getRemoteEndpoint() const
-{
-    boost::system::error_code ec;
-    auto endpoint = ws_.next_layer().remote_endpoint(ec);
-    if (ec) {
-        return boost::asio::ip::tcp::endpoint();
-    }
-    return endpoint;
-}
-
-bool WebSocketConnection::isConnected() const
-{
-    return ws_.next_layer().is_open();
-}
-
-// 实现缺失的send方法：发送字符串数据
 void WebSocketConnection::send(const std::string& data) {
     std::vector<char> char_data(data.begin(), data.end());
     send(char_data);
 }
 
-// 实现缺失的send方法：发送右值引用数据
 void WebSocketConnection::send(std::vector<char>&& data) {
     if (!running_) return;
 
@@ -118,6 +101,21 @@ void WebSocketConnection::send(std::vector<char>&& data) {
     if (!write_in_progress) {
         doWrite(std::move(data));
     }
+}
+
+boost::asio::ip::tcp::endpoint WebSocketConnection::getRemoteEndpoint() const
+{
+    boost::system::error_code ec;
+    auto endpoint = ws_.next_layer().remote_endpoint(ec);
+    if (ec) {
+        return boost::asio::ip::tcp::endpoint();
+    }
+    return endpoint;
+}
+
+bool WebSocketConnection::isConnected() const
+{
+    return ws_.next_layer().is_open();
 }
 
 // 实现缺失的getRemoteAddress方法
@@ -154,7 +152,7 @@ void WebSocketConnection::doRead() {
                     }
                 } else {
                     std::cerr << "WebSocket read error: " << ec.message() << std::endl;
-                    doClose();
+                    close();
                 }
                 return;
             }
@@ -168,10 +166,11 @@ void WebSocketConnection::doRead() {
         });
 }
 
-void WebSocketConnection::doWrite(std::vector<char>&& data) {
+void WebSocketConnection::doWrite(std::vector<char>& data) {
+    auto self = shared_from_this();
     ws_.async_write(
         boost::asio::buffer(data),
-        [this, self, data = std::move(data)](beast::error_code ec, std::size_t bytes_transferred) {
+        [this, self, data = std::move(data)](beast::error_code ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 std::cerr << "WebSocket write error: " << ec.message() << std::endl;
                 close();
