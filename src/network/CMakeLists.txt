@@ -1,31 +1,65 @@
-# network模块的CMakeLists.txt配置
+cmake_minimum_required(VERSION 3.10)
+project(IMServer)
 
 # 设置C++标准
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Boost.Beast requires Boost version >= 1.70
+set(BOOST_MIN_VERSION "1.70")
+
 # 查找Boost库
-find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
 
-# 收集源文件
-file(GLOB_RECURSE NETWORK_SOURCES "*.cpp")
-file(GLOB_RECURSE NETWORK_HEADERS "*.h")
+# 查找OpenSSL
+find_package(OpenSSL REQUIRED)
 
-# 创建可执行文件（作为单独进程）
-add_executable(network_module ${NETWORK_SOURCES} ${NETWORK_HEADERS})
+# 设置头文件目录
+set(HEADER_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../tool/    # 包含工具层头文件
+)
 
-# 包含头文件目录
-target_include_directories(network_module PUBLIC ${Boost_INCLUDE_DIRS})
+# 包含目录
+include_directories(${HEADER_DIR})
+include_directories(${Boost_INCLUDE_DIRS})
 
-# 链接Boost库
-target_link_libraries(network_module ${Boost_LIBRARIES})
+# 源文件
+set(SOURCES
+    ConnectionManager.cpp
+    EventLoop.cpp
+    HttpServer.cpp
+    TcpServer.cpp
+    WebSocketServer.cpp
+)
 
-# 添加编译选项
-if(MSVC)
-    target_compile_options(network_module PRIVATE /W4 /WX)
-else()
-    target_compile_options(network_module PRIVATE -Wall -Wextra -Wpedantic -Werror)
+# 创建静态库
+add_library(network STATIC ${SOURCES})
+
+# 链接库
+target_link_libraries(network
+    ${Boost_LIBRARIES}
+    OpenSSL::SSL
+    OpenSSL::Crypto
+)
+
+# 设置编译选项
+target_compile_options(network PRIVATE -Wall -Wextra)
+
+# 如果Boost版本较新，使用C++11的async
+if(Boost_VERSION GREATER_EQUAL "1.70")
+    target_compile_definitions(network PRIVATE BOOST_ASIO_HAS_STD_CHRONO)
 endif()
 
 # 安装配置
-install(TARGETS network_module DESTINATION bin)
+install(TARGETS network
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(FILES
+    WebSocketServer.h
+    HttpServer.h
+    DESTINATION include/network
+)

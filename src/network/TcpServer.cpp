@@ -1,76 +1,245 @@
-/**
- * @file TcpServer.cpp
- * @brief TCP服务器类的实现
- */
-
 #include "TcpServer.h"
+#include "IdGenerator.h"
 #include <iostream>
 
-namespace im {
 namespace network {
 
-TcpServer::TcpServer(EventSystem& event_system, const std::string& host, uint16_t port)
-    : event_system_(event_system), 
-      acceptor_(event_system_.getIoContext(), 
-                boost::asio::ip::tcp::endpoint(boost::asio::ip::tcp::v4(), port)) {}
-
-void TcpServer::start() {
-    // 开始异步接受连接
-    startAccept();
-    std::cout << "[TcpServer] Started listening on port " << acceptor_.local_endpoint().port() << std::endl;
+TcpConnection::TcpConnection(ConnectionId id, ip::tcp::socket socket)
+    : network::Connection(id, ConnectionType::TCP)
+    , socket_(std::move(socket))
+    , read_buffer_(4096)
+    , running_(false) {
 }
 
-void TcpServer::stop() {
-    // 关闭acceptor
-    boost::system::error_code ec;
-    acceptor_.close(ec);
-    
-    if (ec) {
-        std::cerr << "[TcpServer] Stop error: " << ec.message() << std::endl;
-    } else {
-        std::cout << "[TcpServer] Stopped listening" << std::endl;
+TcpConnection::~TcpConnection() {
+    close();
+}
+
+void TcpConnection::start() {
+    if (!running_) {
+        running_ = true;
+        // 连接成功后，设置状态为Connecting，等待校验Token
+        setState(ConnectionState::Connecting);
+        doRead();
     }
 }
 
-void TcpServer::startAccept() {
-    // 异步接受新连接
-    acceptor_.async_accept(
-        [this](const boost::system::error_code& ec, boost::asio::ip::tcp::socket socket) {
-            handleAccept(std::move(socket), ec);
+void TcpConnection::close() {
+    if (running_) {
+        running_ = false;
+        boost::system::error_code ec;
+        socket_.close(ec);
+        if (close_handler_) {
+            close_handler_(connection_id_, ec);
+        }
+    }
+}
+
+void TcpConnection::send(const std::vector<char> &data)
+{
+    if (!running_) return;
+
+    bool write_in_progress = false;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        // 如果当前有正在进行的写入操作，直接将数据加入写入缓冲区
+        write_in_progress = !write_buffer_.empty();
+        write_buffer_.insert(write_buffer_.end(), data.begin(), data.end());
+    }
+    
+    if (!write_in_progress) {
+        auto self = shared_from_this();
+        asio::async_write(socket_, asio::buffer(write_buffer_),
+            [this, self](boost::system::error_code ec, std::size_t /*length*/) {
+                if (!ec) {
+                    std::lock_guard<std::mutex> lock(write_mutex_);
+                    write_buffer_.clear();
+                } else {
+                    close();
+                }
+            });
+    }
+}
+
+// 实现缺失的send方法：发送字符串数据
+void TcpConnection::send(const std::string& data)
+{
+    std::vector<char> char_data(data.begin(), data.end());
+    send(char_data);
+}
+
+// 实现缺失的send方法：发送右值引用数据
+void TcpConnection::send(std::vector<char>&& data)
+{
+    if (!running_) return;
+
+    bool write_in_progress = false;
+    {
+        std::lock_guard<std::mutex> lock(write_mutex_);
+        // 如果当前有正在进行的写入操作，将数据加入写入缓冲区
+        write_in_progress = !write_buffer_.empty();
+        if (write_in_progress) {
+            write_buffer_.insert(write_buffer_.end(), data.begin(), data.end());
+        } else {
+            // 没有正在进行的写入操作，直接使用传入的数据
+            write_buffer_.swap(data);
+        }
+    }
+    
+    if (!write_in_progress) {
+        auto self = shared_from_this();
+        asio::async_write(socket_, asio::buffer(write_buffer_),
+            [this, self](boost::system::error_code ec, std::size_t /*length*/) {
+                if (!ec) {
+                    std::lock_guard<std::mutex> lock(write_mutex_);
+                    write_buffer_.clear();
+                } else {
+                    close();
+                }
+            });
+    }
+}
+
+// 实现缺失的forceClose方法
+void TcpConnection::forceClose()
+{
+    running_ = false;
+    socket_.close();
+    setState(ConnectionState::Disconnected);
+}
+
+ip::tcp::endpoint TcpConnection::getRemoteEndpoint() const
+{
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return ip::tcp::endpoint();
+    }
+    return endpoint;
+}
+
+std::string TcpConnection::getRemoteAddress() const
+{
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return "";
+    }
+    return endpoint.address().to_string();
+}
+
+uint16_t TcpConnection::getRemotePort() const
+{
+    boost::system::error_code ec;
+    auto endpoint = socket_.remote_endpoint(ec);
+    if (ec) {
+        return 0;
+    }
+    return endpoint.port();
+}
+
+bool TcpConnection::isConnected() const
+{
+    return socket_.is_open();
+}
+
+void TcpConnection::doRead()
+{
+    auto self = shared_from_this();
+    socket_.async_read_some(asio::buffer(read_buffer_),
+        [this, self](boost::system::error_code ec, std::size_t bytes_transferred) {
+            updateBytesReceived(bytes_transferred);
+            incrementMessagesReceived();
+            if (ec) {
+                close();
+                return;
+            }
+            try {
+                size_t processed_bytes = triggerMessageHandler(read_buffer_);
+                read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + processed_bytes);
+                if (read_buffer_.empty()) {
+                    read_buffer_.resize(4096);
+                }
+                //todo 怎么校验Token？
+                
+                doRead();
+            }
+            catch(const std::exception& e) {
+                std::cerr << "Error in TcpConnection::doRead: " << e.what() << '\n';
+                close();
+            }
         });
 }
 
-void TcpServer::handleAccept(boost::asio::ip::tcp::socket socket, const boost::system::error_code& ec) {
-    if (!ec) {
-        // 接受连接成功
-        auto remote_endpoint = socket.remote_endpoint();
-        std::cout << "[TcpServer] New connection from " << remote_endpoint.address().to_string() 
-                  << ":" << remote_endpoint.port() << std::endl;
-        
-        // 创建Connection对象并设置回调函数
-        auto connection = std::make_shared<Connection>(
-            std::move(socket),
-            message_handler_,
-            close_handler_);
-        
-        // 启动连接
-        connection->start();
-    } else {
-        // 接受连接失败
-        std::cerr << "[TcpServer] Accept error: " << ec.message() << std::endl;
+TcpServer::TcpServer(asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
+    : io_context_(io_context),
+      acceptor_(io_context, ip::tcp::endpoint(ip::address::from_string(address), port)),
+      connection_manager_(connection_manager),
+      running_(false) {
+}
+
+TcpServer::~TcpServer() {
+    stop();
+}
+
+void TcpServer::start() {
+    if (!running_) {
+        running_ = true;
+        doAccept();
     }
-    
-    // 继续接受下一个连接
-    startAccept();
 }
 
-void TcpServer::setMessageHandler(Connection::MessageHandler handler) {
-    message_handler_ = std::move(handler);
+void TcpServer::stop() {
+    if (running_) {
+        running_ = false;
+        boost::system::error_code ec;
+        acceptor_.close(ec);
+
+        connection_manager_.closeConnectionsByType(ConnectionType::TCP);
+    }
 }
 
-void TcpServer::setCloseHandler(Connection::CloseHandler handler) {
-    close_handler_ = std::move(handler);
+bool TcpServer::isRunning() const {
+    return running_;
+}
+
+void TcpServer::doAccept() {
+    if (!running_) return;
+    acceptor_.async_accept(
+        [self = shared_from_this()](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
+            if (!ec && self->running_) {
+                self->handleAccept(ec, std::move(socket));
+                self->doAccept();
+            }
+        });
+}
+
+void TcpServer::handleAccept(boost::system::error_code ec, ip::tcp::socket socket) {
+    if (!ec) {
+        auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+        auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
+        
+        // TCP连接后立即接收数据，校验Token才能建立连接
+        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
+            //todo 处理收到的消息
+            std::cout << "Received message from connection " << conn_id << ": " 
+                      << std::string(data.begin(), data.end()) << std::endl;
+            return data.size();
+        });
+
+        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
+            std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state)
+                     << " to " << connectionStateToString(new_state) << std::endl;
+        });
+        
+        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
+            std::cout << "Connection " << conn_id << " closed: " << connectionEventToString(ConnectionEvent::Disconnected)
+                     << " with error: " << ec.message() << std::endl;
+        });
+        
+        connection_manager_.addConnection(conn);
+        conn->start();
+    }
 }
 
 } // namespace network
-} // namespace im

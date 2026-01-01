@@ -14,8 +14,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Find Boost library
 find_package(Boost REQUIRED COMPONENTS system thread)
 
+# Find OpenSSL library
+find_package(OpenSSL REQUIRED)
+
 # Add include directories
-include_directories(include ${Boost_INCLUDE_DIRS})
+include_directories(include ${Boost_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
 
 # Add compiler warnings
 if(MSVC)
@@ -30,6 +33,9 @@ set(CMAKE_BUILD_TYPE Debug)
 # 各个模块作为单独进程构建
 # 网络模块
 add_subdirectory(src/network)
+
+# 工具模块（需要时添加）
+add_subdirectory(src/tool)
 
 # 其他模块将在各自目录中配置为单独进程
 # 核心模块（需要时添加）

@@ -1,615 +1,583 @@
-# IMServer 网络模块技术文档
+# IMServer 网络层技术文档
 
 ## 1. 模块概述
 
-网络模块是IMServer的核心组件之一，负责处理所有网络通信。它基于Boost::asio实现，提供了高效、可扩展的网络通信能力，支持TCP和WebSocket两种协议。
+网络层是IMServer的通信基础，负责处理底层网络通信，支持多种协议（WebSocket、TCP、HTTP/HTTPS），提供高性能、可靠的连接管理和数据传输服务。该模块采用Boost::asio作为核心网络库，基于事件驱动的IO模型，能够高效处理大量并发连接。
 
-### 1.1 主要功能
+## 2. 核心组件设计
 
-- **事件驱动架构**：基于Boost::asio的事件系统，实现高效的事件处理
-- **多协议支持**：同时支持TCP和WebSocket协议
-- **多线程并发**：内置线程池，支持高效并发处理
-- **连接管理**：自动处理连接的建立、数据传输和关闭
-- **异步通信**：全异步API设计，避免阻塞
-- **事件系统**：支持事件的注册、注销和触发，实现模块间的松耦合通信
+### 2.1 EventLoop
 
-### 1.2 架构设计
+#### 2.1.1 功能描述
+事件循环是网络层的核心组件，负责处理网络事件、定时器事件等各种IO事件，提供高效的事件处理机制。
 
-网络模块采用分层设计，主要包括以下几个层次：
-
-- **事件系统层**：基于Boost::asio的EventSystem实现事件驱动
-- **协议层**：TCP和WebSocket协议实现
-- **连接管理层**：处理客户端连接的生命周期
-- **数据处理层**：负责数据的编解码和分发
-
-## 2. Boost::asio选择理由
-
-选择Boost::asio作为网络库框架的主要原因包括：
-
-- **高性能**：基于事件驱动和异步I/O模型，效率高
-- **跨平台**：支持Windows、Linux、macOS等多种操作系统
-- **稳定成熟**：经过长期发展和广泛应用的成熟库
-- **丰富功能**：支持TCP、UDP、WebSocket等多种网络协议
-- **C++标准兼容**：与C++17标准良好集成
-- **活跃社区**：有大量的文档和示例可供参考
-
-## 3. 核心组件设计
-
-### 3.1 EventSystem
-
-#### 3.1.1 功能描述
-
-EventSystem是网络模块的核心事件驱动组件，负责管理事件和事件监听器，提供高效的异步事件处理机制。它采用单例模式设计，确保全局只有一个事件系统实例。
-
-主要功能包括：
-- 事件的注册、注销和触发
-- 事件监听器的添加和移除
-- 异步事件处理
-- 事件优先级支持
-- 批量事件发布
-- 同步/异步事件处理
-
-#### 3.1.2 设计理念
-
-EventSystem采用观察者模式设计，将事件的发布者和订阅者解耦，实现模块间的松耦合通信。它基于Boost::asio的io_context实现异步事件处理，确保高效的事件驱动机制。
-
-#### 3.1.3 核心类结构
-
-**Event（事件基类）**
+#### 2.1.2 实现细节
+- 基于Boost::asio的io_context实现
+- 提供事件循环的启动、停止和运行状态管理
+- 支持定时器功能
+- 支持多线程事件处理
 
 ```cpp
-class Event {
-public:
-    virtual ~Event() = default;
-    virtual std::type_index getType() const = 0;
-    virtual std::string getName() const = 0;
-    int priority = 0;
-    std::chrono::steady_clock::time_point timestamp;
-    Event() : timestamp(std::chrono::steady_clock::now()) {}
-};
-```
-
-所有事件都必须继承自Event类，实现getType()和getName()方法。事件可以设置优先级，高优先级的事件会被优先处理。
-
-**EventListener（事件监听器）**
-
-```cpp
-template<typename T>
-class EventListener : public EventListenerBase {
-public:
-    using CallbackType = std::function<void(const std::shared_ptr<T>&)>;
-    explicit EventListener(CallbackType callback) : callback_(std::move(callback)) {}
-    void onEvent(const std::shared_ptr<Event>& event) override {
-        auto typedEvent = std::dynamic_pointer_cast<T>(event);
-        if (typedEvent && callback_) {
-            callback_(typedEvent);
-        }
-    }
+class EventLoop {
 private:
-    CallbackType callback_;
-};
-```
+    boost::asio::io_context io_context_;
+    std::unique_ptr<boost::asio::io_context::work> work_;
+    std::thread thread_;
+    std::atomic<bool> running_;
 
-事件监听器是一个模板类，支持类型安全的事件处理。监听器通过回调函数接收并处理特定类型的事件。
-
-**EventSystem（事件系统核心类）**
-
-```cpp
-class EventSystem {
 public:
-    static EventSystem& getInstance();
-    EventSystem(const EventSystem&) = delete;
-    EventSystem& operator=(const EventSystem&) = delete;
-    ~EventSystem();
+    EventLoop();
+    ~EventLoop();
+    
+    // 启动事件循环
     void start();
+    
+    // 停止事件循环
     void stop();
-    template<typename T>
-    size_t subscribe(typename EventListener<T>::CallbackType callback);
-    template<typename T>
-    bool unsubscribe(size_t listenerId);
-    template<typename T>
-    void publish(std::shared_ptr<T> event);
-    void publishBatch(std::vector<std::shared_ptr<Event>> events);
-    template<typename T>
-    void dispatch(std::shared_ptr<T> event);
-    size_t getPendingEventCount() const;
-    void clearQueue();
-private:
-    EventSystem();
-    void processEvents();
-    std::unordered_map<std::type_index, std::vector<std::shared_ptr<EventListenerBase>>> listeners_;
-    std::priority_queue<EventQueueItem> eventQueue_;
-    std::mutex mutex_;           // 保护监听器列表
-    std::mutex queueMutex_;      // 保护事件队列
-    std::condition_variable cv_; // 条件变量
-    std::thread workerThread_;   // 工作线程
-    std::atomic<bool> running_;  // 运行状态
-    size_t nextListenerId_;      // 监听器ID生成器
-    std::atomic<size_t> eventCount_; // 待处理事件计数
+    
+    // 获取io_context对象
+    boost::asio::io_context& getIoContext();
+    
+    // 运行状态检查
+    bool isRunning() const;
+    
+    // 延迟执行任务
+    template<typename CompletionHandler>
+    void post(CompletionHandler handler);
+    
+    // 定时执行任务
+    template<typename Duration, typename CompletionHandler>
+    void runAfter(Duration duration, CompletionHandler handler);
 };
 ```
 
-EventSystem是事件系统的核心类，采用单例模式设计。它负责管理事件监听器和事件队列，处理事件的发布和分发。
+### 2.2 Connection
 
-#### 3.1.4 主要方法详解
+#### 2.2.1 功能描述
+连接管理类负责管理单个网络连接的生命周期，包括连接的建立、数据的发送和接收、连接的关闭等。
 
-**启动和停止事件系统**
-
-```cpp
-void start();  // 启动事件系统，开始异步处理事件
-void stop();   // 停止事件系统，等待所有事件处理完成
-```
-
-**注册和注销事件监听器**
-
-```cpp
-template<typename T>
-size_t subscribe(typename EventListener<T>::CallbackType callback);  // 注册事件监听器
-
-template<typename T>
-bool unsubscribe(size_t listenerId);  // 注销事件监听器
-```
-
-**发布事件**
-
-```cpp
-template<typename T>
-void publish(std::shared_ptr<T> event);  // 异步发布事件
-
-void publishBatch(std::vector<std::shared_ptr<Event>> events);  // 批量异步发布事件
-
-template<typename T>
-void dispatch(std::shared_ptr<T> event);  // 同步处理事件（立即执行）
-```
-
-**事件队列管理**
-
-```cpp
-size_t getPendingEventCount() const;  // 获取当前待处理事件数量
-void clearQueue();  // 清空事件队列
-```
-
-#### 3.1.5 事件处理流程
-
-1. **事件注册**：模块通过subscribe()方法注册对特定类型事件的监听器
-2. **事件发布**：模块通过publish()或publishBatch()方法发布事件
-3. **事件入队**：事件被添加到优先级队列中
-4. **事件分发**：工作线程从队列中获取事件，并分发给所有注册的监听器
-5. **事件处理**：监听器的回调函数被调用，处理事件
-
-#### 3.1.6 使用示例
-
-```cpp
-#include <iostream>
-#include "network/EventSystem.h"
-
-using namespace im::network;
-
-// 自定义事件类
-class UserLoginEvent : public Event {
-public:
-    UserLoginEvent(std::string username) : username_(std::move(username)) {}
-    std::type_index getType() const override {
-        return std::type_index(typeid(UserLoginEvent));
-    }
-    std::string getName() const override {
-        return "UserLoginEvent";
-    }
-    std::string getUsername() const { return username_; }
-private:
-    std::string username_;
-};
-
-int main() {
-    // 获取事件系统实例
-    auto& eventSystem = EventSystem::getInstance();
-    
-    // 启动事件系统
-    eventSystem.start();
-    
-    // 注册事件监听器
-    auto listenerId = eventSystem.subscribe<UserLoginEvent>(
-        [](const std::shared_ptr<UserLoginEvent>& event) {
-            std::cout << "User logged in: " << event->getUsername() << std::endl;
-        }
-    );
-    
-    // 发布事件
-    eventSystem.publish(std::make_shared<UserLoginEvent>("admin"));
-    eventSystem.publish(std::make_shared<UserLoginEvent>("user123"));
-    
-    // 等待事件处理完成
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    
-    // 注销事件监听器
-    eventSystem.unsubscribe<UserLoginEvent>(listenerId);
-    
-    // 停止事件系统
-    eventSystem.stop();
-    
-    return 0;
-}
-```
-
-#### 3.1.7 线程安全保证
-
-- **单例实例安全**：通过静态局部变量实现线程安全的单例实例创建
-- **事件发布安全**：publish()和dispatch()方法是线程安全的，可以从任何线程调用
-- **监听器管理安全**：subscribe()和unsubscribe()方法使用互斥锁保护监听器列表
-- **事件队列安全**：使用互斥锁保护事件队列的访问
-
-#### 3.1.8 性能优化
-
-- **事件优先级队列**：使用优先级队列确保高优先级事件被优先处理
-- **批量事件发布**：publishBatch()方法支持批量发布事件，减少锁竞争
-- **类型安全的事件处理**：使用动态类型转换确保类型安全的事件处理
-- **异步事件处理**：基于Boost::asio的io_context实现高效的异步事件处理
-
-### 3.2 Connection
-
-#### 3.2.1 功能描述
-管理单个客户端连接，处理数据的发送和接收。
-
-#### 3.2.2 实现细节
-- 基于`boost::asio::ip::tcp::socket`
-- 支持异步读写操作
-- 自动处理连接生命周期
-- 缓冲区管理
-
+#### 2.2.2 数据结构
 ```cpp
 class Connection : public std::enable_shared_from_this<Connection> {
-private:
-    boost::asio::ip::tcp::socket socket_;
-    std::array<char, 8192> read_buffer_;
-    std::queue<std::vector<char>> write_queue_;
-    bool writing_;
-    
-    void startRead();
-    void handleRead(const boost::system::error_code& ec, size_t bytes_transferred);
-    void startWrite();
-    void handleWrite(const boost::system::error_code& ec, size_t bytes_transferred);
-
 public:
     using Ptr = std::shared_ptr<Connection>;
-    using MessageHandler = std::function<void(Ptr, const std::vector<char>&)>;
-    using CloseHandler = std::function<void(Ptr)>;
+    using MessageHandler = std::function<void(const Ptr&, const std::vector<char>&)>;
+    using CloseHandler = std::function<void(const Ptr&)>;
     
-    Connection(boost::asio::ip::tcp::socket socket, MessageHandler message_handler, CloseHandler close_handler);
+private:
+    boost::asio::ip::tcp::socket socket_;
+    std::vector<char> read_buffer_;
+    std::vector<char> write_buffer_;
+    std::mutex write_mutex_;
+    MessageHandler message_handler_;
+    CloseHandler close_handler_;
+    bool closed_;
+
+public:
+    Connection(boost::asio::ip::tcp::socket socket);
+    ~Connection();
     
+    // 启动连接
     void start();
-    void send(const std::vector<char>& data);
+    
+    // 关闭连接
     void close();
     
+    // 发送数据
+    void send(const std::vector<char>& data);
+    
+    // 获取远程端点信息
     boost::asio::ip::tcp::endpoint getRemoteEndpoint() const;
+    
+    // 设置消息处理回调
+    void setMessageHandler(MessageHandler handler);
+    
+    // 设置关闭处理回调
+    void setCloseHandler(CloseHandler handler);
+    
+    // 连接状态检查
+    bool isClosed() const;
+    
+private:
+    // 异步读取数据
+    void doRead();
+    
+    // 异步写入数据
+    void doWrite();
 };
 ```
 
-### 3.3 TcpServer
+### 2.3 TcpServer
 
-#### 3.3.1 功能描述
-TCP服务器，负责监听TCP端口，接受客户端连接。
+#### 2.3.1 功能描述
+TCP服务器负责监听和接受TCP连接，管理所有客户端连接，提供TCP协议的通信服务。
 
-#### 3.3.2 实现细节
-- 基于`boost::asio::ip::tcp::acceptor`
-- 支持异步接受连接
-- 自动管理连接的生命周期
-- 提供连接事件回调
+#### 2.3.2 实现细节
+- 基于Boost::asio的acceptor实现
+- 支持设置监听地址和端口
+- 提供连接管理功能
+- 支持设置消息处理和连接关闭回调
 
 ```cpp
 class TcpServer {
 private:
-    EventSystem& event_system_;
+    boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
     Connection::MessageHandler message_handler_;
     Connection::CloseHandler close_handler_;
-    
-    void startAccept();
-    void handleAccept(boost::asio::ip::tcp::socket socket, const boost::system::error_code& ec);
+    std::atomic<bool> running_;
+    std::unordered_set<Connection::Ptr> connections_;
+    std::mutex connections_mutex_;
 
 public:
-    TcpServer(EventSystem& event_system, const std::string& host, uint16_t port);
+    TcpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    ~TcpServer();
     
+    // 启动服务器
     void start();
+    
+    // 停止服务器
     void stop();
     
-    void setMessageHandler(Connection::MessageHandler handler) {
-        message_handler_ = std::move(handler);
-    }
+    // 设置消息处理回调
+    void setMessageHandler(Connection::MessageHandler handler);
     
-    void setCloseHandler(Connection::CloseHandler handler) {
-        close_handler_ = std::move(handler);
-    }
+    // 设置连接关闭回调
+    void setCloseHandler(Connection::CloseHandler handler);
+    
+    // 服务器状态检查
+    bool isRunning() const;
+    
+private:
+    // 异步接受连接
+    void doAccept();
+    
+    // 处理新连接
+    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
+    
+    // 移除连接
+    void removeConnection(Connection::Ptr conn);
 };
 ```
 
-### 3.4 WebSocketServer
+### 2.4 WebSocketServer
 
-#### 3.4.1 功能描述
-WebSocket服务器，负责监听WebSocket连接，支持浏览器客户端。
+#### 2.4.1 功能描述
+WebSocket服务器负责监听和接受WebSocket连接，管理所有客户端连接，提供WebSocket协议的通信服务。
 
-#### 3.4.2 实现细节
-- 基于`boost::beast::websocket::stream`
-- 支持异步WebSocket握手和数据传输
-- 兼容WebSocket协议规范
-- 与TCP服务器共享事件系统
+#### 2.4.2 实现细节
+- 基于Boost::asio的acceptor实现
+- 支持WebSocket协议的握手和数据传输
+- 提供连接管理功能
+- 支持设置消息处理和连接关闭回调
 
 ```cpp
 class WebSocketServer {
 private:
-    EventSystem& event_system_;
+    boost::asio::io_context& io_context_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    
-    void startAccept();
-    void handleAccept(boost::asio::ip::tcp::socket socket, const boost::system::error_code& ec);
-    
-    class WebSocketSession : public std::enable_shared_from_this<WebSocketSession> {
-    private:
-        boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
-        boost::beast::flat_buffer buffer_;
-        
-        void onAccept(const boost::system::error_code& ec);
-        void doRead();
-        void onRead(const boost::system::error_code& ec, size_t bytes_transferred);
-        void onWrite(const boost::system::error_code& ec, size_t bytes_transferred);
-        
-    public:
-        explicit WebSocketSession(boost::asio::ip::tcp::socket socket);
-        void start();
-        void send(const std::string& message);
-    };
+    Connection::MessageHandler message_handler_;
+    Connection::CloseHandler close_handler_;
+    std::atomic<bool> running_;
+    std::unordered_set<Connection::Ptr> connections_;
+    std::mutex connections_mutex_;
 
 public:
-    WebSocketServer(EventSystem& event_system, const std::string& host, uint16_t port);
+    WebSocketServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    ~WebSocketServer();
     
+    // 启动服务器
     void start();
+    
+    // 停止服务器
     void stop();
+    
+    // 设置消息处理回调
+    void setMessageHandler(Connection::MessageHandler handler);
+    
+    // 设置连接关闭回调
+    void setCloseHandler(Connection::CloseHandler handler);
+    
+    // 服务器状态检查
+    bool isRunning() const;
+    
+private:
+    // 异步接受连接
+    void doAccept();
+    
+    // 处理新连接
+    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
+    
+    // 移除连接
+    void removeConnection(Connection::Ptr conn);
+    
+    // WebSocket握手处理
+    void handleWebSocketHandshake(Connection::Ptr conn, const std::vector<char>& data);
+    
+    // WebSocket数据帧处理
+    void handleWebSocketFrame(Connection::Ptr conn, const std::vector<char>& data);
+};
+
+### 2.5 HttpServer
+
+#### 2.5.1 功能描述
+HTTP服务器负责处理HTTP/HTTPS请求，主要用于接收登录认证等一次性请求，提供RESTful API接口服务。该服务器采用无状态设计，适用于处理短期请求，与长连接的WebSocket形成互补。
+
+#### 2.5.2 实现细节
+- 基于Boost::asio的acceptor实现
+- 支持HTTP/HTTPS协议
+- 提供请求解析和响应构建功能
+- 支持GET、POST、PUT、DELETE等HTTP方法
+- 支持静态文件服务（可选）
+- 支持请求路由和处理函数绑定
+
+```cpp
+class HttpServer {
+private:
+    boost::asio::io_context& io_context_;
+    boost::asio::ip::tcp::acceptor acceptor_;
+    std::atomic<bool> running_;
+    std::unordered_set<Connection::Ptr> connections_;
+    std::mutex connections_mutex_;
+    
+    // 请求处理函数类型
+    using RequestHandler = std::function<void(Connection::Ptr, const HttpRequest&, HttpResponse&)>;
+    std::unordered_map<std::string, RequestHandler> route_handlers_;
+    std::mutex route_mutex_;
+
+public:
+    HttpServer(boost::asio::io_context& io_context, const std::string& address, uint16_t port);
+    ~HttpServer();
+    
+    // 启动服务器
+    void start();
+    
+    // 停止服务器
+    void stop();
+    
+    // 服务器状态检查
+    bool isRunning() const;
+    
+    // 注册路由处理函数
+    template<typename Handler>
+    void registerRoute(const std::string& path, Handler handler) {
+        std::lock_guard<std::mutex> lock(route_mutex_);
+        route_handlers_[path] = handler;
+    }
+    
+    // 启用HTTPS
+    void enableHttps(const std::string& cert_file, const std::string& private_key_file);
+    
+private:
+    // 异步接受连接
+    void doAccept();
+    
+    // 处理新连接
+    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
+    
+    // 移除连接
+    void removeConnection(Connection::Ptr conn);
+    
+    // HTTP请求处理
+    void handleHttpRequest(Connection::Ptr conn, const std::vector<char>& data);
+    
+    // HTTP请求解析
+    HttpRequest parseHttpRequest(const std::vector<char>& data);
+    
+    // HTTP响应构建
+    std::vector<char> buildHttpResponse(const HttpResponse& response);
+};
+
+// HTTP请求结构
+struct HttpRequest {
+    std::string method;
+    std::string path;
+    std::string version;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+    std::unordered_map<std::string, std::string> query_params;
+};
+
+// HTTP响应结构
+struct HttpResponse {
+    std::string version;
+    int status_code;
+    std::string status_message;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+    
+    HttpResponse() : version("HTTP/1.1"), status_code(200), status_message("OK") {
+        headers["Content-Type"] = "text/plain; charset=utf-8";
+        headers["Connection"] = "close";
+    }
 };
 ```
 
-## 4. 线程模型
+## 3. 数据流和交互流程
 
-网络模块采用了高效的线程模型，主要特点包括：
+### 3.1 客户端连接流程
 
-### 4.1 单EventSystem多线程
+1. 客户端发起TCP/WebSocket连接请求
+2. TcpServer/WebSocketServer接受连接请求
+3. 创建Connection对象管理新连接
+4. 调用Connection::start()开始处理数据传输
+5. 触发连接建立事件，通知上层模块
 
-- 所有网络事件共享同一个EventSystem
-- EventSystem内部管理一个工作线程
-- 工作线程负责事件的分发和处理
-- 事件监听器的回调函数在工作线程中执行
+```
+客户端 → TcpServer/WebSocketServer → Connection → 上层模块
+```
 
-### 4.2 线程安全考虑
+### 3.2 消息接收流程
 
-- 所有公共API都是线程安全的
-- 使用互斥锁保护共享数据
-- 避免在事件处理回调中进行长时间阻塞操作
-- 事件的发布和处理是异步的，不会阻塞调用线程
+1. Connection对象接收到网络数据
+2. 解析数据帧（如果是WebSocket协议）
+3. 调用消息处理回调函数
+4. 将数据传递给上层模块处理
 
-## 5. 性能优化
+```
+客户端 → Connection → 消息处理回调 → 上层模块
+```
 
-### 5.1 事件处理优化
+### 3.3 消息发送流程
 
-- **事件优先级**：支持事件优先级，确保重要事件被优先处理
-- **批量事件发布**：减少锁竞争，提高批量事件处理效率
-- **异步事件处理**：基于Boost::asio的io_context实现高效的异步事件处理
+1. 上层模块调用Connection::send()发送数据
+2. Connection对象将数据添加到发送缓冲区
+3. 异步写入网络
+4. 处理发送完成事件
 
-### 5.2 内存管理
+```
+上层模块 → Connection → 网络 → 客户端
+```
 
-- 使用固定大小的缓冲区减少内存分配
-- 采用对象池技术复用Connection对象
-- 使用智能指针自动管理内存，避免内存泄漏
+### 3.4 客户端断开连接流程
 
-### 5.3 I/O优化
+1. 检测到客户端断开连接
+2. 调用连接关闭回调函数
+3. 清理连接资源
+4. 通知上层模块
 
-- 全异步I/O操作，避免阻塞
-- 合理设置套接字选项（如TCP_NODELAY）
+```
+客户端断开 → Connection → 关闭处理回调 → 上层模块
+```
 
-### 5.4 连接管理
+## 4. 技术特点和优势
 
-- 自动超时断开空闲连接
-- 限制最大连接数，防止资源耗尽
-- 连接状态监控，及时释放资源
+### 4.1 高性能
+- 基于Boost::asio的事件驱动IO模型
+- 支持高并发连接处理
+- 低延迟的事件处理机制
+- 高效的内存管理
 
-## 6. 错误处理
+### 4.2 可靠性
+- 完善的错误处理机制
+- 连接状态监控和自动重连（可选）
+- 数据完整性检查
+- 优雅的关闭流程
 
-### 6.1 异常处理
+### 4.3 灵活性
+- 支持多种协议（TCP、WebSocket、HTTP/HTTPS）
+- 可扩展的事件处理机制
+- 灵活的配置选项
+- 易于集成到不同的应用架构中
 
-- 线程内部捕获并处理所有异常
-- 错误日志记录，便于问题定位
-- 优雅关闭出错的连接
+### 4.4 易用性
+- 简洁的API设计
+- 丰富的文档和示例
+- 统一的接口风格
+- 易于使用和扩展
 
-### 6.2 错误恢复
+## 5. 使用示例
 
-- 网络异常自动重试机制
-- 服务器重启后自动恢复监听
-- 连接断开后客户端可以自动重连
-
-## 7. 集成使用示例
-
-### 7.1 TCP服务器示例
+### 5.1 TCP服务器使用示例
 
 ```cpp
-#include "network/EventSystem.h"
-#include "network/tcp_server.h"
-
-using namespace im::network;
-using namespace std;
+#include "network/EventLoop.h"
+#include "network/TcpServer.h"
 
 int main() {
-    // 获取事件系统实例
-    auto& event_system = EventSystem::getInstance();
+    // 创建事件循环
+    network::EventLoop event_loop;
     
     // 创建TCP服务器
-    TcpServer tcp_server(event_system, "0.0.0.0", 8080);
+    network::TcpServer tcp_server(event_loop.getIoContext(), "0.0.0.0", 8000);
     
-    // 设置消息处理函数
-    tcp_server.setMessageHandler([](Connection::Ptr conn, const vector<char>& data) {
-        cout << "Received message: " << string(data.begin(), data.end()) << endl;
+    // 设置消息处理回调
+    tcp_server.setMessageHandler([](network::Connection::Ptr conn, const std::vector<char>& data) {
+        // 处理接收到的消息
+        std::string message(data.begin(), data.end());
+        std::cout << "Received: " << message << std::endl;
         
         // 回显消息
-        conn->send(data);
+        std::string response = "Echo: " + message;
+        conn->send(std::vector<char>(response.begin(), response.end()));
     });
     
-    // 设置连接关闭处理函数
-    tcp_server.setCloseHandler([](Connection::Ptr conn) {
-        cout << "Connection closed: " << conn->getRemoteEndpoint().address().to_string() << endl;
+    // 设置连接关闭回调
+    tcp_server.setCloseHandler([](network::Connection::Ptr conn) {
+        std::cout << "Connection closed" << std::endl;
     });
     
-    // 启动事件系统和服务器
-    event_system.start();
+    // 启动事件循环
+    event_loop.start();
+    
+    // 启动TCP服务器
     tcp_server.start();
     
-    // 等待用户输入
-    getchar();
+    std::cout << "TCP Server is running on port 8000" << std::endl;
     
-    // 停止服务器和事件系统
+    // 等待用户输入
+    std::string input;
+    std::cin >> input;
+    
+    // 停止TCP服务器
     tcp_server.stop();
-    event_system.stop();
+    
+    // 停止事件循环
+    event_loop.stop();
     
     return 0;
 }
 ```
 
-### 7.2 WebSocket服务器示例
+### 5.2 WebSocket服务器使用示例
 
 ```cpp
-#include "network/EventSystem.h"
-#include "network/websocket_server.h"
-
-using namespace im::network;
-using namespace std;
+#include "network/EventLoop.h"
+#include "network/WebSocketServer.h"
 
 int main() {
-    // 获取事件系统实例
-    auto& event_system = EventSystem::getInstance();
+    // 创建事件循环
+    network::EventLoop event_loop;
     
     // 创建WebSocket服务器
-    WebSocketServer ws_server(event_system, "0.0.0.0", 8081);
+    network::WebSocketServer ws_server(event_loop.getIoContext(), "0.0.0.0", 8081);
     
-    // 启动事件系统和服务器
-    event_system.start();
+    // 设置消息处理回调
+    ws_server.setMessageHandler([](network::Connection::Ptr conn, const std::vector<char>& data) {
+        // 处理接收到的消息
+        std::string message(data.begin(), data.end());
+        std::cout << "Received: " << message << std::endl;
+        
+        // 回显消息
+        std::string response = "Echo: " + message;
+        conn->send(std::vector<char>(response.begin(), response.end()));
+    });
+    
+    // 设置连接关闭回调
+    ws_server.setCloseHandler([](network::Connection::Ptr conn) {
+        std::cout << "Connection closed" << std::endl;
+    });
+    
+    // 启动事件循环
+    event_loop.start();
+    
+    // 启动WebSocket服务器
     ws_server.start();
     
-    // 等待用户输入
-    getchar();
+    std::cout << "WebSocket Server is running on port 8081" << std::endl;
     
-    // 停止服务器和事件系统
+    // 等待用户输入
+    std::string input;
+    std::cin >> input;
+    
+    // 停止WebSocket服务器
     ws_server.stop();
-    event_system.stop();
+    
+    // 停止事件循环
+    event_loop.stop();
     
     return 0;
 }
 ```
 
-### 7.3 事件系统使用示例
+### 5.3 HTTP服务器使用示例
 
 ```cpp
-#include <iostream>
-#include "network/EventSystem.h"
-
-using namespace im::network;
-
-// 自定义事件类
-class UserLoginEvent : public Event {
-public:
-    UserLoginEvent(std::string username) : username_(std::move(username)) {}
-    std::type_index getType() const override { return std::type_index(typeid(UserLoginEvent)); }
-    std::string getName() const override { return "UserLoginEvent"; }
-    std::string getUsername() const { return username_; }
-private:
-    std::string username_;
-};
-
-class MessageReceivedEvent : public Event {
-public:
-    MessageReceivedEvent(std::string sender, std::string content) 
-        : sender_(std::move(sender)), content_(std::move(content)) {}
-    std::type_index getType() const override { return std::type_index(typeid(MessageReceivedEvent)); }
-    std::string getName() const override { return "MessageReceivedEvent"; }
-    std::string getSender() const { return sender_; }
-    std::string getContent() const { return content_; }
-private:
-    std::string sender_;
-    std::string content_;
-};
+#include "network/EventLoop.h"
+#include "network/HttpServer.h"
 
 int main() {
-    // 获取事件系统实例
-    auto& event_system = EventSystem::getInstance();
+    // 创建事件循环
+    network::EventLoop event_loop;
     
-    // 注册事件监听器
-    auto loginListenerId = event_system.subscribe<UserLoginEvent>(
-        [](const std::shared_ptr<UserLoginEvent>& event) {
-            std::cout << "[Login] User: " << event->getUsername() << std::endl;
+    // 创建HTTP服务器
+    network::HttpServer http_server(event_loop.getIoContext(), "0.0.0.0", 8080);
+    
+    // 注册登录路由处理函数
+    http_server.registerRoute("/api/login", [](network::Connection::Ptr conn, const network::HttpRequest& req, network::HttpResponse& resp) {
+        // 处理登录请求
+        std::cout << "Login request received" << std::endl;
+        
+        // 示例：解析请求体（假设是JSON格式）
+        std::string username, password;
+        // 实际应用中应该解析JSON获取用户名和密码
+        
+        // 模拟登录验证
+        if (username == "admin" && password == "password") {
+            // 登录成功
+            resp.status_code = 200;
+            resp.status_message = "OK";
+            resp.headers["Content-Type"] = "application/json";
+            resp.body = "{\"success\": true, \"token\": \"jwt_token_here\"}";
+        } else {
+            // 登录失败
+            resp.status_code = 401;
+            resp.status_message = "Unauthorized";
+            resp.headers["Content-Type"] = "application/json";
+            resp.body = "{\"success\": false, \"message\": \"Invalid credentials\"}";
         }
-    );
+    });
     
-    auto messageListenerId = event_system.subscribe<MessageReceivedEvent>(
-        [](const std::shared_ptr<MessageReceivedEvent>& event) {
-            std::cout << "[Message] From: " << event->getSender() 
-                      << ", Content: " << event->getContent() << std::endl;
-        }
-    );
+    // 注册其他API路由
+    http_server.registerRoute("/api/info", [](network::Connection::Ptr conn, const network::HttpRequest& req, network::HttpResponse& resp) {
+        resp.status_code = 200;
+        resp.status_message = "OK";
+        resp.headers["Content-Type"] = "application/json";
+        resp.body = "{\"version\": \"1.0.0\", \"name\": \"IMServer API\"}";
+    });
     
-    // 启动事件系统
-    event_system.start();
+    // 启动事件循环
+    event_loop.start();
     
-    // 发布事件
-    event_system.publish(std::make_shared<UserLoginEvent>("admin"));
-    event_system.publish(std::make_shared<MessageReceivedEvent>("admin", "Hello, world!"));
-    event_system.publish(std::make_shared<UserLoginEvent>("user123"));
-    event_system.publish(std::make_shared<MessageReceivedEvent>("user123", "Hi there!"));
+    // 启动HTTP服务器
+    http_server.start();
     
-    // 批量发布事件
-    std::vector<std::shared_ptr<Event>> events;
-    events.push_back(std::make_shared<MessageReceivedEvent>("admin", "How are you?"));
-    events.push_back(std::make_shared<MessageReceivedEvent>("user123", "I'm fine, thanks!"));
-    event_system.publishBatch(events);
+    std::cout << "HTTP Server is running on port 8080" << std::endl;
     
-    // 等待事件处理完成
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    // 等待用户输入
+    std::string input;
+    std::cin >> input;
     
-    // 注销事件监听器
-    event_system.unsubscribe<UserLoginEvent>(loginListenerId);
-    event_system.unsubscribe<MessageReceivedEvent>(messageListenerId);
+    // 停止HTTP服务器
+    http_server.stop();
     
-    // 停止事件系统
-    event_system.stop();
+    // 停止事件循环
+    event_loop.stop();
     
     return 0;
 }
 ```
 
-## 8. 未来扩展计划
+## 6. 未来扩展计划
 
-### 8.1 功能扩展
+### 6.1 功能扩展
+- 支持更多网络协议（如UDP、QUIC）
+- 添加SSL/TLS加密支持
+- 实现流量控制和拥塞控制
+- 支持负载均衡功能
 
-- **SSL/TLS支持**：为TCP和WebSocket添加加密支持
-- **UDP协议**：支持UDP协议，用于实时音视频通信
-- **HTTP/HTTPS支持**：添加HTTP服务器功能，支持RESTful API
-- **负载均衡**：支持多服务器部署和负载均衡
+### 6.2 性能优化
+- 内存池优化
+- 零拷贝技术应用
+- 更高效的事件处理算法
+- 多线程优化
 
-### 8.2 性能优化
+### 6.3 可靠性增强
+- 连接池管理
+- 自动重连机制
+- 故障转移支持
+- 监控和统计功能
 
-- **更高效的事件循环**：探索使用io_uring等新的I/O技术
-- **连接池**：实现客户端连接池，提高连接复用率
-- **事件批处理优化**：进一步优化批量事件处理性能
+## 7. 总结
 
-### 8.3 可观测性
-
-- **性能监控**：添加性能指标收集和监控
-- **日志增强**：更详细的日志记录，便于问题定位
-- **追踪支持**：添加分布式追踪功能，支持跨服务调用追踪
-
-### 8.4 事件系统增强
-
-- **事件过滤**：支持基于条件的事件过滤
-- **事件溯源**：添加事件溯源功能，支持事件历史查询
-- **事务支持**：添加事务支持，确保事件处理的原子性
-
-## 9. 总结
-
-网络模块是IMServer的核心组件之一，基于Boost::asio实现了高效、可扩展的网络通信能力。它采用了事件驱动、异步I/O和多线程并发的设计，支持TCP和WebSocket两种协议，具有良好的性能和可靠性。
-
-EventSystem作为网络模块的核心组件，实现了高效的事件驱动机制，采用观察者模式将事件的发布者和订阅者解耦，实现模块间的松耦合通信。它支持事件优先级、批量事件发布、同步/异步事件处理等功能，为网络模块提供了灵活、高效的事件处理能力。
-
-通过合理的线程模型和性能优化，网络模块能够处理大量并发连接，满足IM系统的高并发需求。未来，网络模块将继续扩展功能和优化性能，以支持更多的应用场景和更高的性能要求。
+网络层是IMServer的重要组成部分，提供了高性能、可靠的网络通信服务。该模块基于Boost::asio实现，采用事件驱动的IO模型，支持多种协议，能够高效处理大量并发连接。网络层的设计遵循了高内聚、低耦合的原则，易于使用和扩展，为IMServer的稳定运行提供了坚实的基础。
