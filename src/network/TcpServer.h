@@ -1,6 +1,5 @@
 #pragma once
 
-#include "IdGenerator.h"
 #include "ConnectionManager.h"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
@@ -11,26 +10,30 @@
 
 namespace network {
 
+// 添加与其他服务器一致的命名空间别名
+namespace asio = boost::asio;
+namespace ip = asio::ip;
+
 class TcpConnection : public Connection {
 public:
     using Ptr = std::shared_ptr<TcpConnection>;
 
 private:
-    boost::asio::ip::tcp::socket socket_;
+    ip::tcp::socket socket_;
     std::vector<char> read_buffer_;
     std::vector<char> write_buffer_;
     std::mutex write_mutex_;
     std::atomic<bool> running_;
 
 public:
-    TcpConnection(imserver::tool::ConnectionId id, boost::asio::ip::tcp::socket socket);
+    TcpConnection(ConnectionId id, ip::tcp::socket socket);
     ~TcpConnection();
     
     void start() override;
     void close() override;
     void send(const std::vector<char>& data) override;
     
-    boost::asio::ip::tcp::endpoint getRemoteEndpoint() const override;
+    ip::tcp::endpoint getRemoteEndpoint() const override;
     std::string getRemoteAddress() const override;
     uint16_t getRemotePort() const override;
     bool isConnected() const override;
@@ -41,13 +44,13 @@ private:
 
 class TcpServer : public std::enable_shared_from_this<TcpServer> {
 private:
-    boost::asio::io_context& io_context_;
-    boost::asio::ip::tcp::acceptor acceptor_;
+    asio::io_context& io_context_;
+    ip::tcp::acceptor acceptor_;
     ConnectionManager& connection_manager_;
     std::atomic<bool> running_;
 
 public:
-    TcpServer(boost::asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port);
+    TcpServer(asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port);
     ~TcpServer();
     
     void start();
@@ -56,7 +59,7 @@ public:
     
 private:
     void doAccept();
-    void handleAccept(boost::system::error_code ec, boost::asio::ip::tcp::socket socket);
+    void handleAccept(boost::system::error_code ec, ip::tcp::socket socket);
 };
 
 } // namespace network
