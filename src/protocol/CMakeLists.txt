@@ -4,6 +4,9 @@
 set(PROTOCOL_SOURCES
     ProtocolManager.cpp
     Parser.cpp
+    TcpParser.cpp
+    WebSocketParser.cpp
+    HttpParser.cpp
     MessageRouter.cpp
     AsyncExecutor.cpp
     Message.cpp
@@ -13,6 +16,9 @@ set(PROTOCOL_SOURCES
 set(PROTOCOL_HEADERS
     ProtocolManager.h
     Parser.h
+    TcpParser.h
+    WebSocketParser.h
+    HttpParser.h
     MessageRouter.h
     AsyncExecutor.h
     Message.h
