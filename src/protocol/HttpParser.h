@@ -21,42 +21,15 @@ enum class HttpParseState {
  */
 class HttpParser : public Parser {
 private:
-    /**
-     * @brief 解析HTTP请求行或响应行
-     * @param start_line 请求行或响应行
-     * @param message HTTP消息对象
-     * @return bool 解析是否成功
-     */
-    bool parseStartLine(const std::string& start_line, ::protocol::HttpMessage& message);
-    
-    /**
-     * @brief 解析HTTP头字段
-     * @param buffer 待解析的数据
-     * @param consumed 已消费的数据长度
-     * @param message HTTP消息对象
-     * @return bool 头字段是否解析完成
-     */
-    bool parseHeaders(const std::vector<char>& buffer, size_t& consumed, ::protocol::HttpMessage& message);
-    
-    // HTTP解析相关
-    std::vector<char> buffer_;          // 解析缓冲区
-    HttpParseState state_;              // 当前解析状态
-    size_t content_length_;             // 消息体长度
-    bool chunked_;                      // 是否为分块传输
-    size_t current_chunk_size_;         // 当前分块大小
-    std::unique_ptr<::protocol::HttpMessage> message_; // 当前解析的消息
-    std::mutex mutex_;                 // 互斥锁，保护解析状态
+    bool is_parsing_;                   // 是否正在解析
+    HttpMessage parsed_message_;        // 当前解析的消息
+    std::mutex mutex_;                  // 互斥锁，保护解析状态
 
 public:
-    /**
-     * @brief 构造函数
-     */
     HttpParser();
-    
-    /**
-     * @brief 析构函数
-     */
     ~HttpParser() override = default;
+
+    void reset() override;
     
     /**
      * @brief 异步解析HTTP数据
@@ -74,11 +47,6 @@ public:
     network::ConnectionType getType() const override {
         return network::ConnectionType::HTTP;
     }
-    
-    /**
-     * @brief 重置解析器状态
-     */
-    void reset() override;
 };
 
 } // namespace protocol

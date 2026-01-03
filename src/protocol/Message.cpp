@@ -18,47 +18,37 @@ namespace protocol {
 // ---------------------- Message基类实现 ----------------------
 
 Message::Message() {
-    // 初始化消息头
-    memset(&header_, 0, sizeof(header_));
-    header_.version = 1; // 默认版本
     connection_id_ = 0;
     connection_type_ = network::ConnectionType::TCP;
 }
 
-Message::Message(
-    uint16_t message_type,
-    const std::vector<char>& body,
-    network::ConnectionId connection_id,
-    network::ConnectionType connection_type) {
-    // 初始化消息头
-    memset(&header_, 0, sizeof(header_));
-    header_.message_type = message_type;
-    header_.version = 1; // 默认版本
-    header_.total_length = sizeof(MessageHeader) + body.size();
-    
-    // 初始化消息体
+Message::Message(const std::vector<char>& body,
+                network::ConnectionId connection_id,
+                network::ConnectionType connection_type) {
     body_ = body;
-    
-    // 初始化连接信息
     connection_id_ = connection_id;
     connection_type_ = connection_type;
-}
-
-void Message::updateTotalLength() {
-    header_.total_length = sizeof(MessageHeader) + body_.size();
 }
 
 // ---------------------- TCPMessage子类实现 ----------------------
 
 TCPMessage::TCPMessage() : Message() {
-    connection_type_ = network::ConnectionType::TCP;
+    reset();
 }
 
-TCPMessage::TCPMessage(
-    uint16_t message_type,
-    const std::vector<char>& body,
-    network::ConnectionId connection_id) : 
-    Message(message_type, body, connection_id, network::ConnectionType::TCP) {
+TCPMessage::TCPMessage(const std::vector<char>& body, network::ConnectionId connection_id)
+     : Message(body, connection_id, network::ConnectionType::TCP) {
+    reset();
+}
+
+void TCPMessage::reset()
+{
+    body_.clear();
+    connection_id_ = 0;
+    connection_type_ = network::ConnectionType::TCP;
+    state_ = DeserializeState::Header;
+    data_buffer_.clear();
+    expected_body_length_ = 0;
 }
 
 std::vector<char> TCPMessage::serialize() const {
@@ -85,51 +75,86 @@ std::vector<char> TCPMessage::serialize() const {
 }
 
 bool TCPMessage::deserialize(const std::vector<char>& data) {
-    if (data.size() < sizeof(MessageHeader)) {
+    data_buffer_.insert(data_buffer_.end(), data.begin(), data.end());
+
+    bool message_complete = false;
+    size_t consumed = 0;
+    while (consumed < data_buffer_.size() && !message_complete) {
+        switch (state_) {
+            case DeserializeState::Header:
+                message_complete = deserializeHeader(consumed);
+                break;
+            case DeserializeState::Body:
+                message_complete = deserializeBody(consumed);
+                break;
+            default:
+                std::throw(std::runtime_error("Invalid deserialize state"));
+                break;
+        }
+    }
+
+    data_buffer_.erase(data_buffer_.begin(), data_buffer_.begin() + consumed);
+    return message_complete;
+}
+
+bool TCPMessage::deserializeHeader(size_t &consumed)
+{
+    if (consumed >= data_buffer_.size()) {
+        return false;
+    }
+    size_t remaining = data_buffer_.size() - consumed;
+    if (remaining < sizeof(TcpMessageHeader)) {
         return false;
     }
     
-    // 反序列化消息头到临时变量
-    MessageHeader raw_header;
-    memcpy(&raw_header, data.data(), sizeof(MessageHeader));
-    
-    // 字节序转换：网络字节序 -> 主机字节序
-    header_.total_length = ntohl(raw_header.total_length); // 4字节字段
-    header_.message_type = ntohs(raw_header.message_type); // 2字节字段
-    header_.version = raw_header.version; // 单字节，无需转换
-    header_.reserved = raw_header.reserved; // 单字节，无需转换
-    
-    // 检查消息总长度
-    if (data.size() < header_.total_length) {
+    memcpy(&header_, data_buffer_.data() + consumed, sizeof(TcpMessageHeader));
+    header_.total_length = ntohl(header_.total_length);
+    header_.message_type = ntohs(header_.message_type);
+
+    expected_body_length_ = header_.total_length - sizeof(TcpMessageHeader);
+
+    consumed += sizeof(TcpMessageHeader);
+    state_ = DeserializeState::Body;
+
+    return false;
+}
+
+bool TCPMessage::deserializeBody(size_t &consumed)
+{
+    if (consumed >= data_buffer_.size()) {
         return false;
     }
-    
-    // 反序列化消息体
-    size_t body_size = header_.total_length - sizeof(MessageHeader);
-    body_.assign(data.begin() + sizeof(MessageHeader), 
-                 data.begin() + sizeof(MessageHeader) + body_size);
-    
-    connection_type_ = network::ConnectionType::TCP;
-    return true;
+    size_t remaining = data_buffer_.size() - consumed;
+    size_t bytes_needed = body_.size() > expected_body_length_ ? 0 : expected_body_length_ - body_.size();
+    size_t bytes_to_read = std::min(remaining, bytes_needed);
+
+    body_.insert(body_.end(), data_buffer_.begin() + consumed, data_buffer_.begin() + consumed + bytes_to_read);
+    consumed += bytes_to_read;
+
+    return (body_.size() >= expected_body_length_);
 }
 
 // ---------------------- WebSocketMessage子类实现 ----------------------
 
-WebSocketMessage::WebSocketMessage() : Message() {
+WebSocketMessage::WebSocketMessage() : Message(), state_(DeserializeState::Initial), payload_length_(0) {
     connection_type_ = network::ConnectionType::WebSocket;
-    opcode_ = 0x01; // 默认文本帧
-    is_final_ = true;
+    memset(&header_, 0, sizeof(WebSocketMessageHeader));
 }
 
-WebSocketMessage::WebSocketMessage(
-    uint16_t message_type,
-    const std::vector<char>& body,
-    network::ConnectionId connection_id,
-    uint8_t opcode,
-    bool is_final) : 
-    Message(message_type, body, connection_id, network::ConnectionType::WebSocket) {
-    opcode_ = opcode;
-    is_final_ = is_final;
+WebSocketMessage::WebSocketMessage(const std::vector<char>& body, network::ConnectionId connection_id) : 
+    Message(body, connection_id, network::ConnectionType::WebSocket), payload_length_(0) {
+    memset(&header_, 0, sizeof(WebSocketMessageHeader));
+}
+
+void WebSocketMessage::reset()
+{
+    body_.clear();
+    connection_id_ = 0;
+    connection_type_ = network::ConnectionType::WebSocket;
+    state_ = DeserializeState::Initial;
+    memset(&header_, 0, sizeof(WebSocketMessageHeader));
+    data_buffer_.clear();
+    expected_body_length_ = 0;
 }
 
 std::vector<char> WebSocketMessage::serialize() const {
@@ -171,119 +196,197 @@ std::vector<char> WebSocketMessage::serialize() const {
 }
 
 bool WebSocketMessage::deserialize(const std::vector<char>& data) {
-    // WebSocket消息的反序列化需要解析WebSocket协议帧格式
-    // 这里简化实现，只处理基本的文本帧
-    if (data.size() < 2) {
-        return false;
-    }
-    
-    // 解析第1字节
-    uint8_t first_byte = static_cast<uint8_t>(data[0]);
-    is_final_ = (first_byte & 0x80) != 0;
-    opcode_ = first_byte & 0x0F;
-    
-    // 解析第2字节
-    uint8_t second_byte = static_cast<uint8_t>(data[1]);
-    bool masked = (second_byte & 0x80) != 0;
-    uint8_t basic_length = second_byte & 0x7F;
-    
-    size_t payload_length = 0;
-    size_t header_offset = 2;
-    
-    // 解析载荷长度
-    if (basic_length <= 125) {
-        payload_length = basic_length;
-    } else if (basic_length == 126) {
-        if (data.size() < header_offset + 2) {
-            return false;
+    bool message_complete = false;
+    size_t consumed = 0;
+
+    data_buffer_.insert(data_buffer_.end(), data.begin(), data.end());
+
+    while (consumed < data_buffer_.size() && !message_complete) {
+        switch (state_) {
+            case DeserializeState::Initial:
+                memset(&header_, 0, sizeof(TcpMessageHeader));
+                expected_body_length_ = 0;
+                state_ = DeserializeState::Header;
+                break;
+            case DeserializeState::Header:
+                message_complete = deserializeHeader(consumed);
+                break;
+            case DeserializeState::ExtendedLength:
+                message_complete = deserializeExtendedLength(consumed);
+                break;
+            case DeserializeState::MaskingKey:
+                message_complete = deserializeMaskingKey(consumed);
+                break;
+            case DeserializeState::Payload:
+                message_complete = deserializePayload(consumed);
+                break;
+            case DeserializeState::Complete:
+                message_complete = deserializeComplete(consumed);
+                break;
+            default:
+                std::throw(std::runtime_error("Invalid deserialize state"));
+                break;
         }
-        uint16_t length16 = 0;
-        memcpy(&length16, data.data() + header_offset, 2);
-        payload_length = ntohs(length16);
-        header_offset += 2;
+    }
+
+    data_buffer_.erase(data_buffer_.begin(), data_buffer_.begin() + consumed);
+    return message_complete;
+}
+
+/**
+ * @brief 解析WebSocket帧头
+ * @param consumed 已消费的数据长度
+ * @return bool 消息头是否解析成功
+ * 
+ * 帧头格式：
+ * 0                   1                   2                   3
+ * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ * +-+-+-+-+-------+-+-------------+-------------------------------+
+ * |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
+ * |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ * |N|V|V|V|       |S|             |   (if payload len==126/127)   |
+ * | |1|2|3|       |K|             |                               |
+ * +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
+ * 
+ */
+bool WebSocketMessage::deserializeHeader(size_t &consumed)
+{
+    if (data_buffer_.size() - consumed < HEAD_PARSE_SIZE) {
+        // 帧头不完整，等待更多数据
+        return true;
+    }
+
+    // 解析第1个字节：FIN(1位) + RSV(3位) + 操作码(4位)
+    header_.fin_opcode = static_cast<uint8_t>(data_buffer_[consumed++]);
+
+    // 解析第2个字节：掩码(1位) + 数据长度(7位)
+    uint8_t second_byte = static_cast<uint8_t>(data_buffer_[consumed++]);
+    header_.masked_ = (second_byte & MASK_MASK) != 0;
+    header_.payload_len = second_byte & BASIC_LENGTH_MASK;
+
+    if (header_.payload_len < BASIC_LENGTH) {
+        expected_body_length_ = header_.payload_len;
+        state_ = header_.masked_ ? DeserializeState::MaskingKey : DeserializeState::Payload;
     } else {
-        if (data.size() < header_offset + 8) {
-            return false;
+        expected_body_length_ = 0;
+        state_ = DeserializeState::ExtendedLength;
+    }
+
+    return false;
+}
+
+bool WebSocketMessage::deserializeExtendedLength(size_t &consumed)
+{
+    if (0 == expected_body_length_) {
+        if (data_buffer_.size() - consumed < HEAD_PARSE_SIZE) {
+            return true;
         }
-        uint64_t length64 = 0;
-        memcpy(&length64, data.data() + header_offset, 8);
-        payload_length = be64toh(length64);
-        header_offset += 8;
-    }
-    
-    // 解析掩码密钥
-    std::vector<char> masking_key;
-    if (masked) {
-        if (data.size() < header_offset + 4) {
-            return false;
+        expected_body_length_ = (static_cast<uint64_t>(static_cast<uint8_t>(data_buffer_[consumed++])) << 8) | 
+                                            static_cast<uint8_t>(data_buffer_[consumed++]);
+        state_ = header_.masked_ ? DeserializeState::MaskingKey : DeserializeState::Payload;
+    } else {
+        if (data_buffer_.size() - consumed < EXTENDED_LENGTH_PARSE_SIZE) {
+            return true;
         }
-        masking_key.resize(4);
-        memcpy(masking_key.data(), data.data() + header_offset, 4);
-        header_offset += 4;
-    }
-    
-    // 解析消息体
-    if (data.size() < header_offset + payload_length) {
-        return false;
-    }
-    
-    body_.assign(data.begin() + header_offset, data.begin() + header_offset + payload_length);
-    
-    // 应用掩码（如果有）
-    if (masked) {
-        for (size_t i = 0; i < body_.size(); ++i) {
-            body_[i] ^= masking_key[i % 4];
+
+        expected_body_length_ = 0;
+        for (int i = 0; i < EXTENDED_LENGTH_PARSE_SIZE; i++) {
+            expected_body_length_ = (expected_body_length_ << 8) | 
+                            static_cast<uint8_t>(data_buffer_[consumed + i]);
         }
+        consumed += EXTENDED_LENGTH_PARSE_SIZE;
+        state_ = header_.masked_ ? DeserializeState::MaskingKey : DeserializeState::Payload;
     }
-    
-    // 更新MessageHeader
-    header_.message_type = opcode_;
-    header_.total_length = sizeof(MessageHeader) + body_.size();
-    connection_type_ = network::ConnectionType::WebSocket;
-    
-    return true;
+
+    return false;
+}
+
+bool WebSocketMessage::deserializeMaskingKey(size_t &consumed)
+{
+    if (data_buffer_.size() - consumed < MASKING_KEY_PARSE_SIZE) {
+        return true;
+    }
+
+    masking_key_.resize(MASKING_KEY_PARSE_SIZE);
+    std::memcpy(masking_key_.data(), data_buffer_.data() + consumed, MASKING_KEY_PARSE_SIZE);
+    consumed += MASKING_KEY_PARSE_SIZE;
+    state_ = DeserializeState::Payload;
+    return false;
+}
+
+bool WebSocketMessage::deserializePayload(size_t &consumed)
+{
+    size_t remaining = data_buffer_.size() - consumed;
+    size_t bytes_to_read = std::min(remaining, expected_body_length_);
+
+    body_.insert(body_.end(), data_buffer_.begin() + consumed, data_buffer_.begin() + consumed + bytes_to_read);
+    consumed += bytes_to_read;
+    expected_body_length_ -= bytes_to_read;
+
+    if (expected_body_length_ == 0) {
+        state_ = DeserializeState::Complete;
+    }
+
+    return (expected_body_length_ != 0);
+}
+
+bool WebSocketMessage::deserializeComplete(size_t &consumed)
+{
+    bool is_final = (header_.fin_opcode & MASK_MASK) != 0;
+    if (is_final) { // 最后一帧将状态重置为初始状态，下一次解析直接覆盖
+        state_ = DeserializeState::Initial;
+    }
+    else {  // 非最后一帧，状态切换到解析帧头继续解析
+        state_ = DeserializeState::Header;
+    }
+
+    return is_final;
 }
 
 // ---------------------- HttpMessage子类实现 ----------------------
 
-HttpMessage::HttpMessage() : Message() {
+HttpMessage::HttpMessage() 
+        : Message(), state_(DeserializeState::Initial)
+        , is_parsing_(false), expected_body_length_(0), current_chunk_size_(0) {
     connection_type_ = network::ConnectionType::HTTP;
-    status_code_ = 0;
+    memset(&header_, 0, sizeof(header_));
 }
 
-HttpMessage::HttpMessage(
-    const std::string& method,
-    const std::string& url,
-    const std::string& version,
-    const std::unordered_map<std::string, std::string>& headers,
-    const std::vector<char>& body,
-    network::ConnectionId connection_id) : 
-    Message(0x01, body, connection_id, network::ConnectionType::HTTP) {
-    method_ = method;
-    url_ = url;
-    version_ = version;
-    headers_ = headers;
-    status_code_ = 0;
-    
-    // 更新消息类型为HTTP请求
-    header_.message_type = 0x01;
+HttpMessage::HttpMessage(const std::string& method, const std::string& url, const std::string& version,
+                        const std::unordered_map<std::string, std::string>& headers,
+                        const std::vector<char>& body, network::ConnectionId connection_id)
+                        : Message(body, connection_id, network::ConnectionType::HTTP)
+                        , state_(DeserializeState::Initial)
+                        , is_parsing_(false)
+                        , expected_body_length_(0), current_chunk_size_(0) {
+    header_.method_ = method;
+    header_.url_ = url;
+    header_.version_ = version;
+    header_.headers_ = headers;
 }
 
-HttpMessage::HttpMessage(
-    const std::string& version,
-    int status_code,
-    const std::string& status_message,
-    const std::unordered_map<std::string, std::string>& headers,
-    const std::vector<char>& body,
-    network::ConnectionId connection_id) : 
-    Message(0x02, body, connection_id, network::ConnectionType::HTTP) {
-    version_ = version;
-    status_code_ = status_code;
-    status_message_ = status_message;
-    headers_ = headers;
-    
-    // 更新消息类型为HTTP响应
-    header_.message_type = 0x02;
+HttpMessage::HttpMessage(const std::string& version, int status_code, const std::string& status_message,
+                        const std::unordered_map<std::string, std::string>& headers,
+                        const std::vector<char>& body,
+                        network::ConnectionId connection_id)
+                        : Message(body, connection_id, network::ConnectionType::HTTP)
+                        , state_(DeserializeState::Initial)
+                        , is_parsing_(false)
+                        , expected_body_length_(0), current_chunk_size_(0) {
+    header_.version_ = version;
+    header_.status_code_ = status_code;
+    header_.status_message_ = status_message;
+    header_.headers_ = headers;
+}
+
+void HttpMessage::reset() {
+    state_ = DeserializeState::Initial;
+    is_parsing_ = false;
+    memset(&header_, 0, sizeof(header_));
+    body_.clear();
+    data_buffer_.clear();
+    expected_body_length_ = 0;
+    current_chunk_size_ = 0;
 }
 
 std::vector<char> HttpMessage::serialize() const {
@@ -292,20 +395,19 @@ std::vector<char> HttpMessage::serialize() const {
     // 构建起始行
     if (header_.message_type == 0x01) {
         // HTTP请求：METHOD URL VERSION
-        oss << method_ << " " << url_ << " " << version_ << "\r\n";
+        oss << header_.method_ << " " << header_.url_ << " " << header_.version_ << "\r\n";
     } else {
         // HTTP响应：VERSION STATUS_CODE STATUS_MESSAGE
-        oss << version_ << " " << status_code_ << " " << status_message_ << "\r\n";
+        oss << header_.version_ << " " << header_.status_code_ << " " << header_.status_message_ << "\r\n";
     }
     
     // 构建头字段
-    for (const auto& [name, value] : headers_) {
+    for (const auto& [name, value] : header_.headers_) {
         oss << name << ": " << value << "\r\n";
     }
     
     // 添加Content-Length头
     oss << "Content-Length: " << body_.size() << "\r\n";
-    
     // 空行分隔头和消息体
     oss << "\r\n";
     
@@ -320,89 +422,245 @@ std::vector<char> HttpMessage::serialize() const {
 }
 
 bool HttpMessage::deserialize(const std::vector<char>& data) {
-    // HTTP消息的反序列化需要解析HTTP协议格式
-    // 这里简化实现，只处理基本的请求和响应
-    std::string data_str(data.begin(), data.end());
-    std::istringstream iss(data_str);
-    
-    // 解析起始行
+    data_buffer_.insert(data_buffer_.end(), data.begin(), data.end());
+
+    bool message_complete = false;
+    size_t consumed = 0;
+
+    while (consumed < data_buffer_.size() && !message_complete) {
+        switch (state_) {
+            case DeserializeState::Initial:
+                reset();
+                message_complete = deserializeStartingLine(consumed);
+                break;
+            case DeserializeState::Headers:
+                message_complete = deserializeHeaders(consumed);
+                break;
+            case DeserializeState::Body:
+                message_complete = deserializeBody(consumed);
+                break;
+            case DeserializeState::ChunkedBodyStart:
+                message_complete = deserializeChunkedBodyStart(consumed);
+                break;
+            case DeserializeState::ChunkedBodyData:
+                message_complete = deserializeChunkedBodyData(consumed);
+                break;
+            case DeserializeState::ChunkedBodyEnd:
+                message_complete = deserializeChunkedBodyEnd(consumed);
+                break;
+            case DeserializeState::Complete:
+                message_complete = true;
+                state_ = DeserializeState::Initial;
+                break;
+            default:
+                std::throw(std::runtime_error("Invalid deserialize state"));
+                break;
+        }
+    }
+
+    data_buffer_.erase(data_buffer_.begin(), data_buffer_.begin() + consumed);
+    return message_complete;
+}
+
+/**
+ * @brief 解析HTTP消息起始行
+ * @param line 起始行字符串
+ * @return bool 是否成功解析
+ * 
+ * HTTP 请求行格式：METHOD URL VERSION
+ * HTTP 响应行格式：VERSION STATUS_CODE STATUS_MESSAGE
+ */
+bool HttpMessage::parseStartLine(const std::string &line)
+{
+    // 解析HTTP请求行或响应行
+    std::istringstream iss(line);
     std::string first, second, third;
+    
     if (!(iss >> first >> second >> third)) {
         return false;
     }
-    
+
     if (third == "HTTP/1.1" || third == "HTTP/1.0") {
-        // HTTP请求
-        method_ = first;
-        url_ = second;
-        version_ = third;
-        header_.message_type = 0x01;
-        status_code_ = 0;
-        status_message_.clear();
+        // 请求行：METHOD URL VERSION
+        header_.method_ = first;
+        header_.url_ = second;
+        header_.version_ = third;
     } else if (first == "HTTP/1.1" || first == "HTTP/1.0") {
-        // HTTP响应
-        version_ = first;
-        status_code_ = std::stoi(second);
-        status_message_ = third;
-        method_.clear();
-        url_.clear();
-        header_.message_type = 0x02;
-        
+        // 响应行：VERSION STATUS_CODE STATUS_MESSAGE
+        header_.version_ = first;
+        header_.status_code_ = std::stoi(second);
+        header_.status_message_ = third;
         // 读取剩余的状态消息
         std::string rest;
         if (std::getline(iss, rest)) {
-            status_message_ += rest;
+            header_.status_message_ += rest;
         }
     } else {
         return false;
     }
     
+    return true;
+}
+
+bool HttpMessage::deserializeStartingLine(size_t &consumed)
+{
+    // 查找请求行或响应行结束标志 "\r\n"
+    size_t line_end = std::string(data_buffer_.begin() + consumed, data_buffer_.end()).find("\r\n");
+    if (line_end == std::string::npos) {
+        return true; // 等待更多数据
+    }
+
+    // 解析请求行或响应行
+    std::string start_line(data_buffer_.begin() + consumed, data_buffer_.begin() + line_end);
+    if (!parseStartLine(start_line)) {
+        // 解析请求行或响应行失败直接抛出异常，应该重连
+        throw std::runtime_error("Invalid HTTP message starting line");
+    }
+
+    // 移动到下一个状态
+    consumed = line_end + 2; // 跳过 "\r\n"
+    state_ = DeserializeState::Headers;
+    return false;
+}
+
+bool HttpMessage::parseHeaderLine(size_t &consumed)
+{
+    // 查找头字段结束标志 "\r\n\r\n"
+    size_t headers_end = std::string(data_buffer_.begin() + consumed, data_buffer_.end()).find("\r\n\r\n");
+    if (headers_end == std::string::npos) {
+        return false; // 等待更多数据
+    }
+    
     // 解析头字段
-    headers_.clear();
+    std::string headers_str(data_buffer_.begin() + consumed, data_buffer_.begin() + headers_end);
+    std::istringstream headers_iss(headers_str);
     std::string header_line;
-    while (std::getline(iss, header_line) && header_line != "\r") {
-        if (header_line.empty()) {
+    
+    while (std::getline(headers_iss, header_line)) {
+        // 跳过空行
+        if (header_line.empty() || header_line == "\r") {
             continue;
         }
-        
+
+        // 解析头字段：Name: Value
         size_t colon_pos = header_line.find(':');
         if (colon_pos == std::string::npos) {
             continue;
         }
         
         std::string name = header_line.substr(0, colon_pos);
-        std::string value = header_line.substr(colon_pos + 1);
-        
-        // 去除空格
+        // 去除名称前后空格，并转换为小写
         name.erase(0, name.find_first_not_of(" \t"));
-        name.erase(name.find_last_not_of(" \t\r") + 1);
+        name.erase(name.find_last_not_of(" \t") + 1);
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+
+        std::string value = header_line.substr(colon_pos + 1);
+        // 去除值前后空格
         value.erase(0, value.find_first_not_of(" \t"));
         value.erase(value.find_last_not_of(" \t\r") + 1);
-        
-        headers_[name] = value;
+
+        header_.headers_[name] = value;
     }
-    
-    // 解析消息体
-    // 查找消息体的起始位置
-    size_t body_start = data_str.find("\r\n\r\n");
-    if (body_start == std::string::npos) {
-        body_.clear();
-        return true;
-    }
-    body_start += 4; // 跳过"\r\n\r\n"
-    
-    // 读取消息体
-    if (body_start < data_str.size()) {
-        body_.assign(data.begin() + body_start, data.end());
-    } else {
-        body_.clear();
-    }
-    
-    // 更新MessageHeader
-    header_.total_length = sizeof(MessageHeader) + body_.size();
-    connection_type_ = network::ConnectionType::HTTP;
-    
+
+    consumed = headers_end + sizeof("\r\n\r\n") - 1; // 包括 "\r\n\r\n"
     return true;
+}
+
+bool HttpMessage::deserializeHeaders(size_t &consumed)
+{
+    if (!parseHeaderLine(consumed)) {
+        return true;// 解析完成，等待更多数据
+    }
+
+    // 检查是否有消息体
+    auto content_length_it = header_.headers_.find("content-length");
+    auto transfer_encoding_it = header_.headers_.find("transfer-encoding");
+    
+    if (content_length_it != header_.headers_.end()) {
+        expected_body_length_ = std::stoull(content_length_it->second);
+        state_ = DeserializeState::Body;
+    } else if (transfer_encoding_it != header_.headers_.end()
+                 && transfer_encoding_it->second == "chunked") {
+        state_ = DeserializeState::ChunkedBodyStart;
+    } else {
+        // 没有消息体，解析完成
+        state_ = DeserializeState::Complete;
+    }
+
+    return false;
+}
+
+bool HttpMessage::deserializeBody(size_t &consumed)
+{
+    uint64_t remaining = data_buffer_.size() - consumed;
+    uint64_t bytes_to_read = std::min(remaining, expected_body_length_);
+    if (bytes_to_read == 0) {
+        return true; // 等待更多数据
+    }
+
+    // 读取消息体
+    body_.insert(body_.end(), data_buffer_.begin() + consumed, data_buffer_.begin() + consumed + bytes_to_read);
+    expected_body_length_ -= bytes_to_read;
+    consumed += bytes_to_read;
+
+    if (0 == expected_body_length_) {
+        state_ = DeserializeState::Complete;
+    }
+
+    return (0 != expected_body_length_);
+}
+
+bool HttpMessage::deserializeChunkedBodyStart(size_t &consumed)
+{
+    // 解析chunk大小行
+    size_t chunk_size_end = std::string(data_buffer_.begin() + consumed, data_buffer_.end()).find("\r\n");
+    if (chunk_size_end == std::string::npos) {
+        return true; // 等待更多数据
+    }
+    
+    // 解析chunk大小
+    std::string chunk_size_str(data_buffer_.begin() + consumed, data_buffer_.begin() + chunk_size_end);
+    current_chunk_size_ = std::stoull(chunk_size_str, nullptr, 16);
+    
+    if (current_chunk_size_ == 0) {
+        // 最后一个chunk，进入chunk尾处理
+        consumed = chunk_size_end + 2;
+        state_ = DeserializeState::ChunkedBodyEnd;
+    } else {
+        // 进入chunk数据处理
+        consumed = chunk_size_end + 2;
+        state_ = DeserializeState::ChunkedBodyData;
+    }
+    return false;
+}
+
+bool HttpMessage::deserializeChunkedBodyData(size_t &consumed)
+{
+    // 解析chunk数据
+    if (data_buffer_.size() - consumed < current_chunk_size_ + 2) { // +2 用于 "\r\n"
+        return true; // 等待更多数据
+    }
+    
+    // 读取chunk数据
+    body_.insert(body_.end(), data_buffer_.begin() + consumed, data_buffer_.begin() + consumed + current_chunk_size_);
+    
+    consumed = current_chunk_size_ + 2; // 跳过chunk数据和 "\r\n"
+
+    state_ = DeserializeState::ChunkedBodyStart;
+    return false;
+}
+
+bool HttpMessage::deserializeChunkedBodyEnd(size_t &consumed)
+{
+    // 解析chunk尾的可选头部
+    size_t trailer_end = std::string(buffer_.begin(), buffer_.end()).find("\r\n\r\n");
+    if (trailer_end == std::string::npos) {
+        return true; // 等待更多数据
+    }
+    
+    consumed = trailer_end + 4; // 跳过 "\r\n\r\n"
+    state_ = DeserializeState::Complete;
+    return false;
 }
 
 // ---------------------- MessageSerializer工具类实现 ----------------------
@@ -411,55 +669,29 @@ std::vector<char> MessageSerializer::serialize(const Message& message) {
     return message.serialize();
 }
 
-std::shared_ptr<Message> MessageSerializer::deserialize(const std::vector<char>& data) {
-    // 简化实现，根据连接类型创建相应的消息对象
-    // 实际应用中可能需要更复杂的逻辑来判断消息类型
-    
-    // 先解析消息头，获取消息类型
-    if (data.size() < sizeof(MessageHeader)) {
-        return nullptr;
-    }
-    
-    MessageHeader header;
-    memcpy(&header, data.data(), sizeof(MessageHeader));
-    
-    // 字节序转换
-    header.total_length = ntohl(header.total_length);
-    header.message_type = ntohs(header.message_type);
-    
+std::shared_ptr<Message> MessageSerializer::deserialize(network::ConnectionType type, const std::vector<char> &data)
+{
     std::shared_ptr<Message> message;
-    
-    // 根据消息类型创建相应的消息对象
-    switch (header.message_type) {
-        case 0x01: // HTTP请求
-        case 0x02: // HTTP响应
+
+    switch (type) {
+        case network::ConnectionType::HTTP:
             message = std::make_shared<HttpMessage>();
             break;
-        case 0x01: // WebSocket文本帧
-        case 0x02: // WebSocket二进制帧
-        case 0x00: // WebSocket延续帧
-            message = std::make_shared<WebSocketMessage>();
-            break;
-        default: // TCP消息
+        case network::ConnectionType::TCP:
             message = std::make_shared<TCPMessage>();
             break;
+        case network::ConnectionType::WebSocket:
+            message = std::make_shared<WebSocketMessage>();
+            break;
+        default:
+            return nullptr;
     }
     
-    // 调用具体消息类型的deserialize方法
     if (message && message->deserialize(data)) {
         return message;
     }
     
     return nullptr;
-}
-
-bool MessageSerializer::deserializeHeader(const std::vector<char>& data, MessageHeader& header) {
-    if (data.size() < sizeof(MessageHeader)) {
-        return false;
-    }
-    
-    memcpy(&header, data.data(), sizeof(MessageHeader));
-    return true;
 }
 
 } // namespace protocol
