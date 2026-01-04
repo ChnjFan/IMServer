@@ -4,13 +4,9 @@
 
 namespace protocol {
 
-ProtocolManager::ProtocolManager() : executor_(4, 4) { // 默认4个IO线程，4个CPU线程
+ProtocolManager::ProtocolManager(network::ConnectionManager& connection_manager)
+     : connection_manager_(connection_manager), executor_(4, 4) { // 默认4个IO线程，4个CPU线程
     initializeParsers();
-}
-
-ProtocolManager& ProtocolManager::instance() {
-    static ProtocolManager instance;
-    return instance;
 }
 
 void ProtocolManager::registerHandler(
@@ -73,7 +69,7 @@ void ProtocolManager::doProcessData(network::ConnectionId connection_id, std::ve
         parser->setConnectionId(connection_id);
         
         // 异步解析数据
-        parser->asyncParse(data, [this, connection, callback](const boost::system::error_code& parse_ec, Message message) {
+        parser->asyncParse(data, [this, connection, callback](const boost::system::error_code& parse_ec, Message& message) {
             if (parse_ec) {
                 callback(parse_ec);
                 return;

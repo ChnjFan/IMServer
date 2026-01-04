@@ -26,7 +26,7 @@ private:
     std::mutex mutex_; // 互斥锁，保护成员变量
 
 public:
-    ProtocolManager(network::ConnectionManager& connection_manager) : connection_manager_(connection_manager) {}
+    ProtocolManager(network::ConnectionManager& connection_manager);
     ~ProtocolManager() = default;
 
     ProtocolManager(const ProtocolManager&) = delete;

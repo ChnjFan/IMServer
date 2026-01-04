@@ -36,7 +36,7 @@ void TcpParser::asyncParse(const std::vector<char>& data, ParseCallback callback
     }
 
     if (!is_parsing_) { // 解析完成再调回调
-        callback(ec, std::move(parsed_message_));
+        callback(ec, parsed_message_);
     }
 }
 

@@ -38,7 +38,7 @@ void WebSocketParser::asyncParse(const std::vector<char>& data, ParseCallback ca
     }
 
     if (!is_parsing_) {
-        callback(ec, std::move(parsed_message_));
+        callback(ec, parsed_message_);
     }
 }
 

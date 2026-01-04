@@ -21,7 +21,7 @@ protected:
 
 public:
     using Ptr = std::shared_ptr<Parser>;
-    using ParseCallback = std::function<void(const boost::system::error_code&, Message&&)>;
+    using ParseCallback = std::function<void(const boost::system::error_code&, Message&)>;
 
     virtual ~Parser() = default;
 

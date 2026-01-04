@@ -17,9 +17,7 @@ void HttpParser::reset() {
     parsed_message_.bindConnection(connection_id_, network::ConnectionType::HTTP);
 }
 
-void HttpParser::asyncParse(
-    const std::vector<char>& data,
-    ParseCallback callback) {
+void HttpParser::asyncParse(const std::vector<char>& data, ParseCallback callback) {
     boost::system::error_code ec;
     std::shared_ptr<HttpMessage> result_message;
     bool message_complete = false;
@@ -44,7 +42,7 @@ void HttpParser::asyncParse(
     }
     
     if (!is_parsing_) { // 解析完成再调回调
-        callback(ec, std::move(parsed_message_));
+        callback(ec, parsed_message_);
     }
 }
 
