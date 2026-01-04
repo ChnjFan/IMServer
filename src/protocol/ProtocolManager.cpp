@@ -5,7 +5,7 @@
 namespace protocol {
 
 ProtocolManager::ProtocolManager(network::ConnectionManager& connection_manager)
-     : connection_manager_(connection_manager), executor_(4, 4) { // 默认4个IO线程，4个CPU线程
+     : executor_(4, 4), connection_manager_(connection_manager) { // 默认4个IO线程，4个CPU线程
     initializeParsers();
 }
 
