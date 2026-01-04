@@ -45,6 +45,12 @@ public:
      */
     bool deserialize(const std::vector<char>& data) override;
 
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return MessageType::TCP; }
+
 private:
     /**
      * @brief 解析消息头

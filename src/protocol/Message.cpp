@@ -22,6 +22,25 @@ Message::Message(const std::vector<char>& body,
     connection_type_ = connection_type;
 }
 
+/**
+ * @brief 将消息类型转换为字符串
+ * @param type 消息类型
+ * @return std::string 消息类型的字符串表示
+ */
+std::string Message::messageTypeToString(MessageType type)
+{
+    switch (type) {
+        case MessageType::TCP:
+            return "TCP";
+        case MessageType::HTTP:
+            return "HTTP";
+        case MessageType::WebSocket:
+            return "WebSocket";
+        default:
+            return "Unknown";
+    }
+}
+
 // ---------------------- MessageSerializer工具类实现 ----------------------
 
 std::vector<char> MessageSerializer::serialize(const Message& message) {

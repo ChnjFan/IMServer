@@ -16,56 +16,56 @@ namespace protocol {
  * 负责根据消息类型将消息路由到对应的处理器
  */
 class MessageRouter {
+private:
+    // 路由表，消息类型到处理器的映射
+    std::unordered_map<Message::MessageType, MessageHandler> handlers_;
+    // 读写锁，支持并发访问路由表
+    std::shared_mutex mutex_;
+    // 异步执行器
+    std::shared_ptr<AsyncExecutor> executor_;
+    // 默认执行器（如果未设置外部执行器）
+    std::shared_ptr<AsyncExecutor> default_executor_;
+
 public:
     /**
      * @brief 消息处理器类型
      */
     using MessageHandler = std::function<void(const Message&, network::Connection::Ptr)>;
     
-    /**
-     * @brief 构造函数
-     */
     MessageRouter();
-    
     /**
      * @brief 注册消息处理器
      * @param message_type 消息类型
      * @param handler 消息处理器回调函数
      */
-    void registerHandler(
-        uint16_t message_type,
-        MessageHandler handler);
+    void registerHandler(Message::MessageType message_type, MessageHandler handler);
     
     /**
      * @brief 移除消息处理器
      * @param message_type 消息类型
      */
-    void removeHandler(uint16_t message_type);
+    void removeHandler(Message::MessageType message_type);
     
     /**
      * @brief 异步路由消息
      * @param message 消息对象
      * @param connection 关联的连接对象
      */
-    void asyncRoute(
-        const Message& message,
-        network::Connection::Ptr connection);
+    void asyncRoute(const Message& message, network::Connection::Ptr connection);
     
     /**
      * @brief 同步路由消息（阻塞调用）
      * @param message 消息对象
      * @param connection 关联的连接对象
      */
-    void route(
-        const Message& message,
-        network::Connection::Ptr connection);
+    void route(const Message& message, network::Connection::Ptr connection);
     
     /**
      * @brief 检查是否存在指定类型的处理器
      * @param message_type 消息类型
      * @return bool 是否存在处理器
      */
-    bool hasHandler(uint16_t message_type) const;
+    bool hasHandler(Message::MessageType message_type) const;
     
     /**
      * @brief 设置异步执行器
@@ -74,28 +74,6 @@ public:
     void setExecutor(std::shared_ptr<AsyncExecutor> executor) {
         executor_ = std::move(executor);
     }
-    
-private:
-    /**
-     * @brief 内部路由函数
-     * @param message 消息对象
-     * @param connection 关联的连接对象
-     */
-    void doRoute(
-        const Message& message,
-        network::Connection::Ptr connection);
-    
-    // 路由表，消息类型到处理器的映射
-    std::unordered_map<uint16_t, MessageHandler> handlers_;
-    
-    // 读写锁，支持并发访问路由表
-    std::shared_mutex mutex_;
-    
-    // 异步执行器
-    std::shared_ptr<AsyncExecutor> executor_;
-    
-    // 默认执行器（如果未设置外部执行器）
-    std::shared_ptr<AsyncExecutor> default_executor_;
 };
 
 } // namespace protocol

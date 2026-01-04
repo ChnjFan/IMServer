@@ -20,8 +20,6 @@ void HttpParser::reset() {
 
 void HttpParser::asyncParse(const std::vector<char>& data, ParseCallback callback) {
     boost::system::error_code ec;
-    std::shared_ptr<HttpMessage> result_message;
-    bool message_complete = false;
     
     // 将新数据添加到缓冲区
     { // 加锁保护缓冲区

@@ -97,6 +97,12 @@ public:
      * @return bool 解析是否成功
      */
     bool deserialize(const std::vector<char>& data) override;
+    
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return MessageType::WebSocket; }
 
 private:
     /**

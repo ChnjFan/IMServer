@@ -13,6 +13,13 @@ namespace protocol {
  * 包含消息的完整信息，包括消息头和消息体
  */
 class Message {
+public:
+    enum class MessageType {
+        TCP,
+        WebSocket,
+        HTTP,
+    };
+
 protected:
     std::vector<char> body_;               // 消息体
     network::ConnectionId connection_id_;  // 关联的连接ID
@@ -82,6 +89,13 @@ public:
     }
 
     /**
+     * @brief 将消息类型转换为字符串
+     * @param type 消息类型
+     * @return std::string 消息类型的字符串表示
+     */
+    static std::string messageTypeToString(MessageType type);
+
+    /**
      * @brief 重置消息状态
      */
     virtual void reset() = 0;
@@ -98,6 +112,12 @@ public:
      * @return bool 解析是否成功
      */
     virtual bool deserialize(const std::vector<char>& data) = 0;
+
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    virtual MessageType getMessageType() const = 0;
 };
 
 // 前向声明

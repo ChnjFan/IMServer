@@ -157,6 +157,12 @@ public:
      */
     bool deserialize(const std::vector<char>& data) override;
 
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return MessageType::HTTP; }
+
 private:
     bool parseStartLine(const std::string& line);
 
