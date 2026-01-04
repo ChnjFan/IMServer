@@ -32,9 +32,7 @@ public:
      * @param io_threads IO线程池大小，默认使用硬件线程数
      * @param cpu_threads CPU线程池大小，默认使用硬件线程数
      */
-    explicit AsyncExecutor(
-        size_t io_threads = 0,
-        size_t cpu_threads = 0);
+    explicit AsyncExecutor(size_t io_threads = 0, size_t cpu_threads = 0);
     
     /**
      * @brief 析构函数

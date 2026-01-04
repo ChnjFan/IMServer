@@ -10,6 +10,9 @@ set(PROTOCOL_SOURCES
     MessageRouter.cpp
     AsyncExecutor.cpp
     Message.cpp
+    TcpMessage.cpp
+    WebSocketMessage.cpp
+    HttpMessage.cpp
 )
 
 # 协议层头文件列表
@@ -22,6 +25,9 @@ set(PROTOCOL_HEADERS
     MessageRouter.h
     AsyncExecutor.h
     Message.h
+    TcpMessage.h
+    WebSocketMessage.h
+    HttpMessage.h
 )
 
 # 创建协议层静态库
