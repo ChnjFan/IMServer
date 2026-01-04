@@ -47,9 +47,7 @@ target_include_directories(protocol PUBLIC
 # 链接依赖库
 target_link_libraries(protocol
     network
-    Boost::asio
-    Boost::system
-    Boost::beast
+    ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
