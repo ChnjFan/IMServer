@@ -27,18 +27,14 @@ void MessageRouter::removeHandler(uint16_t message_type) {
     handlers_.erase(message_type);
 }
 
-void MessageRouter::asyncRoute(
-    const Message& message,
-    network::Connection::Ptr connection) {
+void MessageRouter::asyncRoute(const Message& message, network::Connection::Ptr connection) {
     // 异步提交路由任务
     executor_->submit([this, message, connection]() {
         route(message, connection);
     });
 }
 
-void MessageRouter::route(
-    const Message& message,
-    network::Connection::Ptr connection) {
+void MessageRouter::route(const Message& message, network::Connection::Ptr connection) {
     MessageHandler handler;
     
     // 查找处理器

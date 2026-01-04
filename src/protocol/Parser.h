@@ -93,19 +93,11 @@ private:
      * @brief 私有构造函数，防止外部实例化
      */
     ParserFactory();
-    
+
     // 解析器创建函数映射
-    std::unordered_map<
-        network::ConnectionType,
-        std::function<std::shared_ptr<Parser>()>
-    > parser_creators_;
-    
+    std::unordered_map<network::ConnectionType, std::function<std::shared_ptr<Parser>()> > parser_creators_;
     // 解析器实例缓存
-    std::unordered_map<
-        network::ConnectionType,
-        std::weak_ptr<Parser>
-    > parser_instances_;
-    
+    std::unordered_map<network::ConnectionType, std::weak_ptr<Parser> > parser_instances_;
     std::mutex mutex_; // 互斥锁，保护解析器映射和缓存
 };
 

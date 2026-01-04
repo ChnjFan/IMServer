@@ -11,6 +11,7 @@
 
 #include "network/ConnectionManager.h"
 #include "Parser.h"
+#include "Message.h"
 #include "MessageRouter.h"
 #include "AsyncExecutor.h"
 
@@ -21,14 +22,15 @@ private:
     std::unordered_map<network::ConnectionId, std::shared_ptr<Parser>> parsers_; // 解析器映射（按连接ID）
     MessageRouter message_router_; // 消息路由器
     AsyncExecutor executor_; // 异步执行器
+    network::ConnectionManager& connection_manager_;
     std::mutex mutex_; // 互斥锁，保护成员变量
 
 public:
-    /**
-     * @brief 获取ProtocolManager的单例实例
-     * @return ProtocolManager& 单例引用
-     */
-    static ProtocolManager& instance();
+    ProtocolManager(network::ConnectionManager& connection_manager) : connection_manager_(connection_manager) {}
+    ~ProtocolManager() = default;
+
+    ProtocolManager(const ProtocolManager&) = delete;
+    ProtocolManager& operator=(const ProtocolManager&) = delete;
 
     /**
      * @brief 异步处理数据
@@ -76,12 +78,6 @@ public:
     void setThreadPoolSize(size_t io_threads, size_t cpu_threads);
 
 private:
-    ProtocolManager();
-    ~ProtocolManager() = default;
-
-    ProtocolManager(const ProtocolManager&) = delete;
-    ProtocolManager& operator=(const ProtocolManager&) = delete;
-
     /**
      * @brief 内部异步处理函数
      * @param connection_id 连接ID

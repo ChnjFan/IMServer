@@ -56,9 +56,8 @@ std::shared_ptr<Parser> ParserFactory::createParser(network::ConnectionType conn
     return parser;
 }
 
-void ParserFactory::registerParser(
-    network::ConnectionType connection_type,
-    std::function<std::shared_ptr<Parser>()> creator) {
+void ParserFactory::registerParser(network::ConnectionType connection_type,
+        std::function<std::shared_ptr<Parser>()> creator) {
     std::lock_guard<std::mutex> lock(mutex_);
     parser_creators_[connection_type] = std::move(creator);
 }

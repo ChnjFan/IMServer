@@ -54,13 +54,13 @@ void ProtocolManager::doProcessData(network::ConnectionId connection_id, std::ve
 
     try {
         // 获取连接对象
-        auto connection = network::ConnectionManager::instance().getConnection(connection_id);
+        auto connection = connection_manager_.getConnection(connection_id);
         if (!connection) {
             ec = boost::system::errc::make_error_code(boost::system::errc::bad_file_descriptor);
             callback(ec);
             return;
         }
-        
+
         // 获取对应的解析器
         auto parser = getParser(connection_id, connection->getType());
         if (!parser) {
