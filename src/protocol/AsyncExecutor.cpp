@@ -49,18 +49,11 @@ void AsyncExecutor::wait() {
 }
 
 void AsyncExecutor::setThreadPoolSize(PoolType pool_type, size_t size) {
-    // 这里简化实现，实际可能需要更复杂的逻辑
-    // 因为boost::asio::thread_pool的大小在创建后无法直接修改
-    // 完整实现可能需要重建线程池
-    (void)pool_type;
-    (void)size;
+    thread_pool_sizes_[pool_type] = size;
 }
 
 size_t AsyncExecutor::getThreadPoolSize(PoolType pool_type) const {
-    const auto& pool = getThreadPool(pool_type);
-    // boost::asio::thread_pool没有直接获取大小的方法
-    // 这里简化实现，返回一个估计值
-    return 0;
+    return thread_pool_sizes_.at(pool_type);
 }
 
 boost::asio::thread_pool& AsyncExecutor::getThreadPool(PoolType pool_type) {

@@ -138,7 +138,7 @@ private:
      * @param consumed 已解析字节数引用
      * @return bool 是否完成解析
      */
-    bool deserializeComplete(size_t& consumed);
+    bool deserializeComplete();
 };
 
 } // namespace protocol

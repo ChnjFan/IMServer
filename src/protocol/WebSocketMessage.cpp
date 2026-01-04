@@ -157,8 +157,11 @@ bool WebSocketMessage::deserializeExtendedLength(size_t &consumed)
         if (data_buffer_.size() - consumed < 2) {
             return false;
         }
-        expected_body_length_ = (static_cast<uint64_t>(static_cast<uint8_t>(data_buffer_[consumed++])) << 8) | 
-                                            static_cast<uint8_t>(data_buffer_[consumed++]);
+        // 修复序列点问题：将自增操作分开
+        uint8_t first_byte = static_cast<uint8_t>(data_buffer_[consumed]);
+        uint8_t second_byte = static_cast<uint8_t>(data_buffer_[consumed + 1]);
+        expected_body_length_ = (static_cast<uint64_t>(first_byte) << 8) | second_byte;
+        consumed += 2;
         state_ = header_.masked_ ? DeserializeState::MaskingKey : DeserializeState::Payload;
     } else {
         if (data_buffer_.size() - consumed < EXTENDED_LENGTH_PARSE_SIZE) {
@@ -206,7 +209,7 @@ bool WebSocketMessage::deserializePayload(size_t &consumed)
     return false;
 }
 
-bool WebSocketMessage::deserializeComplete(size_t &consumed)
+bool WebSocketMessage::deserializeComplete()
 {
     bool is_final = (header_.fin_opcode & MASK_MASK) != 0;
     if (is_final) { // 最后一帧将状态重置为初始状态，下一次解析直接覆盖

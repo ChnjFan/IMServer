@@ -23,8 +23,8 @@ public:
      * @brief 线程池类型
      */
     enum class PoolType {
-        IO,     ///< IO密集型线程池
-        CPU     ///< CPU密集型线程池
+        IO,     // IO密集型线程池
+        CPU     // CPU密集型线程池
     };
     
     /**
@@ -149,10 +149,11 @@ private:
     const boost::asio::thread_pool& getThreadPool(PoolType pool_type) const;
     
     // 线程池
-    std::unique_ptr<boost::asio::thread_pool> io_thread_pool_;     ///< IO密集型线程池
-    std::unique_ptr<boost::asio::thread_pool> cpu_thread_pool_;   ///< CPU密集型线程池
+    std::unique_ptr<boost::asio::thread_pool> io_thread_pool_;     // IO密集型线程池
+    std::unique_ptr<boost::asio::thread_pool> cpu_thread_pool_;   // CPU密集型线程池
+    std::unordered_map<PoolType, size_t> thread_pool_sizes_;      // 线程池大小映射
     
-    std::atomic<bool> running_;    ///< 执行器运行状态
+    std::atomic<bool> running_;    // 执行器运行状态
 };
 
 } // namespace protocol
