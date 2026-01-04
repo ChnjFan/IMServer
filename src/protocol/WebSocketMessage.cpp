@@ -97,7 +97,7 @@ bool WebSocketMessage::deserialize(const std::vector<char>& data) {
                 message_complete = deserializePayload(consumed);
                 break;
             case DeserializeState::Complete:
-                message_complete = deserializeComplete(consumed);
+                message_complete = deserializeComplete();
                 break;
             default:
                 throw std::runtime_error("Invalid deserialize state");
