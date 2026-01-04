@@ -1,4 +1,6 @@
 #include "TcpParser.h"
+
+#include <iostream>
 #include <boost/system/error_code.hpp>
 
 namespace protocol {

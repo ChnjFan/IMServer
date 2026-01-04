@@ -1,5 +1,6 @@
 #include "HttpParser.h"
 
+#include <iostream>
 #include <string>
 #include <sstream>
 #include <unordered_map>

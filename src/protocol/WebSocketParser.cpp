@@ -1,5 +1,6 @@
 #include "WebSocketParser.h"
 
+#include <iostream>
 #include <cstring>
 #include <algorithm>
 #include <boost/system/error_code.hpp>
