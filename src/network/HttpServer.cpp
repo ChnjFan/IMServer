@@ -455,6 +455,18 @@ HttpRequestHandler HttpServer::findHandlerInTable(const std::string& method, con
     return path_it->second;
 }
 
+void HttpServer::setMessageHandler(Connection::MessageHandler handler) {
+    message_handler_ = std::move(handler);
+}
+
+void HttpServer::setStateChangeHandler(Connection::StateChangeHandler handler) {
+    state_change_handler_ = std::move(handler);
+}
+
+void HttpServer::setCloseHandler(Connection::CloseHandler handler) {
+    close_handler_ = std::move(handler);
+}
+
 void HttpServer::doAccept() {
     if (!running_) return;
 
@@ -473,7 +485,12 @@ void HttpServer::doAccept() {
                 
                 // 添加到连接管理器
                 connection_manager_.addConnection(session);
-                
+
+                // 设置连接回调
+                session->setMessageHandler(message_handler_);
+                session->setStateChangeHandler(state_change_handler_);
+                session->setCloseHandler(close_handler_);
+
                 std::cout << "HTTP connection " << connection_id << " established" << std::endl;
                 session->start();
             }

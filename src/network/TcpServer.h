@@ -52,14 +52,24 @@ private:
     ConnectionManager& connection_manager_;
     std::atomic<bool> running_;
 
+    // 连接回调
+    Connection::MessageHandler message_handler_;
+    Connection::StateChangeHandler state_change_handler_;
+    Connection::CloseHandler close_handler_;
+
 public:
     TcpServer(asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port);
     ~TcpServer();
-    
+
     void start();
     void stop();
     bool isRunning() const;
-    
+
+    // 设置连接回调
+    void setMessageHandler(Connection::MessageHandler handler);
+    void setStateChangeHandler(Connection::StateChangeHandler handler);
+    void setCloseHandler(Connection::CloseHandler handler);
+
 private:
     void doAccept();
     void handleAccept(boost::system::error_code ec, ip::tcp::socket socket);

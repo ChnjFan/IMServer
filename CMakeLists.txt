@@ -33,9 +33,10 @@ set(CMAKE_BUILD_TYPE Debug)
 # 各个模块作为单独进程构建
 # 网络模块
 add_subdirectory(src/network)
-
 # 工具模块（需要时添加）
 add_subdirectory(src/tool)
+# 协议模块
+add_subdirectory(src/protocol)
 
 # 其他模块将在各自目录中配置为单独进程
 # 核心模块（需要时添加）

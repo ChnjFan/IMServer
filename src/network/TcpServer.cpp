@@ -203,6 +203,21 @@ bool TcpServer::isRunning() const {
     return running_;
 }
 
+void TcpServer::setMessageHandler(Connection::MessageHandler handler)
+{
+    message_handler_ = handler;
+}
+
+void TcpServer::setStateChangeHandler(Connection::StateChangeHandler handler)
+{
+    state_change_handler_ = handler;
+}
+
+void TcpServer::setCloseHandler(Connection::CloseHandler handler)
+{
+    close_handler_ = handler;
+}
+
 void TcpServer::doAccept() {
     if (!running_) return;
     acceptor_.async_accept(
@@ -218,25 +233,12 @@ void TcpServer::handleAccept(boost::system::error_code ec, ip::tcp::socket socke
     if (!ec) {
         auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
         auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
-        
-        // TCP连接后立即接收数据，校验Token才能建立连接
-        conn->setMessageHandler([this](ConnectionId conn_id, const std::vector<char>& data) {
-            //todo 处理收到的消息
-            std::cout << "Received message from connection " << conn_id << ": " 
-                      << std::string(data.begin(), data.end()) << std::endl;
-            return data.size();
-        });
 
-        conn->setStateChangeHandler([this](ConnectionId conn_id, ConnectionState old_state, ConnectionState new_state) {
-            std::cout << "Connection " << conn_id << " state changed from " << connectionStateToString(old_state)
-                     << " to " << connectionStateToString(new_state) << std::endl;
-        });
-        
-        conn->setCloseHandler([this](ConnectionId conn_id, const boost::system::error_code& ec) {
-            std::cout << "Connection " << conn_id << " closed: " << connectionEventToString(ConnectionEvent::Disconnected)
-                     << " with error: " << ec.message() << std::endl;
-        });
-        
+        // TCP连接后立即接收数据，校验Token才能建立连接
+        conn->setMessageHandler(message_handler_);
+        conn->setStateChangeHandler(state_change_handler_);
+        conn->setCloseHandler(close_handler_);
+
         connection_manager_.addConnection(conn);
         conn->start();
     }

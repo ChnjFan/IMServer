@@ -151,6 +151,11 @@ private:
     bool cors_enabled_;
     std::string cors_origin_;
 
+    // 连接回调
+    Connection::MessageHandler message_handler_;
+    Connection::StateChangeHandler state_change_handler_;
+    Connection::CloseHandler close_handler_;
+
 public:
     explicit HttpServer(net::io_context& io_context, ConnectionManager& connection_manager);
     ~HttpServer();
@@ -198,6 +203,17 @@ public:
     std::string getCORSOrigin() const;
 
     HttpRequestHandler findHandlerInTable(const std::string& method, const std::string& path);
+
+    /**
+     * @brief 设置连接回调
+     * 
+     * 该函数用于设置连接回调函数，当有新的连接建立或连接状态改变时，会调用该回调函数。
+     * 
+     * @param handler 连接回调函数
+     */
+    void setMessageHandler(Connection::MessageHandler handler);
+    void setStateChangeHandler(Connection::StateChangeHandler handler);
+    void setCloseHandler(Connection::CloseHandler handler);
 
 private:
     void doAccept();
