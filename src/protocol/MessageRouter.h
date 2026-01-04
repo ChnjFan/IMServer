@@ -16,6 +16,12 @@ namespace protocol {
  * 负责根据消息类型将消息路由到对应的处理器
  */
 class MessageRouter {
+public:
+    /**
+     * @brief 消息处理器类型
+     */
+    using MessageHandler = std::function<void(const Message&, network::Connection::Ptr)>;
+
 private:
     // 路由表，消息类型到处理器的映射
     std::unordered_map<Message::MessageType, MessageHandler> handlers_;
@@ -27,11 +33,6 @@ private:
     std::shared_ptr<AsyncExecutor> default_executor_;
 
 public:
-    /**
-     * @brief 消息处理器类型
-     */
-    using MessageHandler = std::function<void(const Message&, network::Connection::Ptr)>;
-    
     MessageRouter();
     /**
      * @brief 注册消息处理器

@@ -60,7 +60,7 @@ public:
      * @param message_type 消息类型
      * @param handler 消息处理器回调函数
      */
-    void registerHandler(uint16_t message_type, std::function<void(const Message&, network::Connection::Ptr)> handler);
+    void registerHandler(Message::MessageType message_type, std::function<void(const Message&, network::Connection::Ptr)> handler);
 
     /**
      * @brief 获取协议解析器

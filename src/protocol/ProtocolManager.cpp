@@ -9,9 +9,8 @@ ProtocolManager::ProtocolManager(network::ConnectionManager& connection_manager)
     initializeParsers();
 }
 
-void ProtocolManager::registerHandler(
-    uint16_t message_type,
-    std::function<void(const Message&, network::Connection::Ptr)> handler) {
+void ProtocolManager::registerHandler(Message::MessageType message_type,
+        std::function<void(const Message&, network::Connection::Ptr)> handler) {
     message_router_.registerHandler(message_type, std::move(handler));
 }
 
