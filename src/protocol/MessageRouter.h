@@ -66,8 +66,8 @@ public:
      * @param message_type 消息类型
      * @return bool 是否存在处理器
      */
-    bool hasHandler(Message::MessageType message_type) const;
-    
+    bool hasHandler(Message::MessageType message_type);
+
     /**
      * @brief 设置异步执行器
      * @param executor 异步执行器

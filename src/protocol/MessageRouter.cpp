@@ -60,7 +60,7 @@ void MessageRouter::route(const Message& message, network::Connection::Ptr conne
     }
 }
 
-bool MessageRouter::hasHandler(Message::MessageType message_type) const {
+bool MessageRouter::hasHandler(Message::MessageType message_type) {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     return handlers_.find(message_type) != handlers_.end();
 }
