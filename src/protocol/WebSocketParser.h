@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Parser.h"
+#include "WebSocketMessage.h"
 
 namespace protocol {
 

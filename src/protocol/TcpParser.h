@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Parser.h"
-#include "Message.h"
+#include "TcpMessage.h"
 
 namespace protocol {
 
