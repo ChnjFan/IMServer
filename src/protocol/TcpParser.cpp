@@ -16,7 +16,6 @@ void TcpParser::reset() {
 }
 
 void TcpParser::asyncParse(const std::vector<char>& data, ParseCallback callback) {
-    size_t consumed = 0;
     boost::system::error_code ec;
     
     { // 加锁保护解析状态
