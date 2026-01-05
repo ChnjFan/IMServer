@@ -520,49 +520,39 @@ private:
 ### 8.1 TCP协议实现示例
 
 ```cpp
-// 发送TCP消息
+// 发送TCP消息示例
 void sendTcpMessage(boost::asio::ip::tcp::socket& socket, uint16_t message_type, const std::string& json_body) {
-    // 构建消息头
-    uint32_t total_length = 8 + json_body.size(); // 4字节长度 + 4字节头 + 消息体
-    uint16_t msg_type = htons(message_type);
-    uint8_t version = 1;
-    uint8_t reserved = 0;
+    // 使用TCPMessage类构建消息
+    protocol::TCPMessage message;
+    message.getBody().assign(json_body.begin(), json_body.end());
     
-    // 构建完整消息
-    std::vector<char> message;
-    message.resize(total_length);
-    
-    // 写入消息头
-    *reinterpret_cast<uint32_t*>(&message[0]) = htonl(total_length);
-    *reinterpret_cast<uint16_t*>(&message[4]) = msg_type;
-    message[6] = version;
-    message[7] = reserved;
-    
-    // 写入消息体
-    std::memcpy(&message[8], json_body.c_str(), json_body.size());
+    // 序列化消息
+    std::vector<char> serialized_message = message.serialize();
     
     // 发送消息
-    boost::asio::write(socket, boost::asio::buffer(message));
+    boost::asio::write(socket, boost::asio::buffer(serialized_message));
 }
 
-// 接收TCP消息
+// 接收TCP消息示例
 bool receiveTcpMessage(boost::asio::ip::tcp::socket& socket, uint16_t& out_message_type, std::string& out_json_body) {
     try {
-        // 读取消息头
-        char header[8];
-        boost::asio::read(socket, boost::asio::buffer(header));
+        // 读取完整消息
+        boost::beast::flat_buffer buffer;
+        boost::asio::read(socket, buffer);
         
-        // 解析消息头
-        uint32_t total_length = ntohl(*reinterpret_cast<uint32_t*>(&header[0]));
-        uint16_t message_type = ntohs(*reinterpret_cast<uint16_t*>(&header[4]));
+        // 将读取的数据转换为vector<char>
+        const auto& data = boost::asio::buffer_cast<const char*>(buffer.data());
+        std::vector<char> message_data(data, data + buffer.size());
         
-        // 读取消息体
-        uint32_t body_length = total_length - 8;
-        std::vector<char> body(body_length);
-        boost::asio::read(socket, boost::asio::buffer(body));
+        // 使用TCPMessage类反序列化消息
+        protocol::TCPMessage message;
+        if (!message.deserialize(message_data)) {
+            LOG_ERROR("Failed to deserialize TCP message");
+            return false;
+        }
         
-        out_message_type = message_type;
-        out_json_body.assign(body.begin(), body.end());
+        // 提取消息类型和消息体
+        out_json_body.assign(message.getBody().begin(), message.getBody().end());
         
         return true;
     } catch (const std::exception& e) {
@@ -575,38 +565,39 @@ bool receiveTcpMessage(boost::asio::ip::tcp::socket& socket, uint16_t& out_messa
 ### 8.2 WebSocket协议实现示例
 
 ```cpp
-// 发送WebSocket消息
+// 发送WebSocket消息示例
 void sendWebSocketMessage(websocket::stream<tcp::socket>& ws, uint16_t message_type, const std::string& json_body) {
-    // 创建完整的消息内容（包含消息类型和JSON体）
-    std::string message = std::to_string(message_type) + "|" + json_body;
+    // 使用WebSocketMessage类构建消息
+    protocol::WebSocketMessage message;
+    message.getBody().assign(json_body.begin(), json_body.end());
+    
+    // 序列化消息
+    std::vector<char> serialized_message = message.serialize();
     
     // 发送WebSocket消息
-    ws.write(boost::asio::buffer(message));
+    ws.write(boost::asio::buffer(serialized_message));
 }
 
-// 接收WebSocket消息
+// 接收WebSocket消息示例
 bool receiveWebSocketMessage(websocket::stream<tcp::socket>& ws, uint16_t& out_message_type, std::string& out_json_body) {
     try {
         // 接收WebSocket消息
         boost::beast::flat_buffer buffer;
         ws.read(buffer);
         
-        // 解析消息
-        std::string message = boost::beast::buffers_to_string(buffer.data());
+        // 将读取的数据转换为vector<char>
+        const auto& data = boost::asio::buffer_cast<const char*>(buffer.data());
+        std::vector<char> message_data(data, data + buffer.size());
         
-        // 提取消息类型和JSON体（格式：type|json）
-        size_t delimiter_pos = message.find('|');
-        if (delimiter_pos == std::string::npos) {
-            LOG_ERROR("Invalid WebSocket message format");
+        // 使用WebSocketMessage类反序列化消息
+        protocol::WebSocketMessage message;
+        if (!message.deserialize(message_data)) {
+            LOG_ERROR("Failed to deserialize WebSocket message");
             return false;
         }
         
-        std::string type_str = message.substr(0, delimiter_pos);
-        uint16_t message_type = std::stoi(type_str);
-        std::string json_body = message.substr(delimiter_pos + 1);
-        
-        out_message_type = message_type;
-        out_json_body = json_body;
+        // 提取消息类型和消息体
+        out_json_body.assign(message.getBody().begin(), message.getBody().end());
         
         return true;
     } catch (const std::exception& e) {

@@ -10,6 +10,7 @@
 - **异步处理**：全异步设计，避免阻塞IO线程
 - **可扩展**：支持动态添加新的消息类型和处理器
 - **可靠性**：完善的错误处理和恢复机制
+- **并行处理**：支持多连接并行处理
 
 ### 1.2 架构设计
 
@@ -18,17 +19,21 @@
 │                     协议层 (Protocol Layer)                     │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │  ProtocolManager│  │   ParserFactory │  │  MessageRouter  │ │
-│  │   (协议管理器)   │  │   (解析器工厂)   │  │  (消息路由器)   │ │
+│  │  ProtocolManager│  │    MessageRouter│  │  AsyncExecutor  │ │
+│  │   (协议管理器)   │  │  (消息路由器)   │  │  (异步执行器)    │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
 │  │  TcpParser      │  │WebSocketParser  │  │   HttpParser    │ │
 │  │  (TCP解析器)     │  │(WebSocket解析器) │  │  (HTTP解析器)    │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
 │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
-│  │ MessageHandler  │  │  AsyncExecutor  │  │   ErrorHandler  │ │
-│  │  (消息处理器)    │  │  (异步执行器)    │  │   (错误处理器)   │ │
+│  │    Message     │  │   TCPMessage    │  │ WebSocketMessage│ │
+│  │  (抽象消息基类)  │  │   (TCP消息)     │  │ (WebSocket消息)  │ │
 │  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│  ┌─────────────────┐                                          │
+│  │   HttpMessage   │                                          │
+│  │  (HTTP消息)      │                                          │
+│  └─────────────────┘                                          │
 └─────────────────────────────────────────────────────────────────┘
                                 ↑ ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -40,13 +45,15 @@
 
 ### 2.1 ProtocolManager（协议管理器）
 
-ProtocolManager是协议层的核心控制器，负责协调整个协议处理流程。
+ProtocolManager是协议层的核心控制器，负责协调整个协议处理流程。采用单例设计，为每个连接创建独立的解析器，支持多连接并行处理。
 
 #### 2.1.1 主要功能
-- 统一管理协议解析器
-- 协调整个协议处理流程
-- 提供异步API供网络层调用
-- 管理协议版本兼容性
+- 统一管理协议解析器：为每个连接创建独立的解析器实例
+- 协调整个协议处理流程：从数据接收、解析到消息路由的完整流程
+- 提供异步API供网络层调用：高效的异步处理接口
+- 管理协议版本兼容性：支持不同协议版本的兼容处理
+- 并行消息处理：支持多连接并行解析和路由
+- 连接生命周期管理：跟踪连接状态和资源
 
 #### 2.1.2 实现细节
 
@@ -69,8 +76,16 @@ public:
         uint16_t message_type,
         std::function<void(const Message&, network::Connection::Ptr)> handler);
     
-    // 获取协议解析器
-    std::shared_ptr<Parser> getParser(network::ConnectionType connection_type);
+    // 获取协议解析器（每个连接独立）
+    std::shared_ptr<Parser> getParser(network::ConnectionId connection_id);
+    
+    // 初始化连接的解析器
+    void initializeParser(
+        network::ConnectionId connection_id,
+        network::ConnectionType connection_type);
+    
+    // 移除连接的解析器
+    void removeParser(network::ConnectionId connection_id);
     
 private:
     ProtocolManager();
@@ -87,7 +102,8 @@ private:
         std::function<void(const boost::system::error_code&)> callback);
     
     // 成员变量
-    std::unordered_map<network::ConnectionType, std::shared_ptr<Parser>> parsers_;
+    // 每个连接ID对应一个解析器，支持多连接并行处理
+    std::unordered_map<network::ConnectionId, std::shared_ptr<Parser>> parsers_;
     MessageRouter message_router_;
     AsyncExecutor executor_;
     std::mutex mutex_;
@@ -96,49 +112,53 @@ private:
 } // namespace protocol
 ```
 
-### 2.2 ParserFactory（解析器工厂）
+### 2.2 解析器管理机制
 
-解析器工厂负责创建不同类型的协议解析器，实现了解析器的延迟加载和单例管理。
+#### 2.2.1 设计变更
 
-#### 2.2.1 主要功能
-- 创建和管理不同协议的解析器
-- 支持动态扩展新的解析器类型
-- 解析器实例的单例管理
+移除了ParserFactory，改为在ProtocolManager中直接为每个连接创建独立的解析器实例。这种设计有以下优势：
 
-#### 2.2.2 实现细节
+- **并行处理**：每个连接拥有独立的解析器，避免了多连接间的锁竞争
+- **状态隔离**：每个连接的解析状态独立，互不影响
+- **简化设计**：减少了中间层，提高了系统的响应速度
+- **更好的资源管理**：连接关闭时可立即释放解析器资源
+
+#### 2.2.2 实现方式
 
 ```cpp
-namespace protocol {
+// 初始化连接的解析器
+void ProtocolManager::initializeParser(
+    network::ConnectionId connection_id,
+    network::ConnectionType connection_type) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    
+    std::shared_ptr<Parser> parser;
+    switch (connection_type) {
+        case network::ConnectionType::TCP:
+            parser = std::make_shared<TcpParser>();
+            break;
+        case network::ConnectionType::WebSocket:
+            parser = std::make_shared<WebSocketParser>();
+            break;
+        case network::ConnectionType::HTTP:
+            parser = std::make_shared<HttpParser>();
+            break;
+        default:
+            throw std::invalid_argument("Unsupported connection type");
+    }
+    
+    parsers_[connection_id] = parser;
+}
 
-class ParserFactory {
-public:
-    static ParserFactory& instance();
-    
-    // 创建解析器
-    std::shared_ptr<Parser> createParser(network::ConnectionType connection_type);
-    
-    // 注册自定义解析器
-    void registerParser(
-        network::ConnectionType connection_type,
-        std::function<std::shared_ptr<Parser>()> creator);
-    
-private:
-    ParserFactory();
-    
-    std::unordered_map<
-        network::ConnectionType,
-        std::function<std::shared_ptr<Parser>()>
-    > parser_creators_;
-    
-    std::unordered_map<
-        network::ConnectionType,
-        std::weak_ptr<Parser>
-    > parser_instances_;
-    
-    std::mutex mutex_;
-};
-
-} // namespace protocol
+// 获取连接的解析器
+std::shared_ptr<Parser> ProtocolManager::getParser(network::ConnectionId connection_id) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto it = parsers_.find(connection_id);
+    if (it == parsers_.end()) {
+        throw std::invalid_argument("Parser not found for connection");
+    }
+    return it->second;
+}
 ```
 
 ### 2.3 Parser（协议解析器）
@@ -312,64 +332,239 @@ private:
 } // namespace protocol
 ```
 
-### 2.5 Message（消息对象）
+### 2.5 Message（消息对象层次结构）
 
-消息对象是协议层处理的核心数据结构，包含消息的完整信息。
+消息对象采用抽象基类设计，为不同协议提供统一的接口，同时允许每种协议实现自己的消息结构。
 
-#### 2.5.1 数据结构
+#### 2.5.1 设计变更
+
+- **Message**：抽象基类，定义了所有消息类型共同的接口
+- **TCPMessage**：TCP协议消息实现
+- **WebSocketMessage**：WebSocket协议消息实现
+- **HttpMessage**：HTTP协议消息实现
+
+这种设计有以下优势：
+- **统一接口**：所有消息类型共享相同的基本接口
+- **协议特定实现**：每种协议可以根据自己的特性实现特定的消息结构
+- **良好的扩展性**：添加新协议时只需继承Message基类
+- **类型安全**：通过虚函数实现多态，提高代码的安全性和可维护性
+
+#### 2.5.2 抽象基类定义
 
 ```cpp
 namespace protocol {
 
-// 消息头结构
-typedef struct {
-    uint32_t total_length;  // 消息总长度
-    uint16_t message_type;  // 消息类型
-    uint8_t version;        // 协议版本
-    uint8_t reserved;       // 保留字段
-} MessageHeader;
-
-// 消息结构
 class Message {
 public:
+    enum class MessageType {
+        TCP,
+        WebSocket,
+        HTTP,
+    };
+
+protected:
+    std::vector<char> body_;               // 消息体
+    network::ConnectionId connection_id_;  // 关联的连接ID
+    network::ConnectionType connection_type_; // 关联的连接类型
+
+public:
     Message();
+    Message(const std::vector<char>& body,
+         network::ConnectionId connection_id = 0,
+         network::ConnectionType connection_type = network::ConnectionType::TCP);
+    virtual ~Message() = default;
+
+    // 连接绑定
+    void bindConnection(network::ConnectionId connection_id, network::ConnectionType connection_type);
     
-    // 获取消息头
-    const MessageHeader& getHeader() const { return header_; }
-    MessageHeader& getHeader() { return header_; }
+    // 消息体访问
+    const std::vector<char>& getBody() const; 
+    std::vector<char>& getBody();
     
-    // 获取消息体
-    const std::vector<char>& getBody() const { return body_; }
-    std::vector<char>& getBody() { return body_; }
+    // 连接信息访问
+    network::ConnectionId getConnectionId() const;
+    void setConnectionId(network::ConnectionId connection_id);
+    network::ConnectionType getConnectionType() const;
+    void setConnectionType(network::ConnectionType connection_type);
     
-    // 获取消息类型
-    uint16_t getMessageType() const { return header_.message_type; }
+    // 抽象方法，子类必须实现
+    virtual void reset() = 0;                          // 重置消息状态
+    virtual std::vector<char> serialize() const = 0;    // 序列化消息
+    virtual bool deserialize(const std::vector<char>& data) = 0; // 反序列化消息
+    virtual MessageType getMessageType() const = 0;     // 获取消息类型
+};
+
+} // namespace protocol
+```
+
+#### 2.5.3 TCP消息实现
+
+```cpp
+namespace protocol {
+
+class TCPMessage : public Message {
+public:
+    enum class DeserializeState {
+        Header,  // 解析消息头
+        Body     // 解析消息体
+    };
     
-    // 获取连接ID
-    network::ConnectionId getConnectionId() const { return connection_id_; }
-    void setConnectionId(network::ConnectionId connection_id) {
-        connection_id_ = connection_id;
-    }
-    
-    // 获取连接类型
-    network::ConnectionType getConnectionType() const { return connection_type_; }
-    void setConnectionType(network::ConnectionType connection_type) {
-        connection_type_ = connection_type;
-    }
-    
-    // 解析JSON消息体
-    template<typename T>
-    T parseJson() const;
-    
-    // 序列化JSON到消息体
-    template<typename T>
-    void serializeJson(const T& data);
-    
+    typedef struct {
+        uint32_t total_length;  // 消息总长度
+        uint16_t message_type;  // 消息类型
+        uint8_t version;        // 协议版本
+        uint8_t reserved;       // 保留字段
+    } TcpMessageHeader;
+
 private:
-    MessageHeader header_;
-    std::vector<char> body_;
-    network::ConnectionId connection_id_;
-    network::ConnectionType connection_type_;
+    DeserializeState state_;            // 当前反序列化状态
+    TcpMessageHeader header_;           // TCP消息头
+    std::vector<char> data_buffer_;     // 消息缓冲区，待处理数据
+    size_t expected_body_length_;       // 预期的消息体长度
+
+public:
+    TCPMessage();
+    TCPMessage(const std::vector<char>& body, network::ConnectionId connection_id = 0);
+
+    void reset() override;
+    std::vector<char> serialize() const override;
+    bool deserialize(const std::vector<char>& data) override;
+    MessageType getMessageType() const override;
+
+private:
+    bool deserializeHeader(size_t& consumed);
+    bool deserializeBody(size_t& consumed);
+};
+
+} // namespace protocol
+```
+
+#### 2.5.4 WebSocket消息实现
+
+```cpp
+namespace protocol {
+
+class WebSocketMessage : public Message {
+public:
+    enum class DeserializeState {
+        Initial,       // 初始状态
+        Header,        // 解析帧头
+        PayloadLength, // 解析载荷长度
+        ExtendedLength,// 解析扩展长度
+        MaskingKey,    // 解析掩码密钥
+        Payload,       // 解析载荷
+        Complete       // 解析完成
+    };
+
+    struct WebSocketMessageHeader {
+        uint8_t fin_opcode;  // FIN位和操作码
+        uint8_t payload_len; // 载荷长度
+        bool masked_;        // 是否掩码
+        uint64_t extended_len; // 扩展长度
+        std::vector<uint8_t> masking_key; // 掩码密钥
+    };
+
+private:
+    DeserializeState state_;  // 当前反序列化状态
+    WebSocketMessageHeader header_;  // WebSocket消息头
+    std::vector<char> data_buffer_;     // 消息缓冲区，待处理数据
+    uint64_t expected_body_length_;          // 预期的消息体长度
+
+public:
+    WebSocketMessage();
+    WebSocketMessage(const std::vector<char>& body, network::ConnectionId connection_id = 0);
+
+    void reset() override;
+    std::vector<char> serialize() const override;
+    bool deserialize(const std::vector<char>& data) override;
+    MessageType getMessageType() const override;
+    
+    // WebSocket特定方法
+    uint8_t getOpcode() const;
+    void setOpcode(uint8_t opcode);
+    bool isFinal() const;
+    void setIsFinal(bool is_final);
+
+private:
+    bool deserializeHeader(size_t& consumed);
+    bool deserializeExtendedLength(size_t& consumed);
+    bool deserializeMaskingKey(size_t& consumed);
+    bool deserializePayload(size_t& consumed);
+    bool deserializeComplete(size_t& consumed);
+};
+
+} // namespace protocol
+```
+
+#### 2.5.5 HTTP消息实现
+
+```cpp
+namespace protocol {
+
+class HttpMessage : public Message {
+public:
+    enum class DeserializeState {
+        Initial,              // 初始状态
+        Headers,              // 解析头字段
+        Body,                 // 解析消息体
+        ChunkedBodyStart,     // 解析分块传输的块大小
+        ChunkedBodyData,      // 解析分块数据
+        ChunkedBodyEnd,       // 解析分块结束
+        Complete              // 解析完成
+    };
+
+    struct HttpMessageHeader {
+        std::string method_;        // 请求方法
+        std::string url_;           // 请求URL
+        std::string version_;       // HTTP版本
+        int status_code_;           // 响应状态码
+        std::string status_message_; // 响应状态消息
+        std::unordered_map<std::string, std::string> headers_; // 头字段
+    };
+
+private:
+    DeserializeState state_; // 当前解析状态
+    bool is_parsing_; // 是否正在解析
+    HttpMessageHeader header_; // HTTP消息头
+    std::vector<char> data_buffer_;     // 消息缓冲区，待处理数据
+    uint64_t expected_body_length_;          // 预期的消息体长度
+    size_t current_chunk_size_;             // 当前分块大小
+
+public:
+    HttpMessage();
+    HttpMessage(const std::string& method, const std::string& url, const std::string& version,
+                const std::unordered_map<std::string, std::string>& headers,
+                const std::vector<char>& body,
+                network::ConnectionId connection_id = 0);
+    
+    void reset() override;
+    std::vector<char> serialize() const override;
+    bool deserialize(const std::vector<char>& data) override;
+    MessageType getMessageType() const override;
+    
+    // HTTP特定方法
+    const std::string& getMethod() const;
+    void setMethod(const std::string& method);
+    const std::string& getUrl() const;
+    void setUrl(const std::string& url);
+    const std::string& getVersion() const;
+    void setVersion(const std::string& version);
+    int getStatusCode() const;
+    void setStatusCode(int status_code);
+    const std::string& getStatusMessage() const;
+    void setStatusMessage(const std::string& status_message);
+    const std::unordered_map<std::string, std::string>& getHeaders() const;
+    std::unordered_map<std::string, std::string>& getHeaders();
+
+private:
+    bool parseStartLine(const std::string& line);
+    bool deserializeStartingLine(size_t& consumed);
+    bool parseHeaderLine(size_t& consumed);
+    bool deserializeHeaders(size_t& consumed);
+    bool deserializeBody(size_t& consumed);
+    bool deserializeChunkedBodyStart(size_t& consumed);
+    bool deserializeChunkedBodyData(size_t& consumed);
+    bool deserializeChunkedBodyEnd(size_t& consumed);
 };
 
 } // namespace protocol
