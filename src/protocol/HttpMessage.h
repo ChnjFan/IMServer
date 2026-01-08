@@ -159,9 +159,9 @@ public:
 
     /**
      * @brief 获取消息类型
-     * @return MessageType 消息类型
+     * @return network::ConnectionType 消息类型
      */
-    MessageType getMessageType() const override { return MessageType::HTTP; }
+    network::ConnectionType getConnectionType() const override { return network::ConnectionType::HTTP; }
 
 private:
     bool parseStartLine(const std::string& line);

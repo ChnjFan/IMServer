@@ -27,14 +27,14 @@ Message::Message(const std::vector<char>& body,
  * @param type 消息类型
  * @return std::string 消息类型的字符串表示
  */
-std::string Message::messageTypeToString(MessageType type)
+std::string Message::messageConnectionTypeToString(network::ConnectionType type)
 {
     switch (type) {
-        case MessageType::TCP:
+        case network::ConnectionType::TCP:
             return "TCP";
-        case MessageType::HTTP:
+        case network::ConnectionType::HTTP:
             return "HTTP";
-        case MessageType::WebSocket:
+        case network::ConnectionType::WebSocket:
             return "WebSocket";
         default:
             return "Unknown";

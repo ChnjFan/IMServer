@@ -13,6 +13,7 @@ public:
         Header,  // 解析消息头
         Body     // 解析消息体
     };
+
     typedef struct {
         uint32_t total_length;  // 消息总长度
         uint16_t message_type;  // 消息类型
@@ -47,9 +48,9 @@ public:
 
     /**
      * @brief 获取消息类型
-     * @return MessageType 消息类型
+     * @return network::ConnectionType 消息类型
      */
-    MessageType getMessageType() const override { return MessageType::TCP; }
+    network::ConnectionType getConnectionType() const override { return network::ConnectionType::TCP; }
 
 private:
     /**

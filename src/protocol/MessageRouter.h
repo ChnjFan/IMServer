@@ -24,7 +24,7 @@ public:
 
 private:
     // 路由表，消息类型到处理器的映射
-    std::unordered_map<Message::MessageType, MessageHandler> handlers_;
+    std::unordered_map<Message::network::ConnectionType, MessageHandler> handlers_;
     // 读写锁，支持并发访问路由表
     std::shared_mutex mutex_;
     // 异步执行器
@@ -39,13 +39,13 @@ public:
      * @param message_type 消息类型
      * @param handler 消息处理器回调函数
      */
-    void registerHandler(Message::MessageType message_type, MessageHandler handler);
+    void registerHandler(Message::network::ConnectionType message_type, MessageHandler handler);
     
     /**
      * @brief 移除消息处理器
      * @param message_type 消息类型
      */
-    void removeHandler(Message::MessageType message_type);
+    void removeHandler(Message::network::ConnectionType message_type);
     
     /**
      * @brief 异步路由消息
@@ -66,7 +66,7 @@ public:
      * @param message_type 消息类型
      * @return bool 是否存在处理器
      */
-    bool hasHandler(Message::MessageType message_type);
+    bool hasHandler(Message::network::ConnectionType message_type);
 
     /**
      * @brief 设置异步执行器
