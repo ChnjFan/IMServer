@@ -223,24 +223,48 @@ void TcpServer::doAccept() {
     acceptor_.async_accept(
         [self = shared_from_this()](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
             if (!ec && self->running_) {
-                self->handleAccept(ec, std::move(socket));
-                self->doAccept();
+                try {
+                    self->handleAccept(ec, std::move(socket));
+                    self->doAccept();
+                }
+                catch(const std::exception& e) {
+                    std::cerr << "Error in TcpServer::async_accept callback: " << e.what() << std::endl;
+                }
+                catch(...) {
+                    std::cerr << "Unknown error in TcpServer::async_accept callback" << std::endl;
+                }
             }
         });
 }
 
 void TcpServer::handleAccept(boost::system::error_code ec, ip::tcp::socket socket) {
     if (!ec) {
-        auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
-        auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
+        try {
+            auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+            auto conn = std::make_shared<TcpConnection>(connection_id, std::move(socket));
 
-        // TCP连接后立即接收数据，校验Token才能建立连接
-        conn->setMessageHandler(message_handler_);
-        conn->setStateChangeHandler(state_change_handler_);
-        conn->setCloseHandler(close_handler_);
+            // TCP连接后立即接收数据，校验Token才能建立连接
+            conn->setMessageHandler(message_handler_);
+            conn->setStateChangeHandler(state_change_handler_);
+            conn->setCloseHandler(close_handler_);
 
-        connection_manager_.addConnection(conn);
-        conn->start();
+            connection_manager_.addConnection(conn);
+            conn->start();
+        }
+        catch(const std::exception& e) {
+            std::cerr << "Error in TcpServer::handleAccept: " << e.what() << std::endl;
+            // 捕获异常后，继续接受新连接，避免服务器崩溃
+            if (running_) {
+                doAccept();
+            }
+        }
+        catch(...) {
+            std::cerr << "Unknown error in TcpServer::handleAccept" << std::endl;
+            // 捕获未知异常后，继续接受新连接
+            if (running_) {
+                doAccept();
+            }
+        }
     }
 }
 
