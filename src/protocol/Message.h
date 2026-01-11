@@ -89,12 +89,6 @@ public:
     }
     
     /**
-     * @brief 获取连接类型
-     * @return network::ConnectionType 连接类型
-     */
-    network::ConnectionType getConnectionType() const { return connection_type_; }
-    
-    /**
      * @brief 设置连接类型
      * @param connection_type 连接类型
      */

@@ -11,7 +11,7 @@ MessageRouter::MessageRouter() {
     executor_ = default_executor_;
 }
 
-void MessageRouter::registerHandler(Message::network::ConnectionType message_type, MessageHandler handler) {
+void MessageRouter::registerHandler(network::ConnectionType message_type, MessageHandler handler) {
     if (!handler) {
         throw std::invalid_argument("Handler cannot be null");
     }
@@ -20,7 +20,7 @@ void MessageRouter::registerHandler(Message::network::ConnectionType message_typ
     handlers_[message_type] = std::move(handler);
 }
 
-void MessageRouter::removeHandler(Message::network::ConnectionType message_type) {
+void MessageRouter::removeHandler(network::ConnectionType message_type) {
     std::unique_lock<std::shared_mutex> lock(mutex_);
     handlers_.erase(message_type);
 }
@@ -61,7 +61,7 @@ void MessageRouter::route(const Message& message, network::Connection::Ptr conne
 
 
 
-bool MessageRouter::hasHandler(Message::network::ConnectionType connection_type) {
+bool MessageRouter::hasHandler(network::ConnectionType connection_type) {
     std::shared_lock<std::shared_mutex> lock(mutex_);
     return handlers_.find(connection_type) != handlers_.end();
 }
