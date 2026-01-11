@@ -1,5 +1,4 @@
 #include "Gateway.h"
-#include "AuthCenter.h"
 
 #include <iostream>
 #include <thread>

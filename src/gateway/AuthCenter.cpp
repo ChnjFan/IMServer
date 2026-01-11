@@ -330,7 +330,7 @@ std::string base64Decode(const std::string& input) {
     std::string result;
     int i = 0;
     int j = 0;
-    int in_ = 0;
+    size_t in_ = 0;
     unsigned char char_array_4[4], char_array_3[3];
     
     while (str.size() > in_ && str[in_] != '=') {

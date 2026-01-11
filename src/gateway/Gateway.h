@@ -9,6 +9,7 @@
 
 #include <boost/asio.hpp>
 
+#include "AuthCenter.h"
 #include "network/ConnectionManager.h"
 #include "network/TcpServer.h"
 #include "network/WebSocketServer.h"
