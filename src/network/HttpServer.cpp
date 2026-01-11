@@ -357,7 +357,7 @@ void HttpServer::start() {
         }
 
         running_ = true;
-        std::cout << "HTTP Server started on " << addr.to_string() << ":" << port << std::endl;
+        std::cout << "HTTP Server started on " << acceptor_.local_endpoint() << std::endl;
 
         // 开始接受连接
         doAccept();
