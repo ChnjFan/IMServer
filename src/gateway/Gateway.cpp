@@ -26,7 +26,7 @@ void Gateway::initialize(const GatewayConfig& config) {
     connection_manager_->setIdleTimeout(std::chrono::seconds(config.idle_timeout));
     connection_manager_->setEnableStatistics(true);
 
-    auth_center_->initialize(config);
+    auth_center_->initialize(config.auth_config);
 
     initializeServers();
 }
