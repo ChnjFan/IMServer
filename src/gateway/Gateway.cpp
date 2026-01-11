@@ -10,6 +10,7 @@ Gateway::Gateway(boost::asio::io_context& io_context)
     : io_context_(io_context),
       is_running_(false) {
     initializeConnectionManager();
+    initializeProtocolManager();
     initializeAuthCenter();
 }
 
