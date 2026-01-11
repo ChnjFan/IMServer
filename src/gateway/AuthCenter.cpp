@@ -11,7 +11,7 @@ namespace gateway {
 
 AuthCenter::AuthCenter() {}
 
-void AuthCenter::initialize(const GatewayConfig& config) {
+void AuthCenter::initialize(const AuthConfig& config) {
     std::lock_guard<std::mutex> lock(mutex_);
     
     config_ = config;
@@ -19,6 +19,8 @@ void AuthCenter::initialize(const GatewayConfig& config) {
     
     std::cout << "AuthCenter initialized successfully!" << std::endl;
     std::cout << "Authentication: " << (config_.enable_authentication ? "enabled" : "disabled") << std::endl;
+    std::cout << "JWT Secret: " << config_.jwt_secret << std::endl;
+    std::cout << "JWT Expire Time: " << config_.jwt_expire_time << " seconds" << std::endl;
 }
 
 bool AuthCenter::validateToken(const std::string& token) {

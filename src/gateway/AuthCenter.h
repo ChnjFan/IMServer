@@ -8,6 +8,12 @@
 
 namespace gateway {
 
+struct AuthConfig {
+    bool enable_authentication = true;
+    std::string jwt_secret = "default_secret_key";
+    uint32_t jwt_expire_time = 3600; // 1小时
+};
+
 /**
  * @brief 认证中心类
  * 
@@ -28,7 +34,7 @@ public:
      * @brief 初始化认证中心
      * @param config 网关配置
      */
-    void initialize(const GatewayConfig& config);
+    void initialize(const AuthConfig& config);
     
     /**
      * @brief 验证Token
@@ -145,7 +151,7 @@ private:
     std::string generateJwtToken(const std::unordered_map<std::string, std::string>& payload);
     
     // 配置
-    GatewayConfig config_;
+    AuthConfig config_;
     
     // 状态
     std::atomic<bool> initialized_{false};

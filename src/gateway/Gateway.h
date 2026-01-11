@@ -35,9 +35,7 @@ struct GatewayConfig {
     uint32_t idle_timeout = 300; // 5分钟
     
     // 认证配置
-    bool enable_authentication = true;
-    std::string jwt_secret = "default_secret_key";
-    uint32_t jwt_expire_time = 3600; // 1小时
+    AuthConfig auth_config;
     
     // 日志配置
     bool enable_debug_log = false;

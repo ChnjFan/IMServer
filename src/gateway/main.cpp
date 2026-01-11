@@ -35,9 +35,9 @@ int main() {
         config.http_port = 8080;
         config.max_connections = 10000;
         config.idle_timeout = 300;
-        config.enable_authentication = true;
-        config.jwt_secret = "my_secret_key_for_gateway";
-        config.jwt_expire_time = 3600;
+        config.auth_config.enable_authentication = true;
+        config.auth_config.jwt_secret = "my_secret_key_for_gateway";
+        config.auth_config.jwt_expire_time = 3600;
         config.enable_debug_log = true;
         
         gateway.initialize(config);
