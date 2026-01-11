@@ -337,13 +337,7 @@ void HttpServer::start() {
     }
 
     try {
-        // 打开acceptor
         boost::system::error_code ec;
-        acceptor_.open(boost::asio::ip::tcp::v4(), ec);
-        if (ec) {
-            throw std::runtime_error("Failed to open acceptor: " + ec.message());
-        }
-
         // 设置地址重用选项
         acceptor_.set_option(net::socket_base::reuse_address(true), ec);
         if (ec) {
