@@ -317,9 +317,9 @@ std::string HttpConnection::getMimeType(const std::string& file_path) {
 }
 
 // HttpServer实现
-HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager)
+HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
     : io_context_(io_context),
-      acceptor_(io_context),
+      acceptor_(io_context, ip::tcp::endpoint(ip::address::from_string(address), port)),
       connection_manager_(connection_manager),
       running_(false),
       static_file_directory_(""),
@@ -331,29 +331,17 @@ HttpServer::~HttpServer() {
     stop();
 }
 
-void HttpServer::start(const address& addr, uint16_t port) {
+void HttpServer::start() {
     if (running_) {
         return;
     }
 
     try {
-        // 打开acceptor
         boost::system::error_code ec;
-        acceptor_.open(boost::asio::ip::tcp::v4(), ec);
-        if (ec) {
-            throw std::runtime_error("Failed to open acceptor: " + ec.message());
-        }
-
         // 设置地址重用选项
         acceptor_.set_option(net::socket_base::reuse_address(true), ec);
         if (ec) {
             throw std::runtime_error("Failed to set reuse_address option: " + ec.message());
-        }
-
-        // 绑定到指定地址和端口
-        acceptor_.bind(boost::asio::ip::tcp::endpoint(addr, port), ec);
-        if (ec) {
-            throw std::runtime_error("Failed to bind to address: " + ec.message());
         }
 
         // 开始监听
@@ -363,7 +351,7 @@ void HttpServer::start(const address& addr, uint16_t port) {
         }
 
         running_ = true;
-        std::cout << "HTTP Server started on " << addr.to_string() << ":" << port << std::endl;
+        std::cout << "HTTP Server started on " << acceptor_.local_endpoint() << std::endl;
 
         // 开始接受连接
         doAccept();
@@ -477,22 +465,30 @@ void HttpServer::doAccept() {
                     std::cerr << "Accept error: " << ec.message() << std::endl;
                 }
             } else {
-                // 使用工具层的IdGenerator生成全局唯一连接ID
-                auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
-                
-                // 创建新的HTTP会话
-                auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
-                
-                // 添加到连接管理器
-                connection_manager_.addConnection(session);
+                try {
+                    // 使用工具层的IdGenerator生成全局唯一连接ID
+                    auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+                    
+                    // 创建新的HTTP会话
+                    auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
+                    
+                    // 添加到连接管理器
+                    connection_manager_.addConnection(session);
 
-                // 设置连接回调
-                session->setMessageHandler(message_handler_);
-                session->setStateChangeHandler(state_change_handler_);
-                session->setCloseHandler(close_handler_);
+                    // 设置连接回调
+                    session->setMessageHandler(message_handler_);
+                    session->setStateChangeHandler(state_change_handler_);
+                    session->setCloseHandler(close_handler_);
 
-                std::cout << "HTTP connection " << connection_id << " established" << std::endl;
-                session->start();
+                    std::cout << "HTTP connection " << connection_id << " established" << std::endl;
+                    session->start();
+                }
+                catch(const std::exception& e) {
+                    std::cerr << "Error in HttpServer::async_accept callback: " << e.what() << std::endl;
+                }
+                catch(...) {
+                    std::cerr << "Unknown error in HttpServer::async_accept callback" << std::endl;
+                }
             }
 
             // 继续接受下一个连接

@@ -42,15 +42,14 @@ void Connection::setState(ConnectionState new_state) {
     }
 }
 
-size_t Connection::triggerMessageHandler(const std::vector<char>& data) {
+void Connection::triggerMessageHandler(const std::vector<char>& data) {
     if (message_handler_) {
         try {
-            return message_handler_(connection_id_, data);
+            message_handler_(connection_id_, data);
         } catch (const std::exception& e) {
             std::cerr << "Message handler exception: " << e.what() << std::endl;
         }
     }
-    return 0;
 }
 
 void Connection::triggerCloseHandler(const boost::system::error_code& ec) {

@@ -100,9 +100,9 @@ public:
     
     /**
      * @brief 获取消息类型
-     * @return MessageType 消息类型
+     * @return network::ConnectionType 消息类型
      */
-    MessageType getMessageType() const override { return MessageType::WebSocket; }
+    network::ConnectionType getConnectionType() const override { return network::ConnectionType::WebSocket; }
 
 private:
     /**

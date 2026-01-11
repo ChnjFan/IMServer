@@ -161,7 +161,8 @@ void WebSocketConnection::doRead() {
                 boost::asio::buffer_cast<const char*>(buffer.data()),
                 boost::asio::buffer_cast<const char*>(buffer.data()) + buffer.size());
 
-            buffer.consume(triggerMessageHandler(data));
+            triggerMessageHandler(data);
+            buffer.consume(bytes_transferred);
             doRead();
         });
 }
@@ -232,11 +233,20 @@ void WebSocketServer::setCloseHandler(Connection::CloseHandler handler) {
 
 void WebSocketServer::doAccept() {
     if (!running_) return;
+    auto self = shared_from_this();
     acceptor_.async_accept(
-        [self = shared_from_this()](beast::error_code ec, asio::ip::tcp::socket socket) {
+        [self](beast::error_code ec, asio::ip::tcp::socket socket) {
             if (!ec && self->running_) {
-                self->handleAccept(ec, std::move(socket));
-                self->doAccept();
+                try {
+                    self->handleAccept(ec, std::move(socket));
+                    self->doAccept();
+                }
+                catch(const std::exception& e) {
+                    std::cerr << "Error in WebSocketServer::async_accept callback: " << e.what() << std::endl;
+                }
+                catch(...) {
+                    std::cerr << "Unknown error in WebSocketServer::async_accept callback" << std::endl;
+                }
             }
         });
 }
@@ -254,18 +264,26 @@ void WebSocketServer::handleAccept(beast::error_code ec, asio::ip::tcp::socket s
     if (ec) {
         std::cerr << "Accept error: " << ec.message() << std::endl;
     } else {
-        // todo 建立连接后，从请求中获取token直接校验
+        try {
+            // todo 建立连接后，从请求中获取token直接校验
 
-        auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
-        auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
+            auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+            auto conn = std::make_shared<WebSocketConnection>(connection_id, std::move(socket));
 
-        // 设置连接回调
-        conn->setMessageHandler(message_handler_);
-        conn->setStateChangeHandler(state_change_handler_);
-        conn->setCloseHandler(close_handler_);
+            // 设置连接回调
+            conn->setMessageHandler(message_handler_);
+            conn->setStateChangeHandler(state_change_handler_);
+            conn->setCloseHandler(close_handler_);
 
-        connection_manager_.addConnection(conn);
-        conn->start();
+            connection_manager_.addConnection(conn);
+            conn->start();
+        }
+        catch(const std::exception& e) {
+            std::cerr << "Error in WebSocketServer::handleAccept: " << e.what() << std::endl;
+        }
+        catch(...) {
+            std::cerr << "Unknown error in WebSocketServer::handleAccept" << std::endl;
+        }
     }
 }
 

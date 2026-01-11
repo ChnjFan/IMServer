@@ -19,6 +19,7 @@ namespace network {
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
+namespace ip = net::ip;
 
 // HTTP请求响应结构
 using HttpRequest = http::request<http::string_body>;
@@ -157,10 +158,10 @@ private:
     Connection::CloseHandler close_handler_;
 
 public:
-    explicit HttpServer(net::io_context& io_context, ConnectionManager& connection_manager);
+    explicit HttpServer(net::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port);
     ~HttpServer();
 
-    void start(const address& addr, uint16_t port);
+    void start();
     void stop();
 
     bool isRunning() const;

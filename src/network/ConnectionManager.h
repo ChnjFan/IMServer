@@ -118,7 +118,7 @@ class Connection : public std::enable_shared_from_this<Connection> {
 public:
     using Ptr = std::shared_ptr<Connection>;
     // 消息处理回调函数
-    using MessageHandler = std::function<size_t(ConnectionId, const std::vector<char>&)>;
+    using MessageHandler = std::function<void(ConnectionId, const std::vector<char>&)>;
     // 连接状态变更回调函数
     using StateChangeHandler = std::function<void(ConnectionId, ConnectionState, ConnectionState)>;
     // 连接关闭回调函数
@@ -202,7 +202,7 @@ protected:
     void updateLastActivity() { stats_.last_activity_time = std::chrono::steady_clock::now(); }
     
     // 回调触发辅助方法, 返回处理的字节数
-    size_t triggerMessageHandler(const std::vector<char>& data);
+    void triggerMessageHandler(const std::vector<char>& data);
     void triggerCloseHandler(const boost::system::error_code& ec);
     
     // 统计信息更新

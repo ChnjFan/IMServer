@@ -59,10 +59,19 @@ size_t AsyncExecutor::getThreadPoolSize(PoolType pool_type) const {
 boost::asio::thread_pool& AsyncExecutor::getThreadPool(PoolType pool_type) {
     switch (pool_type) {
         case PoolType::IO:
+            if (!io_thread_pool_) {
+                throw std::runtime_error("IO thread pool is not initialized");
+            }
             return *io_thread_pool_;
         case PoolType::CPU:
+            if (!cpu_thread_pool_) {
+                throw std::runtime_error("CPU thread pool is not initialized");
+            }
             return *cpu_thread_pool_;
         default:
+            if (!cpu_thread_pool_) {
+                throw std::runtime_error("CPU thread pool is not initialized");
+            }
             return *cpu_thread_pool_;
     }
 }
@@ -70,10 +79,19 @@ boost::asio::thread_pool& AsyncExecutor::getThreadPool(PoolType pool_type) {
 const boost::asio::thread_pool& AsyncExecutor::getThreadPool(PoolType pool_type) const {
     switch (pool_type) {
         case PoolType::IO:
+            if (!io_thread_pool_) {
+                throw std::runtime_error("IO thread pool is not initialized");
+            }
             return *io_thread_pool_;
         case PoolType::CPU:
+            if (!cpu_thread_pool_) {
+                throw std::runtime_error("CPU thread pool is not initialized");
+            }
             return *cpu_thread_pool_;
         default:
+            if (!cpu_thread_pool_) {
+                throw std::runtime_error("CPU thread pool is not initialized");
+            }
             return *cpu_thread_pool_;
     }
 }

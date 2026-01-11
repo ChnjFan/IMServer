@@ -14,10 +14,24 @@ namespace protocol {
  */
 class Message {
 public:
-    enum class MessageType {
-        TCP,
-        WebSocket,
-        HTTP,
+    enum class MessageType : uint16_t {
+        LoginRequest = 1001,
+        LoginResponse = 1002,
+        LogoutRequest = 1003,
+        LogoutResponse = 1004,
+        RegisterRequest = 1005,
+        RegisterResponse = 1006,
+        ChatRequest = 2001,
+        GroupChatRequest = 2002,
+        MessageAck = 2003,
+        UserStatusUpdate = 3001,
+        SessionListRequest = 3002,
+        SessionListResponse = 3003,
+        MessageHistoryRequest = 3004,
+        MessageHistoryResponse = 3005,
+        ErrorResponse = 9001,
+        HeartbeatRequest = 9002,
+        HeartbeatResponse = 9003,
     };
 
 protected:
@@ -75,12 +89,6 @@ public:
     }
     
     /**
-     * @brief 获取连接类型
-     * @return network::ConnectionType 连接类型
-     */
-    network::ConnectionType getConnectionType() const { return connection_type_; }
-    
-    /**
      * @brief 设置连接类型
      * @param connection_type 连接类型
      */
@@ -93,7 +101,7 @@ public:
      * @param type 消息类型
      * @return std::string 消息类型的字符串表示
      */
-    static std::string messageTypeToString(MessageType type);
+    static std::string messageConnectionTypeToString(network::ConnectionType type);
 
     /**
      * @brief 重置消息状态
@@ -115,9 +123,9 @@ public:
 
     /**
      * @brief 获取消息类型
-     * @return MessageType 消息类型
+     * @return network::ConnectionType 消息类型
      */
-    virtual MessageType getMessageType() const = 0;
+    virtual network::ConnectionType getConnectionType() const = 0;
 };
 
 // 前向声明

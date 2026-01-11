@@ -27,8 +27,18 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
-# Add debug symbols
+# Add debug symbols and gdb support
 set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O0")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0")
+
+# Ensure debug flags are passed to all targets
+add_compile_options(
+    $<$<CONFIG:Debug>:-ggdb>
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Debug>:-fno-inline>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+)
 
 # 各个模块作为单独进程构建
 # 网络模块
@@ -37,6 +47,9 @@ add_subdirectory(src/network)
 add_subdirectory(src/tool)
 # 协议模块
 add_subdirectory(src/protocol)
+
+# 网关模块
+add_subdirectory(src/gateway)
 
 # 其他模块将在各自目录中配置为单独进程
 # 核心模块（需要时添加）
