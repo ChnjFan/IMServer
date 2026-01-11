@@ -471,22 +471,30 @@ void HttpServer::doAccept() {
                     std::cerr << "Accept error: " << ec.message() << std::endl;
                 }
             } else {
-                // 使用工具层的IdGenerator生成全局唯一连接ID
-                auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
-                
-                // 创建新的HTTP会话
-                auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
-                
-                // 添加到连接管理器
-                connection_manager_.addConnection(session);
+                try {
+                    // 使用工具层的IdGenerator生成全局唯一连接ID
+                    auto connection_id = imserver::tool::IdGenerator::getInstance().generateConnectionId();
+                    
+                    // 创建新的HTTP会话
+                    auto session = std::make_shared<HttpConnection>(connection_id, std::move(socket), this);
+                    
+                    // 添加到连接管理器
+                    connection_manager_.addConnection(session);
 
-                // 设置连接回调
-                session->setMessageHandler(message_handler_);
-                session->setStateChangeHandler(state_change_handler_);
-                session->setCloseHandler(close_handler_);
+                    // 设置连接回调
+                    session->setMessageHandler(message_handler_);
+                    session->setStateChangeHandler(state_change_handler_);
+                    session->setCloseHandler(close_handler_);
 
-                std::cout << "HTTP connection " << connection_id << " established" << std::endl;
-                session->start();
+                    std::cout << "HTTP connection " << connection_id << " established" << std::endl;
+                    session->start();
+                }
+                catch(const std::exception& e) {
+                    std::cerr << "Error in HttpServer::async_accept callback: " << e.what() << std::endl;
+                }
+                catch(...) {
+                    std::cerr << "Unknown error in HttpServer::async_accept callback" << std::endl;
+                }
             }
 
             // 继续接受下一个连接
