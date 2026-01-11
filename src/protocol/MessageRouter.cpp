@@ -38,11 +38,11 @@ void MessageRouter::route(const Message& message, network::Connection::Ptr conne
     // 查找处理器
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        auto it = handlers_.find(message.getConnectionType());
+        auto it = handlers_.find(connection->getType());
         if (it == handlers_.end()) {
             // 没有找到处理器，这里可以添加默认处理逻辑
             std::cerr << "No handler found for message type: "
-                    << Message::messageConnectionTypeToString(message.getConnectionType()) << std::endl;
+                    << Message::messageConnectionTypeToString(connection->getType()) << std::endl;
             return;
         }
         
@@ -60,9 +60,11 @@ void MessageRouter::route(const Message& message, network::Connection::Ptr conne
     }
 }
 
-bool MessageRouter::hasHandler(Message::network::ConnectionType message_type) {
+
+
+bool MessageRouter::hasHandler(Message::network::ConnectionType connection_type) {
     std::shared_lock<std::shared_mutex> lock(mutex_);
-    return handlers_.find(message_type) != handlers_.end();
+    return handlers_.find(connection_type) != handlers_.end();
 }
 
 } // namespace protocol
