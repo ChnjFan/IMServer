@@ -6,6 +6,8 @@
 #include <atomic>
 #include <unordered_map>
 
+#include "network/ConnectionManager.h"
+
 namespace gateway {
 
 struct AuthConfig {
