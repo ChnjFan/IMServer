@@ -97,18 +97,12 @@ public:
     network::ConnectionManager::GlobalStats getGlobalStats() const;
     
 private:
+    // 处理消息
     size_t handleMessage(network::Connection::Ptr connection, const std::vector<char>& data);
     void handleStateChange(network::Connection::Ptr connection, network::ConnectionState old_state, network::ConnectionState new_state);
     void handleClose(network::Connection::Ptr connection, const boost::system::error_code& ec);
     
-    /**
-     * @brief 解析消息
-     * @param connection_id 连接ID
-     * @param data 消息数据
-     * @return 解析后的消息对象
-     */
-    std::shared_ptr<protocol::Message> parseMessage(network::ConnectionId connection_id, const std::vector<char>& data);
-    
+    // 初始化组件
     void initializeServers();
     void initializeConnectionManager();
     void initializeProtocolManager();

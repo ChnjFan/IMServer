@@ -35,7 +35,6 @@ void MessageRouter::asyncRoute(const Message& message, network::Connection::Ptr 
 void MessageRouter::route(const Message& message, network::Connection::Ptr connection) {
     MessageHandler handler;
     
-    // 查找处理器
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
         auto it = handlers_.find(connection->getType());
