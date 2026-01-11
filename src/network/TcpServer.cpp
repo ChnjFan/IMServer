@@ -220,8 +220,9 @@ void TcpServer::setCloseHandler(Connection::CloseHandler handler)
 
 void TcpServer::doAccept() {
     if (!running_) return;
+    auto self = shared_from_this();
     acceptor_.async_accept(
-        [self = shared_from_this()](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
+        [self](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
             if (!ec && self->running_) {
                 try {
                     self->handleAccept(ec, std::move(socket));

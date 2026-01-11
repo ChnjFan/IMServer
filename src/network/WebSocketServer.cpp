@@ -233,11 +233,20 @@ void WebSocketServer::setCloseHandler(Connection::CloseHandler handler) {
 
 void WebSocketServer::doAccept() {
     if (!running_) return;
+    auto self = shared_from_this();
     acceptor_.async_accept(
-        [self = shared_from_this()](beast::error_code ec, asio::ip::tcp::socket socket) {
+        [self](beast::error_code ec, asio::ip::tcp::socket socket) {
             if (!ec && self->running_) {
-                self->handleAccept(ec, std::move(socket));
-                self->doAccept();
+                try {
+                    self->handleAccept(ec, std::move(socket));
+                    self->doAccept();
+                }
+                catch(const std::exception& e) {
+                    std::cerr << "Error in WebSocketServer::async_accept callback: " << e.what() << std::endl;
+                }
+                catch(...) {
+                    std::cerr << "Unknown error in WebSocketServer::async_accept callback" << std::endl;
+                }
             }
         });
 }
