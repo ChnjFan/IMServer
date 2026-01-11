@@ -161,7 +161,8 @@ void WebSocketConnection::doRead() {
                 boost::asio::buffer_cast<const char*>(buffer.data()),
                 boost::asio::buffer_cast<const char*>(buffer.data()) + buffer.size());
 
-            buffer.consume(triggerMessageHandler(data));
+            triggerMessageHandler(data);
+            buffer.consume(bytes_transferred);
             doRead();
         });
 }

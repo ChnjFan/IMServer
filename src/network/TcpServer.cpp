@@ -155,8 +155,8 @@ void TcpConnection::doRead()
                 return;
             }
             try {
-                size_t processed_bytes = triggerMessageHandler(read_buffer_);
-                read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + processed_bytes);
+                triggerMessageHandler(read_buffer_);
+                read_buffer_.erase(read_buffer_.begin(), read_buffer_.begin() + bytes_transferred);
                 if (read_buffer_.empty()) {
                     read_buffer_.resize(4096);
                 }
