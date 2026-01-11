@@ -6,8 +6,6 @@
 #include <atomic>
 #include <unordered_map>
 
-#include "Gateway.h"
-
 namespace gateway {
 
 /**
@@ -148,10 +146,6 @@ private:
     
     // 配置
     GatewayConfig config_;
-    
-    // 单例实例
-    static std::unique_ptr<AuthCenter> instance_;
-    static std::mutex instance_mutex_;
     
     // 状态
     std::atomic<bool> initialized_{false};

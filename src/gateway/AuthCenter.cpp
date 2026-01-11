@@ -7,10 +7,6 @@
 #include <algorithm>
 #include <cstring>
 
-// 单例实例初始化
-std::unique_ptr<gateway::AuthCenter> gateway::AuthCenter::instance_;
-std::mutex gateway::AuthCenter::instance_mutex_;
-
 namespace gateway {
 
 AuthCenter::AuthCenter() {}
