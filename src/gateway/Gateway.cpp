@@ -29,16 +29,22 @@ void Gateway::initialize(const GatewayConfig& config) {
     auth_center_->initialize(config.auth_config);
 
     initializeServers();
+    std::cout << "Gateway initialized with config:" << std::endl;
+    std::cout << "  Max Connections: " << config.max_connections << std::endl;
+    std::cout << "  Idle Timeout: " << config.idle_timeout << " seconds" << std::endl;
 }
 
 void Gateway::start() {
     std::lock_guard<std::mutex> lock(mutex_);
+
+    std::cout << "Gateway starting..." << std::endl;
     
     if (is_running_) {
         return;
     }
     
     if (tcp_server_) {
+        std::cout << "TCP server starting on port " << config_.tcp_port << std::endl;
         tcp_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });
@@ -51,6 +57,7 @@ void Gateway::start() {
         tcp_server_->start();
     }
     if (websocket_server_) {
+        std::cout << "WebSocket server starting on port " << config_.websocket_port << std::endl;
         websocket_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });
@@ -63,6 +70,7 @@ void Gateway::start() {
         websocket_server_->start();
     }
     if (http_server_) {
+        std::cout << "HTTP server starting on port " << config_.http_port << std::endl;
         http_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });

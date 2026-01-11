@@ -31,6 +31,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
 target_link_libraries(${TARGET_NAME} PUBLIC
     network
     protocol
+    tool_module
     ${Boost_LIBRARIES}
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>

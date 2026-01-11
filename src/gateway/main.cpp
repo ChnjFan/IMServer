@@ -21,7 +21,7 @@ int main() {
             boost::asio::make_work_guard(io_context);
 
         std::vector<std::thread> threads;
-        for (int i = 0; i < thread_count; ++i) {
+        for (unsigned int i = 0; i < thread_count; ++i) {
             threads.emplace_back([&io_context]() {
                 io_context.run();
             });
