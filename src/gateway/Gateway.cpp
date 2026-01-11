@@ -176,9 +176,9 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
 }
 
 void Gateway::initializeServers() {
-    tcp_server_ = std::make_unique<network::TcpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.tcp_port);
-    websocket_server_ = std::make_unique<network::WebSocketServer>(io_context_, *connection_manager_, "0.0.0.0", config_.websocket_port);
-    http_server_ = std::make_unique<network::HttpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.http_port);
+    tcp_server_ = std::make_shared<network::TcpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.tcp_port);
+    websocket_server_ = std::make_shared<network::WebSocketServer>(io_context_, *connection_manager_, "0.0.0.0", config_.websocket_port);
+    http_server_ = std::make_shared<network::HttpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.http_port);
 }
 
 void Gateway::initializeConnectionManager() {

@@ -114,9 +114,9 @@ private:
     std::shared_ptr<AuthCenter> auth_center_;
     
     // 各种协议服务器
-    std::unique_ptr<network::TcpServer> tcp_server_;
-    std::unique_ptr<network::WebSocketServer> websocket_server_;
-    std::unique_ptr<network::HttpServer> http_server_;
+    std::shared_ptr<network::TcpServer> tcp_server_;
+    std::shared_ptr<network::WebSocketServer> websocket_server_;
+    std::shared_ptr<network::HttpServer> http_server_;
     
     GatewayConfig config_;
     
