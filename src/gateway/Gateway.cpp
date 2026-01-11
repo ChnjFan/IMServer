@@ -42,11 +42,11 @@ void Gateway::start() {
         tcp_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });
-        tcp_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
-            this->handleStateChange(connection_id, state);
+        tcp_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState old_state, network::ConnectionState new_state) {
+            this->handleStateChange(connection_id, old_state, new_state);
         });
-        tcp_server_->setCloseHandler([this](network::ConnectionId connection_id) {
-            this->handleClose(connection_id);
+        tcp_server_->setCloseHandler([this](network::ConnectionId connection_id, const boost::system::error_code& ec) {
+            this->handleClose(connection_id, ec);
         });
         tcp_server_->start();
     }
@@ -54,11 +54,11 @@ void Gateway::start() {
         websocket_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });
-        websocket_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
-            this->handleStateChange(connection_id, state);
+        websocket_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState old_state, network::ConnectionState new_state) {
+            this->handleStateChange(connection_id, old_state, new_state);
         });
-        websocket_server_->setCloseHandler([this](network::ConnectionId connection_id) {
-            this->handleClose(connection_id);
+        websocket_server_->setCloseHandler([this](network::ConnectionId connection_id, const boost::system::error_code& ec) {
+            this->handleClose(connection_id, ec);
         });
         websocket_server_->start();
     }
@@ -66,11 +66,11 @@ void Gateway::start() {
         http_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
             this->handleMessage(connection_id, data);
         });
-        http_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
-            this->handleStateChange(connection_id, state);
+        http_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState old_state, network::ConnectionState new_state) {
+            this->handleStateChange(connection_id, old_state, new_state);
         });
-        http_server_->setCloseHandler([this](network::ConnectionId connection_id) {
-            this->handleClose(connection_id);
+        http_server_->setCloseHandler([this](network::ConnectionId connection_id, const boost::system::error_code& ec) {
+            this->handleClose(connection_id, ec);
         });
         http_server_->start();
     }
