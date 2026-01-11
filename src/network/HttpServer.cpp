@@ -317,9 +317,9 @@ std::string HttpConnection::getMimeType(const std::string& file_path) {
 }
 
 // HttpServer实现
-HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager)
+HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
     : io_context_(io_context),
-      acceptor_(io_context),
+      acceptor_(io_context, ip::tcp::endpoint(ip::address::from_string(address), port)),
       connection_manager_(connection_manager),
       running_(false),
       static_file_directory_(""),
@@ -331,7 +331,7 @@ HttpServer::~HttpServer() {
     stop();
 }
 
-void HttpServer::start(const address& addr, uint16_t port) {
+void HttpServer::start() {
     if (running_) {
         return;
     }
@@ -348,12 +348,6 @@ void HttpServer::start(const address& addr, uint16_t port) {
         acceptor_.set_option(net::socket_base::reuse_address(true), ec);
         if (ec) {
             throw std::runtime_error("Failed to set reuse_address option: " + ec.message());
-        }
-
-        // 绑定到指定地址和端口
-        acceptor_.bind(boost::asio::ip::tcp::endpoint(addr, port), ec);
-        if (ec) {
-            throw std::runtime_error("Failed to bind to address: " + ec.message());
         }
 
         // 开始监听
