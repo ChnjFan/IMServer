@@ -97,9 +97,9 @@ public:
     
 private:
     // 处理消息
-    size_t handleMessage(network::Connection::Ptr connection, const std::vector<char>& data);
-    void handleStateChange(network::Connection::Ptr connection, network::ConnectionState old_state, network::ConnectionState new_state);
-    void handleClose(network::Connection::Ptr connection, const boost::system::error_code& ec);
+    void handleMessage(network::ConnectionId connection_id, const std::vector<char>& data);
+    void handleStateChange(network::ConnectionId connection_id, network::ConnectionState old_state, network::ConnectionState new_state);
+    void handleClose(network::ConnectionId connection_id, const boost::system::error_code& ec);
     
     // 初始化组件
     void initializeServers();

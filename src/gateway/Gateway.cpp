@@ -39,38 +39,38 @@ void Gateway::start() {
     }
     
     if (tcp_server_) {
-        tcp_server_->setMessageHandler([this](network::Connection::Ptr connection, const std::vector<char>& data) {
-            this->handleMessage(connection, data);
+        tcp_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
+            this->handleMessage(connection_id, data);
         });
-        tcp_server_->setStateChangeHandler([this](network::Connection::Ptr connection, network::ConnectionState state) {
-            this->handleStateChange(connection, state);
+        tcp_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
+            this->handleStateChange(connection_id, state);
         });
-        tcp_server_->setCloseHandler([this](network::Connection::Ptr connection) {
-            this->handleClose(connection);
+        tcp_server_->setCloseHandler([this](network::ConnectionId connection_id) {
+            this->handleClose(connection_id);
         });
         tcp_server_->start();
     }
     if (websocket_server_) {
-        websocket_server_->setMessageHandler([this](network::Connection::Ptr connection, const std::vector<char>& data) {
-            this->handleMessage(connection, data);
+        websocket_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
+            this->handleMessage(connection_id, data);
         });
-        websocket_server_->setStateChangeHandler([this](network::Connection::Ptr connection, network::ConnectionState state) {
-            this->handleStateChange(connection, state);
+        websocket_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
+            this->handleStateChange(connection_id, state);
         });
-        websocket_server_->setCloseHandler([this](network::Connection::Ptr connection) {
-            this->handleClose(connection);
+        websocket_server_->setCloseHandler([this](network::ConnectionId connection_id) {
+            this->handleClose(connection_id);
         });
         websocket_server_->start();
     }
     if (http_server_) {
-        http_server_->setMessageHandler([this](network::Connection::Ptr connection, const std::vector<char>& data) {
-            this->handleMessage(connection, data);
+        http_server_->setMessageHandler([this](network::ConnectionId connection_id, const std::vector<char>& data) {
+            this->handleMessage(connection_id, data);
         });
-        http_server_->setStateChangeHandler([this](network::Connection::Ptr connection, network::ConnectionState state) {
-            this->handleStateChange(connection, state);
+        http_server_->setStateChangeHandler([this](network::ConnectionId connection_id, network::ConnectionState state) {
+            this->handleStateChange(connection_id, state);
         });
-        http_server_->setCloseHandler([this](network::Connection::Ptr connection) {
-            this->handleClose(connection);
+        http_server_->setCloseHandler([this](network::ConnectionId connection_id) {
+            this->handleClose(connection_id);
         });
         http_server_->start();
     }
@@ -136,36 +136,33 @@ network::ConnectionManager::GlobalStats Gateway::getGlobalStats() const {
     return connection_manager_->getGlobalStats();
 }
 
-size_t Gateway::handleMessage(network::Connection::Ptr connection, const std::vector<char>& data) {
-    protocol_manager_->doProcessData(connection, data, [this, connection](const boost::system::error_code& ec) {
+void Gateway::handleMessage(network::ConnectionId connection_id, const std::vector<char>& data) {
+    protocol_manager_->doProcessData(connection_id, data, [this, connection_id](const boost::system::error_code& ec) {
         if (!ec) {
             // 消息处理成功
         } else {
-            std::cout << "Error processing message for connection " << connection->getId() << ": " << ec.message() << std::endl;
+            std::cout << "Error processing message for connection " << connection_id << ": " << ec.message() << std::endl;
         }
     });
-    
-    return data.size();
 }
 
-void Gateway::handleStateChange(network::Connection::Ptr connection, network::ConnectionState old_state, network::ConnectionState new_state) {
+void Gateway::handleStateChange(network::ConnectionId connection_id, network::ConnectionState old_state, network::ConnectionState new_state) {
     // 可以添加状态变更处理逻辑
     if (config_.enable_debug_log) {
-        if (connection) {
-            std::cout << "Connection state changed: " << connection->getRemoteAddress() << ":" 
-                      << connection->getRemotePort() << " (ID: " << connection->getId() << ") "
+        if (connection_id) {
+            std::cout << "Connection state changed: " << connection_id << " "
                       << network::connectionStateToString(old_state) << " -> " 
                       << network::connectionStateToString(new_state) << std::endl;
         }
     }
 }
 
-void Gateway::handleClose(network::Connection::Ptr connection, const boost::system::error_code &ec) {
+void Gateway::handleClose(network::ConnectionId connection_id, const boost::system::error_code &ec) {
     if (config_.enable_debug_log) {
         if (ec) {
-            std::cout << "Connection " << connection->getId() << " closed with error: " << ec.message() << std::endl;
+            std::cout << "Connection " << connection_id << " closed with error: " << ec.message() << std::endl;
         } else {
-            std::cout << "Connection " << connection->getId() << " closed successfully" << std::endl;
+            std::cout << "Connection " << connection_id << " closed successfully" << std::endl;
         }
     }
 }
