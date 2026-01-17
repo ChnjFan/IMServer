@@ -52,7 +52,11 @@ public:
      */
     network::ConnectionType getConnectionType() const override { return network::ConnectionType::TCP; }
 
-    MessageType getMessageType() const override { return header_.message_type; }
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return static_cast<MessageType>(header_.message_type); }
 
 private:
     /**
