@@ -3,9 +3,9 @@
 # 定义目标名称
 set(TARGET_NAME gateway)
 
-# 收集源文件
-file(GLOB_RECURSE SOURCES "*.cpp")
-file(GLOB_RECURSE HEADERS "*.h")
+# 收集源文件（只收集当前目录，不包括子目录）
+file(GLOB SOURCES "*.cpp")
+file(GLOB HEADERS "*.h")
 
 # 创建库
 add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
