@@ -52,6 +52,8 @@ public:
      */
     network::ConnectionType getConnectionType() const override { return network::ConnectionType::TCP; }
 
+    MessageType getMessageType() const override { return header_.message_type; }
+
 private:
     /**
      * @brief 解析消息头

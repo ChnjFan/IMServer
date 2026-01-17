@@ -126,6 +126,12 @@ public:
      * @return network::ConnectionType 消息类型
      */
     virtual network::ConnectionType getConnectionType() const = 0;
+
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    virtual MessageType getMessageType() const = 0;
 };
 
 // 前向声明

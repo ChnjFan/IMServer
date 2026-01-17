@@ -44,7 +44,8 @@ private:
     DeserializeState state_;  // 当前反序列化状态
     WebSocketMessageHeader header_;  // WebSocket消息头
     std::vector<char> data_buffer_;     // 消息缓冲区，待处理数据
-    uint64_t expected_body_length_;          // 预期的消息体长度
+    MessageType message_type_;          // 消息类型
+    uint64_t expected_body_length_;     // 预期的消息体长度
 
 public:
     WebSocketMessage();
@@ -103,6 +104,12 @@ public:
      * @return network::ConnectionType 消息类型
      */
     network::ConnectionType getConnectionType() const override { return network::ConnectionType::WebSocket; }
+
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return message_type_; }
 
 private:
     /**
