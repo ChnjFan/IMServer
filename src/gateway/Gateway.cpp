@@ -146,6 +146,9 @@ network::ConnectionManager::GlobalStats Gateway::getGlobalStats() const {
 }
 
 void Gateway::handleMessage(network::ConnectionId connection_id, const std::vector<char>& data) {
+    if (config_.enable_debug_log) {
+        std::cout << "Received message from connection " << connection_id << " with data: " << data.size() << " bytes" << std::endl;
+    }
     protocol_manager_->asyncProcessData(connection_id, data, [this, connection_id](const boost::system::error_code& ec) {
         if (!ec) {
             // 消息处理成功
