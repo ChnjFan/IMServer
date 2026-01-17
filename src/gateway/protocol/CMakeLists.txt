@@ -39,8 +39,8 @@ add_library(gateway_protocol STATIC
 # 设置包含目录
 target_include_directories(gateway_protocol PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/../network
+    ${CMAKE_SOURCE_DIR}/src/tool
     ${BOOST_INCLUDE_DIRS}
 )
 

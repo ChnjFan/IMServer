@@ -17,6 +17,7 @@ find_package(OpenSSL REQUIRED)
 set(HEADER_DIR
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/../../tool/    # 包含工具层头文件
+    ${CMAKE_CURRENT_SOURCE_DIR}/../protocol/    # 包含协议层头文件
 )
 
 # 包含目录

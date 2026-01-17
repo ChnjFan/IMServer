@@ -9,7 +9,7 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "network/ConnectionManager.h"
+#include "ConnectionManager.h"
 #include "Parser.h"
 #include "Message.h"
 #include "MessageRouter.h"

@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-#include "network/ConnectionManager.h"
+#include "ConnectionManager.h"
 
 namespace protocol {
 
