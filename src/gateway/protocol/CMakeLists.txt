@@ -31,32 +31,32 @@ set(PROTOCOL_HEADERS
 )
 
 # 创建协议层静态库
-add_library(protocol STATIC
+add_library(gateway_protocol STATIC
     ${PROTOCOL_SOURCES}
     ${PROTOCOL_HEADERS}
 )
 
 # 设置包含目录
-target_include_directories(protocol PUBLIC
+target_include_directories(gateway_protocol PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/network
+    ${CMAKE_CURRENT_SOURCE_DIR}/../network
     ${BOOST_INCLUDE_DIRS}
 )
 
 # 链接依赖库
-target_link_libraries(protocol
-    network
+target_link_libraries(gateway_protocol
+    gateway_network
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
 )
 
 # 设置C++标准
-target_compile_features(protocol PUBLIC cxx_std_17)
+target_compile_features(gateway_protocol PUBLIC cxx_std_17)
 
 # 添加编译选项
 if(MSVC)
-    target_compile_options(protocol PRIVATE /W4 /WX /wd4251)
+    target_compile_options(gateway_protocol PRIVATE /W4 /WX /wd4251)
 else()
-    target_compile_options(protocol PRIVATE -Wall -Wextra -Werror -pedantic)
+    target_compile_options(gateway_protocol PRIVATE -Wall -Wextra -Werror -pedantic)
 endif()

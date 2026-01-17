@@ -17,20 +17,22 @@ target_compile_options(${TARGET_NAME} PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -pedantic>
 )
 
+# 添加子目录
+add_subdirectory(network)
+add_subdirectory(protocol)
+
 # 添加包含目录
 target_include_directories(${TARGET_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/network
-    ${CMAKE_SOURCE_DIR}/src/protocol
     ${CMAKE_SOURCE_DIR}/src/tool
     ${Boost_INCLUDE_DIRS}
 )
 
 # 链接依赖
 target_link_libraries(${TARGET_NAME} PUBLIC
-    network
-    protocol
+    gateway_network
+    gateway_protocol
     tool_module
     ${Boost_LIBRARIES}
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
