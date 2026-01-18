@@ -4,7 +4,7 @@
 #include "TcpMessage.h"
 #include "WebSocketMessage.h"
 #include "HttpMessage.h"
-#include "idGenerator.h"
+#include "IdGenerator.h"
 
 namespace protocol {
 
