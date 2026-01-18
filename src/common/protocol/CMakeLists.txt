@@ -8,6 +8,23 @@ find_package(Protobuf REQUIRED)
 # 查找gRPC包
 find_package(gRPC REQUIRED)
 
+# 确保gRPC插件存在
+if(NOT DEFINED gRPC_CPP_PLUGIN_EXECUTABLE)
+    # 尝试常见的插件路径
+    find_program(gRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin
+        PATHS 
+            /usr/local/bin
+            /usr/bin
+            $ENV{PATH}
+    )
+    
+    if(NOT gRPC_CPP_PLUGIN_EXECUTABLE)
+        message(FATAL_ERROR "grpc_cpp_plugin not found. Please install gRPC or set gRPC_CPP_PLUGIN_EXECUTABLE explicitly.")
+    endif()
+endif()
+
+message(STATUS "Found gRPC plugin: ${gRPC_CPP_PLUGIN_EXECUTABLE}")
+
 # 设置protobuf生成目录
 set(PROTOBUF_GENERATE_CPP_APPEND_PATH FALSE)
 set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
