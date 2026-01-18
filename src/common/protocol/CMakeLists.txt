@@ -15,17 +15,31 @@ set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 # 确保生成目录存在
 file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 
+# 定义protobuf文件
+set(PROTO_FILES gateway_routing.proto)
+
 # 编译protobuf文件
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
     OUTPUT_DIR ${PROTO_GEN_DIR}
-    gateway_routing.proto
+    ${PROTO_FILES}
 )
 
-# 编译gRPC文件
-grpc_generate_cpp(GRPC_SRCS GRPC_HDRS 
-    OUTPUT_DIR ${PROTO_GEN_DIR}
-    gateway_routing.proto
-)
+# 手动设置gRPC生成
+set(GRPC_SRCS "")
+set(GRPC_HDRS "")
+foreach(PROTO_FILE ${PROTO_FILES})
+    get_filename_component(PROTO_NAME ${PROTO_FILE} NAME_WE)
+    list(APPEND GRPC_SRCS "${PROTO_GEN_DIR}/${PROTO_NAME}.grpc.pb.cc")
+    list(APPEND GRPC_HDRS "${PROTO_GEN_DIR}/${PROTO_NAME}.grpc.pb.h")
+    
+    add_custom_command(
+        OUTPUT "${PROTO_GEN_DIR}/${PROTO_NAME}.grpc.pb.cc" "${PROTO_GEN_DIR}/${PROTO_NAME}.grpc.pb.h"
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        ARGS -I=${CMAKE_CURRENT_SOURCE_DIR} --grpc_out=${PROTO_GEN_DIR} --plugin=protoc-gen-grpc=${gRPC_CPP_PLUGIN_EXECUTABLE} ${PROTO_FILE}
+        DEPENDS ${PROTO_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+endforeach()
 
 # 创建公共协议库
 add_library(im_common_protocol
