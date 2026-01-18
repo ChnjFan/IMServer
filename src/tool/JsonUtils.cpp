@@ -154,7 +154,9 @@ bool JsonUtils::getJsonValue(const std::string& json_str, const std::string& pat
 
 bool JsonUtils::isValidJson(const std::string& json_str) {
     try {
-        json::parse(json_str);
+        auto result = json::parse(json_str);
+        // 记录日志
+        std::cout << "Parsed JSON: " << result.dump(2) << std::endl;
         return true;
     } catch (const json::exception& e) {
         return false;
