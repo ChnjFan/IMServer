@@ -35,9 +35,11 @@ file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 # 定义protobuf文件
 set(PROTO_FILES gateway_routing.proto)
 
+# 设置protobuf输出目录
+set(protobuf_generate_PROTOC_OUT_DIR ${PROTO_GEN_DIR})
+
 # 编译protobuf文件
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
-    OUTPUT_DIR ${PROTO_GEN_DIR}
     ${PROTO_FILES}
 )
 
