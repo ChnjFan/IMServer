@@ -41,6 +41,9 @@ add_compile_options(
 )
 
 # 各个模块作为单独进程构建
+# 公共模块
+add_subdirectory(src/common/protocol)
+
 # 工具模块
 add_subdirectory(src/tool)
 

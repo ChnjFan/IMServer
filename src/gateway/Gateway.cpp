@@ -194,6 +194,7 @@ void Gateway::initializeConnectionManager() {
 
 void Gateway::initializeProtocolManager() {
     protocol_manager_ = std::make_shared<protocol::ProtocolManager>(*connection_manager_);
+    // todo 将各网关服务器消息统一转换为内部消息发往网关层
 }
 
 void Gateway::initializeAuthCenter() {

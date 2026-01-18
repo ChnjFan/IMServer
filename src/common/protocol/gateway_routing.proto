@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+package im.common.protocol;
+
+// 网关与路由层通信协议
+
+// 消息类型枚举
+enum MessageType {
+  MESSAGE_TYPE_UNKNOWN = 0;
+  MESSAGE_TYPE_CHAT = 1;
+  MESSAGE_TYPE_NOTIFICATION = 2;
+  MESSAGE_TYPE_COMMAND = 3;
+  MESSAGE_TYPE_ACK = 4;
+}
+
+// 错误码枚举
+enum ErrorCode {
+  ERROR_CODE_SUCCESS = 0;
+  ERROR_CODE_INVALID_REQUEST = 1;
+  ERROR_CODE_USER_NOT_FOUND = 2;
+  ERROR_CODE_SERVICE_UNAVAILABLE = 3;
+  ERROR_CODE_INTERNAL_ERROR = 4;
+}
+
+// 基础消息结构
+message BaseMessage {
+  string message_id = 1;          // 全局唯一消息ID
+  string source_service = 2;      // 源服务标识
+  string target_service = 3;      // 目标服务标识
+  int32 message_type = 4;         // 消息类型
+  int64 timestamp = 5;            // 时间戳
+  bytes payload = 6;              // 消息体（二进制）
+  map<string, string> metadata = 7; // 元数据（认证信息、路由规则等）
+}
+
+// 路由请求消息
+message RouteRequest {
+  BaseMessage base_message = 1;   // 基础消息
+  string gateway_id = 2;           // 网关ID
+  int32 priority = 3;              // 优先级（0-10）
+}
+
+// 路由响应消息
+message RouteResponse {
+  string message_id = 1;          // 对应请求的消息ID
+  ErrorCode error_code = 2;       // 错误码
+  string error_message = 3;       // 错误信息
+  bool accepted = 4;              // 是否接受路由
+}
+
+// 路由服务定义
+service RoutingService {
+  // 路由消息
+  rpc RouteMessage(RouteRequest) returns (RouteResponse);
+  
+  // 批量路由消息
+  rpc BatchRouteMessages(stream RouteRequest) returns (stream RouteResponse);
+  
+  // 检查路由服务状态
+  rpc CheckStatus(google.protobuf.Empty) returns (StatusResponse);
+}
+
+// 状态响应消息
+message StatusResponse {
+  bool is_healthy = 1;            // 服务是否健康
+  int32 queue_size = 2;           // 消息队列大小
+  int64 uptime_seconds = 3;       // 服务运行时间（秒）
+}
+
+// 导入空消息类型
+import "google/protobuf/empty.proto";

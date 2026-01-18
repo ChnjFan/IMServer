@@ -27,6 +27,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/network
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol
     ${CMAKE_SOURCE_DIR}/src/tool
+    ${CMAKE_SOURCE_DIR}/src/common/protocol
     ${Boost_INCLUDE_DIRS}
 )
 
@@ -35,6 +36,7 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     gateway_network
     gateway_protocol
     tool_module
+    im_common_protocol
     ${Boost_LIBRARIES}
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
