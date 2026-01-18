@@ -10,16 +10,36 @@ GRPC_PLUGIN="grpc_cpp_plugin"
 
 # 检查protoc是否存在
 if ! command -v "$PROTOC" &> /dev/null; then
-    echo "Error: protoc not found in PATH"
-    echo "Please install Protocol Buffers and add to PATH"
-    exit 1
+    # 尝试常见的安装路径
+    if [ -f "/usr/local/bin/protoc" ]; then
+        PROTOC="/usr/local/bin/protoc"
+        echo "Found protoc at /usr/local/bin/protoc"
+    elif [ -f "/usr/bin/protoc" ]; then
+        PROTOC="/usr/bin/protoc"
+        echo "Found protoc at /usr/bin/protoc"
+    else
+        echo "Error: protoc not found in PATH"
+        echo "Please install Protocol Buffers and add to PATH"
+        echo "Or install to /usr/local/bin/protoc"
+        exit 1
+    fi
 fi
 
 # 检查grpc_cpp_plugin是否存在
 if ! command -v "$GRPC_PLUGIN" &> /dev/null; then
-    echo "Error: grpc_cpp_plugin not found in PATH"
-    echo "Please install gRPC and add to PATH"
-    exit 1
+    # 尝试常见的安装路径
+    if [ -f "/usr/local/bin/grpc_cpp_plugin" ]; then
+        GRPC_PLUGIN="/usr/local/bin/grpc_cpp_plugin"
+        echo "Found grpc_cpp_plugin at /usr/local/bin/grpc_cpp_plugin"
+    elif [ -f "/usr/bin/grpc_cpp_plugin" ]; then
+        GRPC_PLUGIN="/usr/bin/grpc_cpp_plugin"
+        echo "Found grpc_cpp_plugin at /usr/bin/grpc_cpp_plugin"
+    else
+        echo "Error: grpc_cpp_plugin not found in PATH"
+        echo "Please install gRPC and add to PATH"
+        echo "Or install to /usr/local/bin/grpc_cpp_plugin"
+        exit 1
+    fi
 fi
 
 # 创建生成目录

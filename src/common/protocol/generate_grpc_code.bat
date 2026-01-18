@@ -11,19 +11,38 @@ set GRPC_PLUGIN=grpc_cpp_plugin
 :: 检查protoc是否存在
 where %PROTOC% > nul 2> nul
 if %ERRORLEVEL% neq 0 (
-    echo Error: protoc not found in PATH
-    echo Please install Protocol Buffers and add to PATH
-    pause
-    exit /b 1
+    :: 尝试常见的安装路径
+    if exist "D:\Program Files\protoc\bin\protoc.exe" (
+        set PROTOC="D:\Program Files\protoc\bin\protoc.exe"
+        echo Found protoc at D:\Program Files\protoc\bin\protoc.exe
+    ) else if exist "C:\Program Files\protoc\bin\protoc.exe" (
+        set PROTOC="C:\Program Files\protoc\bin\protoc.exe"
+        echo Found protoc at C:\Program Files\protoc\bin\protoc.exe
+    ) else (
+        echo Error: protoc not found in PATH
+        echo Please install Protocol Buffers and add to PATH
+        echo Or install to D:\Program Files\protoc\bin\protoc.exe
+        pause
+        exit /b 1
+    )
 )
 
 :: 检查grpc_cpp_plugin是否存在
 where %GRPC_PLUGIN% > nul 2> nul
 if %ERRORLEVEL% neq 0 (
-    echo Error: grpc_cpp_plugin not found in PATH
-    echo Please install gRPC and add to PATH
-    pause
-    exit /b 1
+    :: 尝试常见的安装路径
+    if exist "D:\Program Files\grpc\bin\grpc_cpp_plugin.exe" (
+        set GRPC_PLUGIN="D:\Program Files\grpc\bin\grpc_cpp_plugin.exe"
+        echo Found grpc_cpp_plugin at D:\Program Files\grpc\bin\grpc_cpp_plugin.exe
+    ) else if exist "C:\Program Files\grpc\bin\grpc_cpp_plugin.exe" (
+        set GRPC_PLUGIN="C:\Program Files\grpc\bin\grpc_cpp_plugin.exe"
+        echo Found grpc_cpp_plugin at C:\Program Files\grpc\bin\grpc_cpp_plugin.exe
+    ) else (
+        echo Error: grpc_cpp_plugin not found in PATH
+        echo Please install gRPC and add to PATH
+        pause
+        exit /b 1
+    )
 )
 
 :: 创建生成目录

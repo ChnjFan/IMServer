@@ -36,16 +36,16 @@ public:
     MessageRouter();
     /**
      * @brief 注册消息处理器
-     * @param message_type 消息类型
+     * @param connection_type 连接类型
      * @param handler 消息处理器回调函数
      */
-    void registerHandler(network::ConnectionType message_type, MessageHandler handler);
+    void registerHandler(network::ConnectionType connection_type, MessageHandler handler);
     
     /**
      * @brief 移除消息处理器
-     * @param message_type 消息类型
+     * @param connection_type 连接类型
      */
-    void removeHandler(network::ConnectionType message_type);
+    void removeHandler(network::ConnectionType connection_type);
     
     /**
      * @brief 异步路由消息
@@ -63,10 +63,10 @@ public:
     
     /**
      * @brief 检查是否存在指定类型的处理器
-     * @param message_type 消息类型
+     * @param connection_type 连接类型
      * @return bool 是否存在处理器
      */
-    bool hasHandler(network::ConnectionType message_type);
+    bool hasHandler(network::ConnectionType connection_type);
 
     /**
      * @brief 设置异步执行器
