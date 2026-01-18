@@ -28,6 +28,7 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol
     ${CMAKE_SOURCE_DIR}/src/tool
     ${CMAKE_SOURCE_DIR}/src/common/protocol
+    ${CMAKE_SOURCE_DIR}/src/common/protocol/generated
     ${Boost_INCLUDE_DIRS}
 )
 
