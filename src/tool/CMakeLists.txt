@@ -6,11 +6,13 @@ find_package(Threads REQUIRED)
 # 设置工具模块头文件
 set(TOOL_HEADERS
     IdGenerator.h
+    JsonUtils.h
 )
 
 # 设置工具模块实现文件
 set(TOOL_SOURCES
     IdGenerator.cpp
+    JsonUtils.cpp
 )
 
 # 创建工具模块库
@@ -24,6 +26,7 @@ target_link_libraries(tool_module
 # 设置包含目录
 target_include_directories(tool_module PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/src/third_party/nlohmann
 )
 
 # 设置C++标准

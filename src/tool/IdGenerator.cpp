@@ -176,12 +176,12 @@ IdGenerator::GeneratorStats IdGenerator::getStats() const {
     return stats;
 }
 
-// ==================== 私有方法实现 ====================
-
 uint64_t IdGenerator::getCurrentTimestamp() const {
     return std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start_time_).count();
 }
+
+// ==================== 私有方法实现 ====================
 
 uint32_t IdGenerator::getProcessId() const {
 #ifdef _WIN32

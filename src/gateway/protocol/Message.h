@@ -14,7 +14,7 @@ namespace protocol {
  */
 class Message {
 public:
-    enum class MessageType : uint16_t {
+    enum class MessageType : int32_t {
         LoginRequest = 1001,
         LoginResponse = 1002,
         LogoutRequest = 1003,
@@ -38,6 +38,7 @@ protected:
     std::vector<char> body_;               // 消息体
     network::ConnectionId connection_id_;  // 关联的连接ID
     network::ConnectionType connection_type_; // 关联的连接类型
+    std::string message_id_;                // 消息ID
 
 public:
     /**
@@ -59,6 +60,10 @@ public:
 
     void bindConnection(network::ConnectionId connection_id, network::ConnectionType connection_type) {
         connection_id_ = connection_id;
+        // 绑定连接类型时，将连接ID添加到消息ID末尾，用于区分不同连接类型的消息
+        // 例如：messid_TCP_1234567890
+        message_id_ += "_" + messageConnectionTypeToString(connection_type);
+        message_id_ += "_" + std::to_string(connection_id);
         connection_type_ = connection_type;
     }
 
@@ -73,6 +78,7 @@ public:
      * @return std::vector<char>& 消息体引用
      */
     std::vector<char>& getBody() { return body_; }
+    std::string getPayload() const { return std::string(body_.begin(), body_.end()); }
 
     /**
      * @brief 获取连接ID
@@ -132,6 +138,12 @@ public:
      * @return MessageType 消息类型
      */
     virtual MessageType getMessageType() const = 0;
+
+    /**
+     * @brief 获取消息ID
+     * @return std::string 消息ID
+     */
+    std::string getMessageId() const { return message_id_; }
 };
 
 // 前向声明

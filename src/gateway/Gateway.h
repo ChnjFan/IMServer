@@ -110,6 +110,9 @@ private:
     void initializeConnectionManager();
     void initializeProtocolManager();
     void initializeAuthCenter();
+
+    // 消息转换
+    void convertMessageToImMessage(const std::shared_ptr<protocol::Message>& message, imserver::protocol::ImMessage& im_message);
     
     // 核心组件
     boost::asio::io_context& io_context_;

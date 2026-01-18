@@ -3,8 +3,10 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <unordered_map>
 
 #include "RoutingClient.h"
+#include "JsonUtils.h"
 
 namespace gateway {
 
@@ -214,43 +216,28 @@ void Gateway::initializeConnectionManager() {
 
 void Gateway::initializeProtocolManager() {
     protocol_manager_ = std::make_shared<protocol::ProtocolManager>(*connection_manager_);
-    
-    // 通用消息处理函数
+
     auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
         try {
-            // 创建路由请求
             im::common::protocol::RouteRequest request;
-            
-            // 填充基础消息
+
             auto* base_message = request.mutable_base_message();
+            // 消息ID格式包含连接类型和连接ID，用于区分不同连接类型的消息，
+            // 例如：messid_TCP_1234567890
             base_message->set_message_id(message.getMessageId());
-            base_message->set_timestamp(message.getTimestamp());
+            base_message->set_source_service("gateway");
+            base_message->set_target_service("routing");
+            base_message->set_message_type(message.getMessageType());
+            base_message->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
             base_message->set_from_user_id(message.getFromUserId());
             
-            // 添加接收者
-            for (const auto& to_user_id : message.getToUserIds()) {
-                base_message->add_to_user_ids(to_user_id);
+            std::unordered_map<std::string, std::string> metadata;
+            if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
+                for (const auto& [key, value] : metadata) {
+                    base_message->mutable_metadata()->set_key(key)->set_value(value);
+                }
             }
-            
-            // 设置消息类型
-            switch (message.getType()) {
-                case protocol::MessageType::CHAT:
-                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_CHAT);
-                    break;
-                case protocol::MessageType::NOTIFICATION:
-                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_NOTIFICATION);
-                    break;
-                case protocol::MessageType::COMMAND:
-                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_COMMAND);
-                    break;
-                default:
-                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_UNKNOWN);
-            }
-            
-            // 设置消息负载
-            std::string payload = message.getPayload();
-            base_message->set_payload(payload.data(), payload.size());
-            
+
             // 设置网关ID和优先级
             request.set_gateway_id("gateway_1"); // 实际应用中应该使用唯一的网关ID
             request.set_priority(5); // 默认优先级
