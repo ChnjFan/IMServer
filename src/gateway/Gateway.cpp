@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#include "RoutingClient.h"
+
 namespace gateway {
 
 Gateway::Gateway(boost::asio::io_context& io_context)
@@ -29,10 +31,28 @@ void Gateway::initialize(const GatewayConfig& config) {
 
     auth_center_->initialize(config.auth_config);
 
+    initializeRoutingClient();
     initializeServers();
     std::cout << "Gateway initialized with config:" << std::endl;
     std::cout << "  Max Connections: " << config.max_connections << std::endl;
     std::cout << "  Idle Timeout: " << config.idle_timeout << " seconds" << std::endl;
+}
+
+void Gateway::initializeRoutingClient() {
+    routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
+
+    // 检查路由服务状态
+    im::common::protocol::StatusResponse status;
+    if (routing_client_->checkStatus(status)) {
+        std::cout << "[Gateway] Routing service status: " 
+                  << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
+        if (status.is_healthy()) {
+            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
+            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+        }
+    } else {
+        std::cerr << "[Gateway] Failed to check routing service status" << std::endl;
+    }
 }
 
 void Gateway::start() {
@@ -194,7 +214,71 @@ void Gateway::initializeConnectionManager() {
 
 void Gateway::initializeProtocolManager() {
     protocol_manager_ = std::make_shared<protocol::ProtocolManager>(*connection_manager_);
-    // todo 将各网关服务器消息统一转换为内部消息发往网关层
+    
+    // 通用消息处理函数
+    auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
+        try {
+            // 创建路由请求
+            im::common::protocol::RouteRequest request;
+            
+            // 填充基础消息
+            auto* base_message = request.mutable_base_message();
+            base_message->set_message_id(message.getMessageId());
+            base_message->set_timestamp(message.getTimestamp());
+            base_message->set_from_user_id(message.getFromUserId());
+            
+            // 添加接收者
+            for (const auto& to_user_id : message.getToUserIds()) {
+                base_message->add_to_user_ids(to_user_id);
+            }
+            
+            // 设置消息类型
+            switch (message.getType()) {
+                case protocol::MessageType::CHAT:
+                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_CHAT);
+                    break;
+                case protocol::MessageType::NOTIFICATION:
+                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_NOTIFICATION);
+                    break;
+                case protocol::MessageType::COMMAND:
+                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_COMMAND);
+                    break;
+                default:
+                    base_message->set_message_type(im::common::protocol::MessageType::MESSAGE_TYPE_UNKNOWN);
+            }
+            
+            // 设置消息负载
+            std::string payload = message.getPayload();
+            base_message->set_payload(payload.data(), payload.size());
+            
+            // 设置网关ID和优先级
+            request.set_gateway_id("gateway_1"); // 实际应用中应该使用唯一的网关ID
+            request.set_priority(5); // 默认优先级
+            
+            // 发送路由请求
+            im::common::protocol::RouteResponse response;
+            if (routing_client_->routeMessage(request, response)) {
+                if (response.error_code() == im::common::protocol::ErrorCode::ERROR_CODE_SUCCESS) {
+                    if (response.accepted()) {
+                        std::cout << "[Gateway] Message routed successfully: " << message.getMessageId() << std::endl;
+                    } else {
+                        std::cerr << "[Gateway] Message rejected by routing service: " << message.getMessageId() << std::endl;
+                    }
+                } else {
+                    std::cerr << "[Gateway] Routing failed with error: " << response.error_message() << std::endl;
+                }
+            } else {
+                std::cerr << "[Gateway] Failed to send routing request: " << message.getMessageId() << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[Gateway] Exception in message handler: " << e.what() << std::endl;
+        }
+    };
+    
+    // 注册各种连接类型的处理器
+    protocol_manager_->registerHandler(network::ConnectionType::TCP, messageHandler);
+    protocol_manager_->registerHandler(network::ConnectionType::WebSocket, messageHandler);
+    protocol_manager_->registerHandler(network::ConnectionType::HTTP, messageHandler);
 }
 
 void Gateway::initializeAuthCenter() {
