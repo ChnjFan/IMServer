@@ -219,7 +219,7 @@ void Gateway::initializeProtocolManager() {
 
     auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
         try {
-            std::cout << "[Gateway] Received message: " << connection->getConnectionId() << " - " << message.getMessageId() << std::endl;
+            std::cout << "[Gateway] Received message: " << connection->getId() << " - " << message.getMessageId() << std::endl;
             im::common::protocol::RouteRequest request;
 
             messageConverter(message, request.mutable_base_message());
