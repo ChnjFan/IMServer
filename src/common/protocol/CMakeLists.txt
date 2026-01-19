@@ -80,13 +80,6 @@ target_include_directories(im_common_protocol
 target_link_libraries(im_common_protocol
     ${Protobuf_LIBRARIES}
     gRPC::grpc++
-    -lutf8_range
-    -labsl_log_internal_check_op
-    -labsl_log_internal_message
-    -labsl_log_internal_nullguard
-    -labsl_base
-    -labsl_raw_logging_internal
-    -labsl_strings
 )
 
 # 设置编译选项

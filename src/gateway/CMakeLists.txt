@@ -42,13 +42,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
     $<$<CXX_COMPILER_ID:MSVC>:advapi32>
-    -lutf8_range
-    -labsl_log_internal_check_op
-    -labsl_log_internal_message
-    -labsl_log_internal_nullguard
-    -labsl_base
-    -labsl_raw_logging_internal
-    -labsl_strings
 )
 
 # 添加示例可执行文件
