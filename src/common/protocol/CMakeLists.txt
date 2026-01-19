@@ -2,10 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(im_common_protocol)
 
-# 查找Protobuf包
 find_package(Protobuf REQUIRED)
-
-# 查找gRPC包
 find_package(gRPC REQUIRED)
 
 # 确保gRPC插件存在

@@ -32,6 +32,9 @@ target_include_directories(${TARGET_NAME} PUBLIC
     ${Boost_INCLUDE_DIRS}
 )
 
+find_package(Protobuf REQUIRED)
+find_package(gRPC REQUIRED)
+
 # 链接依赖
 target_link_libraries(${TARGET_NAME} PUBLIC
     gateway_network
