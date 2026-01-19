@@ -84,18 +84,9 @@ target_link_libraries(im_common_protocol
     -labsl_log_internal_check_op
     -labsl_log_internal_message
     -labsl_log_internal_nullguard
-    -labsl_log_internal_format
-    -labsl_log_internal_proto
-    -labsl_log_internal_sink
-    -labsl_log_internal_time
-    -labsl_log_internal_config
-    -labsl_log_internal_conditions
     -labsl_base
     -labsl_raw_logging_internal
     -labsl_strings
-    -labsl_strings_internal
-    -labsl_time
-    -labsl_time_zone
 )
 
 # 设置编译选项
