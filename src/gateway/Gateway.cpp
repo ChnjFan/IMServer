@@ -219,6 +219,7 @@ void Gateway::initializeProtocolManager() {
 
     auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
         try {
+            std::cout << "[Gateway] Received message: " << connection->getConnectionId() << " - " << message.getMessageId() << std::endl;
             im::common::protocol::RouteRequest request;
 
             messageConverter(message, request.mutable_base_message());
@@ -266,13 +267,13 @@ void Gateway::messageConverter(const protocol::Message &message, im::common::pro
     pBaseMessage->set_message_id(message.getMessageId());
     pBaseMessage->set_source_service("gateway");
     pBaseMessage->set_target_service("routing");
-    pBaseMessage->set_message_type(message.getMessageType());
+    pBaseMessage->set_message_type(std::static_cast<int32_t>(message.getMessageType()));
     pBaseMessage->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
     
     std::unordered_map<std::string, std::string> metadata;
     if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
         for (const auto& [key, value] : metadata) {
-            pBaseMessage->mutable_metadata()->set_key(key)->set_value(value);
+            (*pBaseMessage->mutable_metadata())[key] = value;
         }
     }
 }
