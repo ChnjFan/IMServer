@@ -267,7 +267,7 @@ void Gateway::messageConverter(const protocol::Message &message, im::common::pro
     pBaseMessage->set_message_id(message.getMessageId());
     pBaseMessage->set_source_service("gateway");
     pBaseMessage->set_target_service("routing");
-    pBaseMessage->set_message_type(std::static_cast<int32_t>(message.getMessageType()));
+    //todo 消息类型转换
     pBaseMessage->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
     
     std::unordered_map<std::string, std::string> metadata;
