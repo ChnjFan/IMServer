@@ -92,6 +92,7 @@ target_compile_features(im_common_protocol PRIVATE cxx_std_17)
 target_compile_options(im_common_protocol PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unused-result>
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-relocation>
+)
 
 # 安装配置
 install(TARGETS im_common_protocol
