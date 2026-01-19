@@ -34,7 +34,6 @@ target_include_directories(${TARGET_NAME} PUBLIC
 
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
-find_package(absl REQUIRED)
 
 # 链接依赖
 target_link_libraries(${TARGET_NAME} PUBLIC
@@ -45,7 +44,6 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     ${Boost_LIBRARIES}
     ${Protobuf_LIBRARIES}
     gRPC::grpc++
-    absl
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
     $<$<CXX_COMPILER_ID:MSVC>:advapi32>
