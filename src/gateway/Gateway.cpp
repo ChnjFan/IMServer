@@ -40,23 +40,6 @@ void Gateway::initialize(const GatewayConfig& config) {
     std::cout << "  Idle Timeout: " << config.idle_timeout << " seconds" << std::endl;
 }
 
-void Gateway::initializeRoutingClient() {
-    routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
-
-    // 检查路由服务状态
-    im::common::protocol::StatusResponse status;
-    if (routing_client_->checkStatus(status)) {
-        std::cout << "[Gateway] Routing service status: " 
-                  << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
-        if (status.is_healthy()) {
-            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
-            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
-        }
-    } else {
-        std::cerr << "[Gateway] Failed to check routing service status" << std::endl;
-    }
-}
-
 void Gateway::start() {
     std::lock_guard<std::mutex> lock(mutex_);
 
@@ -201,6 +184,23 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
     }
 }
 
+void Gateway::initializeRoutingClient() {
+    routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
+
+    // 检查路由服务状态
+    im::common::protocol::StatusResponse status;
+    if (routing_client_->checkStatus(status)) {
+        std::cout << "[Gateway] Routing service status: " 
+                  << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
+        if (status.is_healthy()) {
+            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
+            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+        }
+    } else {
+        std::cerr << "[Gateway] Failed to check routing service status" << std::endl;
+    }
+}
+
 void Gateway::initializeServers() {
     tcp_server_ = std::make_shared<network::TcpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.tcp_port);
     websocket_server_ = std::make_shared<network::WebSocketServer>(io_context_, *connection_manager_, "0.0.0.0", config_.websocket_port);
@@ -256,24 +256,23 @@ void Gateway::initializeAuthCenter() {
     auth_center_ = std::make_shared<AuthCenter>();
 }
 
-void Gateway::messageConverter(protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
+void Gateway::messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
     if (nullptr == pBaseMessage) {
         return;
     }
 
     // 消息ID格式包含连接类型和连接ID，用于区分不同连接类型的消息，
     // 例如：messid_TCP_1234567890
-    base_message->set_message_id(message.getMessageId());
-    base_message->set_source_service("gateway");
-    base_message->set_target_service("routing");
-    base_message->set_message_type(message.getMessageType());
-    base_message->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
-    base_message->set_from_user_id(message.getFromUserId());
+    pBaseMessage->set_message_id(message.getMessageId());
+    pBaseMessage->set_source_service("gateway");
+    pBaseMessage->set_target_service("routing");
+    pBaseMessage->set_message_type(message.getMessageType());
+    pBaseMessage->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
     
     std::unordered_map<std::string, std::string> metadata;
     if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
         for (const auto& [key, value] : metadata) {
-            base_message->mutable_metadata()->set_key(key)->set_value(value);
+            pBaseMessage->mutable_metadata()->set_key(key)->set_value(value);
         }
     }
 }

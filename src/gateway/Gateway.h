@@ -106,12 +106,13 @@ private:
     void handleClose(network::ConnectionId connection_id, const boost::system::error_code& ec);
     
     // 初始化组件
+    void initializeRoutingClient();
     void initializeServers();
     void initializeConnectionManager();
     void initializeProtocolManager();
     void initializeAuthCenter();
 
-    void messageConverter(protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage);
+    void messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage);
 
     // 核心组件
     boost::asio::io_context& io_context_;
