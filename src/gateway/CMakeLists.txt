@@ -39,6 +39,8 @@ target_link_libraries(${TARGET_NAME} PUBLIC
     tool_module
     im_common_protocol
     ${Boost_LIBRARIES}
+    ${Protobuf_LIBRARIES}
+    gRPC::grpc++
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
     $<$<CXX_COMPILER_ID:MSVC>:advapi32>
