@@ -221,25 +221,9 @@ void Gateway::initializeProtocolManager() {
         try {
             im::common::protocol::RouteRequest request;
 
-            auto* base_message = request.mutable_base_message();
-            // 消息ID格式包含连接类型和连接ID，用于区分不同连接类型的消息，
-            // 例如：messid_TCP_1234567890
-            base_message->set_message_id(message.getMessageId());
-            base_message->set_source_service("gateway");
-            base_message->set_target_service("routing");
-            base_message->set_message_type(message.getMessageType());
-            base_message->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
-            base_message->set_from_user_id(message.getFromUserId());
-            
-            std::unordered_map<std::string, std::string> metadata;
-            if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
-                for (const auto& [key, value] : metadata) {
-                    base_message->mutable_metadata()->set_key(key)->set_value(value);
-                }
-            }
-
+            messageConverter(message, request.mutable_base_message());
             // 设置网关ID和优先级
-            request.set_gateway_id("gateway_1"); // 实际应用中应该使用唯一的网关ID
+            request.set_gateway_id("gateway_1"); // todo 实际应用中应该使用唯一的网关ID
             request.set_priority(5); // 默认优先级
             
             // 发送路由请求
@@ -270,6 +254,28 @@ void Gateway::initializeProtocolManager() {
 
 void Gateway::initializeAuthCenter() {
     auth_center_ = std::make_shared<AuthCenter>();
+}
+
+void Gateway::messageConverter(protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
+    if (nullptr == pBaseMessage) {
+        return;
+    }
+
+    // 消息ID格式包含连接类型和连接ID，用于区分不同连接类型的消息，
+    // 例如：messid_TCP_1234567890
+    base_message->set_message_id(message.getMessageId());
+    base_message->set_source_service("gateway");
+    base_message->set_target_service("routing");
+    base_message->set_message_type(message.getMessageType());
+    base_message->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
+    base_message->set_from_user_id(message.getFromUserId());
+    
+    std::unordered_map<std::string, std::string> metadata;
+    if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
+        for (const auto& [key, value] : metadata) {
+            base_message->mutable_metadata()->set_key(key)->set_value(value);
+        }
+    }
 }
 
 } // namespace gateway
