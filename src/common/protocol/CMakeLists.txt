@@ -80,10 +80,18 @@ target_include_directories(im_common_protocol
 target_link_libraries(im_common_protocol
     ${Protobuf_LIBRARIES}
     gRPC::grpc++
+    absl::log_internal_check_op
+    absl::log_internal_message
+    absl::log_internal_nullguard
 )
 
 # 设置编译选项
 target_compile_features(im_common_protocol PRIVATE cxx_std_17)
+
+# 添加编译选项来减少警告
+target_compile_options(im_common_protocol PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unused-result>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-relocation>
 
 # 安装配置
 install(TARGETS im_common_protocol
