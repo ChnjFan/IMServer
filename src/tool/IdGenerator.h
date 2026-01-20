@@ -121,17 +121,17 @@ public:
      */
     GeneratorStats getStats() const;
 
-private:
-    /**
-     * @brief 私有构造函数（单例模式）
-     */
-    IdGenerator();
-
     /**
      * @brief 获取当前时间戳（毫秒）
      * @return 当前时间戳
      */
     uint64_t getCurrentTimestamp() const;
+
+private:
+    /**
+     * @brief 私有构造函数（单例模式）
+     */
+    IdGenerator();
 
     /**
      * @brief 获取进程ID

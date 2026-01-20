@@ -9,9 +9,9 @@ ProtocolManager::ProtocolManager(network::ConnectionManager& connection_manager)
     initializeParsers();
 }
 
-void ProtocolManager::registerHandler(network::ConnectionType message_type,
+void ProtocolManager::registerHandler(network::ConnectionType connection_type,
         std::function<void(const Message&, network::Connection::Ptr)> handler) {
-    message_router_.registerHandler(message_type, std::move(handler));
+    message_router_.registerHandler(connection_type, std::move(handler));
 }
 
 std::shared_ptr<Parser> ProtocolManager::getParser(network::ConnectionId connection_id, network::ConnectionType connection_type) {

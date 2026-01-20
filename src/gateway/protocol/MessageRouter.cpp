@@ -11,18 +11,18 @@ MessageRouter::MessageRouter() {
     executor_ = default_executor_;
 }
 
-void MessageRouter::registerHandler(network::ConnectionType message_type, MessageHandler handler) {
+void MessageRouter::registerHandler(network::ConnectionType connection_type, MessageHandler handler) {
     if (!handler) {
         throw std::invalid_argument("Handler cannot be null");
     }
     
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    handlers_[message_type] = std::move(handler);
+    handlers_[connection_type] = std::move(handler);
 }
 
-void MessageRouter::removeHandler(network::ConnectionType message_type) {
+void MessageRouter::removeHandler(network::ConnectionType connection_type) {
     std::unique_lock<std::shared_mutex> lock(mutex_);
-    handlers_.erase(message_type);
+    handlers_.erase(connection_type);
 }
 
 void MessageRouter::asyncRoute(const Message& message, network::Connection::Ptr connection) {

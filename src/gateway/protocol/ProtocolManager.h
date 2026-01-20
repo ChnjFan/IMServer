@@ -9,7 +9,7 @@
 #include <boost/asio.hpp>
 #include <boost/system/error_code.hpp>
 
-#include "network/ConnectionManager.h"
+#include "ConnectionManager.h"
 #include "Parser.h"
 #include "Message.h"
 #include "MessageRouter.h"
@@ -57,10 +57,10 @@ public:
 
     /**
      * @brief 注册消息处理器
-     * @param message_type 消息类型
+     * @param connection_type 消息类型
      * @param handler 消息处理器回调函数
      */
-    void registerHandler(network::ConnectionType message_type, std::function<void(const Message&, network::Connection::Ptr)> handler);
+    void registerHandler(network::ConnectionType connection_type, std::function<void(const Message&, network::Connection::Ptr)> handler);
 
     /**
      * @brief 获取协议解析器

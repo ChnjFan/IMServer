@@ -16,6 +16,7 @@
 #include "network/HttpServer.h"
 #include "protocol/Message.h"
 #include "protocol/ProtocolManager.h"
+#include "RoutingClient.h"
 
 namespace gateway {
 
@@ -27,6 +28,9 @@ struct GatewayConfig {
     uint16_t tcp_port = 8888;
     uint16_t websocket_port = 9999;
     uint16_t http_port = 8080;
+    
+    // 路由服务地址
+    std::string routing_server_address = "localhost:50051";
     
     // 最大连接数
     size_t max_connections = 10000;
@@ -102,16 +106,24 @@ private:
     void handleClose(network::ConnectionId connection_id, const boost::system::error_code& ec);
     
     // 初始化组件
+    void initializeRoutingClient();
     void initializeServers();
     void initializeConnectionManager();
     void initializeProtocolManager();
     void initializeAuthCenter();
-    
+
+    void checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_timer> timer);
+
+    void messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage);
+
     // 核心组件
     boost::asio::io_context& io_context_;
     std::shared_ptr<network::ConnectionManager> connection_manager_;
     std::shared_ptr<protocol::ProtocolManager> protocol_manager_;
     std::shared_ptr<AuthCenter> auth_center_;
+    std::unique_ptr<RoutingClient> routing_client_;
+
+    std::atomic<bool> routing_service_available_ = false;
     
     // 各种协议服务器
     std::shared_ptr<network::TcpServer> tcp_server_;

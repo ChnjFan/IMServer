@@ -3,9 +3,9 @@
 # 定义目标名称
 set(TARGET_NAME gateway)
 
-# 收集源文件
-file(GLOB_RECURSE SOURCES "*.cpp")
-file(GLOB_RECURSE HEADERS "*.h")
+# 收集源文件（只收集当前目录，不包括子目录）
+file(GLOB SOURCES "*.cpp")
+file(GLOB HEADERS "*.h")
 
 # 创建库
 add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
@@ -14,25 +14,41 @@ add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_17)
 target_compile_options(${TARGET_NAME} PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /MP>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -pedantic>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -pedantic -fPIC>
 )
+
+# 设置链接选项
+target_link_options(${TARGET_NAME} PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-no-pie>
+)
+
+# 添加子目录
+add_subdirectory(network)
+add_subdirectory(protocol)
 
 # 添加包含目录
 target_include_directories(${TARGET_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/src/network
-    ${CMAKE_SOURCE_DIR}/src/protocol
+    ${CMAKE_CURRENT_SOURCE_DIR}/network
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocol
     ${CMAKE_SOURCE_DIR}/src/tool
+    ${CMAKE_SOURCE_DIR}/src/common/protocol
+    ${CMAKE_SOURCE_DIR}/src/common/protocol/generated
     ${Boost_INCLUDE_DIRS}
 )
 
+find_package(Protobuf REQUIRED)
+find_package(gRPC REQUIRED)
+
 # 链接依赖
 target_link_libraries(${TARGET_NAME} PUBLIC
-    network
-    protocol
-    tool_module
     ${Boost_LIBRARIES}
+    ${Protobuf_LIBRARIES}
+    gRPC::grpc++
+    gateway_network
+    gateway_protocol
+    tool_module
+    im_common_protocol
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
     $<$<CXX_COMPILER_ID:MSVC>:advapi32>

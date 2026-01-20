@@ -1,12 +1,6 @@
 // 在WebSocketServer.h中添加is_open()方法到WebSocketSession类中
 #pragma once
 
-#include "ConnectionManager.h"
-#include "IdGenerator.h"
-#include <boost/beast.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/asio.hpp>
 #include <string>
 #include <unordered_set>
 #include <mutex>
@@ -14,6 +8,14 @@
 #include <functional>
 #include <memory>
 #include <queue>
+
+#include <boost/beast.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/asio.hpp>
+
+#include "ConnectionManager.h"
+#include "IdGenerator.h"
 
 namespace network {
 namespace beast = boost::beast;

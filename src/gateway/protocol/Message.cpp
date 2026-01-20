@@ -4,6 +4,7 @@
 #include "TcpMessage.h"
 #include "WebSocketMessage.h"
 #include "HttpMessage.h"
+#include "IdGenerator.h"
 
 namespace protocol {
 
@@ -12,6 +13,7 @@ namespace protocol {
 Message::Message() {
     connection_id_ = 0;
     connection_type_ = network::ConnectionType::TCP;
+    message_id_ = std::to_string(imserver::tool::IdGenerator::getInstance().generateMessageId());
 }
 
 Message::Message(const std::vector<char>& body,
@@ -20,6 +22,7 @@ Message::Message(const std::vector<char>& body,
     body_ = body;
     connection_id_ = connection_id;
     connection_type_ = connection_type;
+    message_id_ = std::to_string(imserver::tool::IdGenerator::getInstance().generateMessageId());
 }
 
 /**

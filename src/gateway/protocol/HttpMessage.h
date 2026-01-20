@@ -37,6 +37,7 @@ private:
     bool is_parsing_; // 是否正在解析
     HttpMessageHeader header_; // HTTP消息头
     std::vector<char> data_buffer_;     // 消息缓冲区，待处理数据
+    MessageType message_type_;          // 消息类型
     uint64_t expected_body_length_;          // 预期的消息体长度
     size_t current_chunk_size_;             // 当前分块大小
 
@@ -162,6 +163,12 @@ public:
      * @return network::ConnectionType 消息类型
      */
     network::ConnectionType getConnectionType() const override { return network::ConnectionType::HTTP; }
+
+    /**
+     * @brief 获取消息类型
+     * @return MessageType 消息类型
+     */
+    MessageType getMessageType() const override { return message_type_; }
 
 private:
     bool parseStartLine(const std::string& line);

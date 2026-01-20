@@ -3,6 +3,12 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <unordered_map>
+#include <functional>
+#include <boost/system/error_code.hpp>
+
+#include "RoutingClient.h"
+#include "JsonUtils.h"
 
 namespace gateway {
 
@@ -29,6 +35,7 @@ void Gateway::initialize(const GatewayConfig& config) {
 
     auth_center_->initialize(config.auth_config);
 
+    initializeRoutingClient();
     initializeServers();
     std::cout << "Gateway initialized with config:" << std::endl;
     std::cout << "  Max Connections: " << config.max_connections << std::endl;
@@ -179,6 +186,14 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
     }
 }
 
+void Gateway::initializeRoutingClient() {
+    routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
+
+    // 创建定时器并开始检查
+    auto timer = std::make_shared<boost::asio::steady_timer>(io_context_);
+    checkRoutingServiceStatus(timer);
+}
+
 void Gateway::initializeServers() {
     tcp_server_ = std::make_shared<network::TcpServer>(io_context_, *connection_manager_, "0.0.0.0", config_.tcp_port);
     websocket_server_ = std::make_shared<network::WebSocketServer>(io_context_, *connection_manager_, "0.0.0.0", config_.websocket_port);
@@ -194,10 +209,99 @@ void Gateway::initializeConnectionManager() {
 
 void Gateway::initializeProtocolManager() {
     protocol_manager_ = std::make_shared<protocol::ProtocolManager>(*connection_manager_);
+
+    auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
+        try {
+            std::cout << "[Gateway] Received message: " << connection->getId() << " - " << message.getMessageId() << std::endl;
+            if (!routing_service_available_) {
+                // 路由服务不可用，直接丢弃消息
+                std::cerr << "[Gateway] Routing service not available, message dropped: " << message.getMessageId() << std::endl;
+                return;
+            }
+
+            im::common::protocol::RouteRequest request;
+
+            messageConverter(message, request.mutable_base_message());
+            // 设置网关ID和优先级
+            request.set_gateway_id("gateway_1"); // todo 实际应用中应该使用唯一的网关ID
+            request.set_priority(5); // 默认优先级
+            
+            // 发送路由请求
+            im::common::protocol::RouteResponse response;
+            if (routing_client_->routeMessage(request, response)) {
+                if (response.error_code() == im::common::protocol::ErrorCode::ERROR_CODE_SUCCESS) {
+                    if (response.accepted()) {
+                        std::cout << "[Gateway] Message routed successfully: " << message.getMessageId() << std::endl;
+                    } else {
+                        std::cerr << "[Gateway] Message rejected by routing service: " << message.getMessageId() << std::endl;
+                    }
+                } else {
+                    std::cerr << "[Gateway] Routing failed with error: " << response.error_message() << std::endl;
+                }
+            } else {
+                std::cerr << "[Gateway] Failed to send routing request: " << message.getMessageId() << std::endl;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[Gateway] Exception in message handler: " << e.what() << std::endl;
+        }
+    };
+    
+    // 注册各种连接类型的处理器
+    protocol_manager_->registerHandler(network::ConnectionType::TCP, messageHandler);
+    protocol_manager_->registerHandler(network::ConnectionType::WebSocket, messageHandler);
+    protocol_manager_->registerHandler(network::ConnectionType::HTTP, messageHandler);
 }
 
 void Gateway::initializeAuthCenter() {
     auth_center_ = std::make_shared<AuthCenter>();
+}
+
+void Gateway::checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_timer> timer) {
+    im::common::protocol::StatusResponse status;
+    if (routing_client_->checkStatus(status)) {
+        std::cout << "[Gateway] Routing service status: " 
+                    << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
+        if (status.is_healthy()) {
+            routing_service_available_ = true;
+            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
+            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+        } else {
+            routing_service_available_ = false;
+            std::cerr << "[Gateway] Routing service unhealthy, messages will be dropped" << std::endl;
+        }
+    } else {
+        routing_service_available_ = false;
+        std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
+        // 30秒后再次检查路由服务状态
+        timer->expires_after(std::chrono::seconds(30));
+        auto self = this;
+        timer->async_wait([self, timer](const boost::system::error_code& ec) {
+            if (!ec) {
+                self->checkRoutingServiceStatus(timer);
+            }
+        });
+    }
+}
+
+void Gateway::messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
+    if (nullptr == pBaseMessage) {
+        return;
+    }
+
+    // 消息ID格式包含连接类型和连接ID，用于区分不同连接类型的消息，
+    // 例如：messid_TCP_1234567890
+    pBaseMessage->set_message_id(message.getMessageId());
+    pBaseMessage->set_source_service("gateway");
+    pBaseMessage->set_target_service("routing");
+    //todo 消息类型转换
+    pBaseMessage->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
+    
+    std::unordered_map<std::string, std::string> metadata;
+    if (imserver::tool::JsonUtils::jsonToMetadata(message.getPayload(), metadata)) {
+        for (const auto& [key, value] : metadata) {
+            (*pBaseMessage->mutable_metadata())[key] = value;
+        }
+    }
 }
 
 } // namespace gateway
