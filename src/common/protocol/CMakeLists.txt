@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(im_common_protocol)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../common.cmake)
+
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 
@@ -64,6 +66,11 @@ add_library(im_common_protocol
     ${GRPC_SRCS}
     ${GRPC_HDRS}
 )
+target_link_libraries(im_common_protocol
+  ${_REFLECTION}
+  ${_GRPC_GRPCPP}
+  ${_PROTOBUF_LIBPROTOBUF}
+)
 
 # 设置包含目录
 target_include_directories(im_common_protocol
@@ -77,8 +84,9 @@ target_include_directories(im_common_protocol
 target_link_libraries(im_common_protocol
     absl::flags
     absl::flags_parse
-    ${Protobuf_LIBRARIES}
-    gRPC::grpc++
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF}
 )
 
 # 设置编译选项
