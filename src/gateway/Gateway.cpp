@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <unordered_map>
+#include <boost/system/error_code.hpp>
 
 #include "RoutingClient.h"
 #include "JsonUtils.h"
@@ -187,18 +188,32 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
 void Gateway::initializeRoutingClient() {
     routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
 
-    // 检查路由服务状态
-    im::common::protocol::StatusResponse status;
-    if (routing_client_->checkStatus(status)) {
-        std::cout << "[Gateway] Routing service status: " 
-                  << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
-        if (status.is_healthy()) {
-            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
-            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+    // 定义状态检查函数
+    auto checkStatus = [this](std::shared_ptr<boost::asio::steady_timer> timer) {
+        im::common::protocol::StatusResponse status;
+        if (routing_client_->checkStatus(status)) {
+            std::cout << "[Gateway] Routing service status: " 
+                      << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
+            if (status.is_healthy()) {
+                std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
+                std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+            }
+            // 检查成功，不需要再定时检查
+        } else {
+            std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
+            // 30秒后再次检查
+            timer->expires_after(std::chrono::seconds(30));
+            timer->async_wait([this, timer](const boost::system::error_code& ec) {
+                if (!ec) {
+                    checkStatus(timer);
+                }
+            });
         }
-    } else {
-        std::cerr << "[Gateway] Failed to check routing service status" << std::endl;
-    }
+    };
+
+    // 创建定时器并开始检查
+    auto timer = std::make_shared<boost::asio::steady_timer>(io_context_);
+    checkStatus(timer);
 }
 
 void Gateway::initializeServers() {
