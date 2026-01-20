@@ -4,6 +4,7 @@
 #include <thread>
 #include <chrono>
 #include <unordered_map>
+#include <functional>
 #include <boost/system/error_code.hpp>
 
 #include "RoutingClient.h"
@@ -188,8 +189,12 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
 void Gateway::initializeRoutingClient() {
     routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
 
+    // 定义状态检查函数类型
+    using CheckStatusFunc = std::function<void(std::shared_ptr<boost::asio::steady_timer>)>;
+    
     // 定义状态检查函数
-    auto checkStatus = [this](std::shared_ptr<boost::asio::steady_timer> timer) {
+    CheckStatusFunc checkStatus;
+    checkStatus = [this, &checkStatus](std::shared_ptr<boost::asio::steady_timer> timer) {
         im::common::protocol::StatusResponse status;
         if (routing_client_->checkStatus(status)) {
             std::cout << "[Gateway] Routing service status: " 
@@ -198,12 +203,11 @@ void Gateway::initializeRoutingClient() {
                 std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
                 std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
             }
-            // 检查成功，不需要再定时检查
         } else {
             std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
             // 30秒后再次检查
             timer->expires_after(std::chrono::seconds(30));
-            timer->async_wait([this, timer](const boost::system::error_code& ec) {
+            timer->async_wait([this, &checkStatus, timer](const boost::system::error_code& ec) {
                 if (!ec) {
                     checkStatus(timer);
                 }
