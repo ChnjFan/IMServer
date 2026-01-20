@@ -112,6 +112,8 @@ private:
     void initializeProtocolManager();
     void initializeAuthCenter();
 
+    void checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_timer> timer);
+
     void messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage);
 
     // 核心组件
@@ -120,6 +122,8 @@ private:
     std::shared_ptr<protocol::ProtocolManager> protocol_manager_;
     std::shared_ptr<AuthCenter> auth_center_;
     std::unique_ptr<RoutingClient> routing_client_;
+
+    std::atomic<bool> routing_service_available_ = false;
     
     // 各种协议服务器
     std::shared_ptr<network::TcpServer> tcp_server_;

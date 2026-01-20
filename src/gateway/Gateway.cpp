@@ -192,32 +192,9 @@ void Gateway::initializeRoutingClient() {
     // 定义状态检查函数类型
     using CheckStatusFunc = std::function<void(std::shared_ptr<boost::asio::steady_timer>)>;
     
-    // 定义状态检查函数
-    CheckStatusFunc checkStatus;
-    checkStatus = [this, &checkStatus](std::shared_ptr<boost::asio::steady_timer> timer) {
-        im::common::protocol::StatusResponse status;
-        if (routing_client_->checkStatus(status)) {
-            std::cout << "[Gateway] Routing service status: " 
-                      << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
-            if (status.is_healthy()) {
-                std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
-                std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
-            }
-        } else {
-            std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
-            // 30秒后再次检查
-            timer->expires_after(std::chrono::seconds(30));
-            timer->async_wait([this, &checkStatus, timer](const boost::system::error_code& ec) {
-                if (!ec) {
-                    checkStatus(timer);
-                }
-            });
-        }
-    };
-
     // 创建定时器并开始检查
     auto timer = std::make_shared<boost::asio::steady_timer>(io_context_);
-    checkStatus(timer);
+    checkRoutingServiceStatus(timer);
 }
 
 void Gateway::initializeServers() {
@@ -239,6 +216,12 @@ void Gateway::initializeProtocolManager() {
     auto messageHandler = [this](const protocol::Message& message, network::Connection::Ptr connection) {
         try {
             std::cout << "[Gateway] Received message: " << connection->getId() << " - " << message.getMessageId() << std::endl;
+            if (!routing_service_available_) {
+                // 路由服务不可用，直接丢弃消息
+                std::cerr << "[Gateway] Routing service not available, message dropped: " << message.getMessageId() << std::endl;
+                return;
+            }
+
             im::common::protocol::RouteRequest request;
 
             messageConverter(message, request.mutable_base_message());
@@ -274,6 +257,33 @@ void Gateway::initializeProtocolManager() {
 
 void Gateway::initializeAuthCenter() {
     auth_center_ = std::make_shared<AuthCenter>();
+}
+
+void Gateway::checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_timer> timer) {
+    im::common::protocol::StatusResponse status;
+    if (routing_client_->checkStatus(status)) {
+        std::cout << "[Gateway] Routing service status: " 
+                    << (status.is_healthy() ? "healthy" : "unhealthy") << std::endl;
+        if (status.is_healthy()) {
+            routing_service_available_ = true;
+            std::cout << "[Gateway] Queue size: " << status.queue_size() << std::endl;
+            std::cout << "[Gateway] Uptime: " << status.uptime_seconds() << " seconds" << std::endl;
+        } else {
+            routing_service_available_ = false;
+            std::cerr << "[Gateway] Routing service unhealthy, messages will be dropped" << std::endl;
+        }
+    } else {
+        routing_service_available_ = false;
+        std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
+        // 30秒后再次检查路由服务状态
+        timer->expires_after(std::chrono::seconds(30));
+        auto self = this;
+        timer->async_wait([self, timer](const boost::system::error_code& ec) {
+            if (!ec) {
+                checkRoutingServiceStatus(timer);
+            }
+        });
+    }
 }
 
 void Gateway::messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
