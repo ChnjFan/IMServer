@@ -14,7 +14,12 @@ add_library(${TARGET_NAME} STATIC ${SOURCES} ${HEADERS})
 target_compile_features(${TARGET_NAME} PRIVATE cxx_std_17)
 target_compile_options(${TARGET_NAME} PRIVATE
     $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /MP>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -pedantic>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -Werror -pedantic -fPIC>
+)
+
+# 设置链接选项
+target_link_options(${TARGET_NAME} PRIVATE
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-no-pie>
 )
 
 # 添加子目录
