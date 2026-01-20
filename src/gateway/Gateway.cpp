@@ -189,9 +189,6 @@ void Gateway::handleClose(network::ConnectionId connection_id, const boost::syst
 void Gateway::initializeRoutingClient() {
     routing_client_ = std::make_unique<RoutingClient>(config_.routing_server_address);
 
-    // 定义状态检查函数类型
-    using CheckStatusFunc = std::function<void(std::shared_ptr<boost::asio::steady_timer>)>;
-    
     // 创建定时器并开始检查
     auto timer = std::make_shared<boost::asio::steady_timer>(io_context_);
     checkRoutingServiceStatus(timer);
@@ -280,7 +277,7 @@ void Gateway::checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_time
         auto self = this;
         timer->async_wait([self, timer](const boost::system::error_code& ec) {
             if (!ec) {
-                checkRoutingServiceStatus(timer);
+                self->checkRoutingServiceStatus(timer);
             }
         });
     }

@@ -50,6 +50,9 @@ add_subdirectory(src/tool)
 # 网关模块
 add_subdirectory(src/gateway)
 
+# 路由模块
+add_subdirectory(src/routing)
+
 # 其他模块将在各自目录中配置为单独进程
 # 核心模块（需要时添加）
 # add_subdirectory(src/core)
