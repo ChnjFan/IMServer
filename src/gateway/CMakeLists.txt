@@ -37,13 +37,13 @@ find_package(gRPC REQUIRED)
 
 # 链接依赖
 target_link_libraries(${TARGET_NAME} PUBLIC
+    ${Boost_LIBRARIES}
+    ${Protobuf_LIBRARIES}
+    gRPC::grpc++
     gateway_network
     gateway_protocol
     tool_module
     im_common_protocol
-    ${Boost_LIBRARIES}
-    ${Protobuf_LIBRARIES}
-    gRPC::grpc++
     $<$<CXX_COMPILER_ID:MSVC>:ws2_32>
     $<$<CXX_COMPILER_ID:MSVC>:mswsock>
     $<$<CXX_COMPILER_ID:MSVC>:advapi32>
