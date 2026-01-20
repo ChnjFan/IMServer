@@ -75,6 +75,8 @@ target_include_directories(im_common_protocol
 
 # 链接依赖
 target_link_libraries(im_common_protocol
+    absl::flags
+    absl::flags_parse
     ${Protobuf_LIBRARIES}
     gRPC::grpc++
 )
