@@ -1,6 +1,7 @@
 #include "LoadBalancer.h"
 #include <iostream>
 #include <random>
+#include <mutex>
 #include <algorithm>
 #include <chrono>
 
@@ -51,6 +52,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
 void LoadBalancer::updateInstanceStatus(const ServiceInstance& instance, bool healthy) {
     // 这里可以更新实例的健康状态
     // 实际实现中可能需要维护实例状态的映射
+    instance->healthy = healthy;
 }
 
 std::shared_ptr<ServiceInstance> LoadBalancer::selectRoundRobin(const std::vector<std::shared_ptr<ServiceInstance>>& instances, const std::string& service_name) {
