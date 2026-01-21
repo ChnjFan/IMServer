@@ -76,6 +76,3 @@ install(TARGETS im_routing_service
 
 # 安装配置文件
 install(DIRECTORY config/ DESTINATION etc/imserver/routing)
-
-# 添加到主构建系统
-add_subdirectory(${CMAKE_SOURCE_DIR}/src/common/protocol ${CMAKE_BINARY_DIR}/src/common/protocol)

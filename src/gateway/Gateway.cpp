@@ -292,6 +292,7 @@ void Gateway::messageConverter(const protocol::Message &message, im::common::pro
     // 例如：messid_TCP_1234567890
     pBaseMessage->set_message_id(message.getMessageId());
     pBaseMessage->set_source_service("gateway");
+    // 根据请求类型设置目标服务
     pBaseMessage->set_target_service("routing");
     //todo 消息类型转换
     pBaseMessage->set_timestamp(imserver::tool::IdGenerator::getInstance().getCurrentTimestamp());
