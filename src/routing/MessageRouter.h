@@ -10,6 +10,10 @@
 
 namespace routing {
 
+using im::common::protocol::RouteRequest;
+using im::common::protocol::RouteResponse;
+using im::common::protocol::StatusResponse;
+
 /**
  * @brief 服务实例类
  * 表示一个可路由的服务实例
@@ -43,9 +47,6 @@ class MessageRouter {
 using ServiceInstancePtr = std::shared_ptr<ServiceInstance>;
 using ServiceInstanceList = std::vector<ServiceInstancePtr>;
 using ServiceInstanceMap = std::unordered_map<std::string, ServiceInstanceList>;
-using im::common::protocol::RouteRequest;
-using im::common::protocol::RouteResponse;
-using im::common::protocol::StatusResponse;
 
 private:
     // 服务实例映射：服务名称 -> 服务实例列表
@@ -74,9 +75,9 @@ public:
     /**
      * @brief 路由消息
      * @param request 路由请求
-     * @return 路由响应
+     * @param response 路由响应
      */
-    RouteResponse routeMessage(const RouteRequest* request, RouteResponse *response);
+    void routeMessage(const RouteRequest* request, RouteResponse *response);
 
     /**
      * @brief 注册服务实例

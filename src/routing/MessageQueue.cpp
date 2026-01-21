@@ -105,34 +105,16 @@ void MessageQueue::workerFunction() {
     while (!stop_) {
         QueueItem item;
         if (dequeue(item)) {
-            // 处理消息
-            if (processor_) {
-                try {
-                    auto response = processor_(item.request);
-                    if (item.callback) {
-                        item.callback(response);
-                    }
-                } catch (const std::exception& e) {
-                    std::cerr << "Error processing message: " << e.what() << std::endl;
-                    
-                    // 发送错误响应
-                    im::common::protocol::RouteResponse response;
-                    response.set_message_id(item.request.base_message().message_id());
-                    response.set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_INTERNAL_ERROR);
-                    response.set_error_message("Internal error processing message");
-                    response.set_accepted(false);
-                    
-                    if (item.callback) {
-                        item.callback(response);
-                    }
-                }
-            }
+            // 消息队列现在只负责存储消息
+            // 处理逻辑由MessageRouter负责
+            std::cout << "Message dequeued, waiting for processing..." << std::endl;
         }
     }
 }
 
+// 暂时不使用处理器功能
 void MessageQueue::setProcessor(MessageProcessor processor) {
-    processor_ = std::move(processor);
+    // 预留接口，暂不实现
 }
 
 } // namespace routing

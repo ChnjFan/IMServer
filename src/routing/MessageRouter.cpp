@@ -20,12 +20,6 @@ MessageRouter::MessageRouter()
     // 启动消息队列
     message_queue_->start(4);
     
-    // 设置消息处理器
-    auto processor = [this](const im::common::protocol::RouteRequest& request) {
-        return routeMessageInternal(request);
-    };
-    message_queue_->setProcessor(processor);
-    
     // 注册一些默认服务实例（用于测试）
     registerDefaultServices();
 }
@@ -41,7 +35,7 @@ MessageRouter::~MessageRouter() {
     delete metrics_;
 }
 
-RouteResponse MessageRouter::routeMessage(const RouteRequest *request, RouteResponse *response) {
+void MessageRouter::routeMessage(const RouteRequest *request, RouteResponse *response) {
     auto start = std::chrono::steady_clock::now();
     message_count_++;
     metrics_->incrementCounter(Metrics::MESSAGE_COUNT);
@@ -52,7 +46,7 @@ RouteResponse MessageRouter::routeMessage(const RouteRequest *request, RouteResp
         // 记录处理时间
         metrics_->recordTimer(Metrics::MESSAGE_LATENCY, start);
         
-        if (response.accepted()) {
+        if (response->accepted()) {
             metrics_->incrementCounter(Metrics::ROUTE_COUNT);
         } else {
             metrics_->incrementCounter(Metrics::ROUTE_ERROR_COUNT);
@@ -112,7 +106,7 @@ std::unordered_map<std::string, int64_t> MessageRouter::getStats() {
 
 void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteResponse *response) {
     if (nullptr == request || nullptr == response) {
-        static_assert(false, "request or response is nullptr");
+        std::cerr << "request or response is nullptr" << std::endl;
         return;
     }
 
@@ -145,9 +139,6 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
         return;
     }
 
-    // todo 这里可以添加实际的消息发送逻辑
-    // todo 例如，通过网络发送消息到选定的服务实例
-    
     // 模拟消息路由成功
     std::cout << "Routing message to service: " << target_service 
               << " instance: " << selected_instance->service_id 
