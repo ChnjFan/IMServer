@@ -113,7 +113,7 @@ void MessageQueue::workerFunction() {
 }
 
 // 暂时不使用处理器功能
-void MessageQueue::setProcessor(MessageProcessor processor) {
+void MessageQueue::setProcessor([[maybe_unused]] MessageProcessor processor) {
     // 预留接口，暂不实现
 }
 
