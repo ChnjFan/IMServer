@@ -112,7 +112,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectLeastConn(const std::vector
     return selectLeastLoad(instances);
 }
 
-std::shared_ptr<ServiceInstance> LoadBalancer::selectIpHash(const std::vector<std::shared_ptr<ServiceInstance>>& instances, const std::string& ip) {
+std::shared_ptr<ServiceInstance> LoadBalancer::selectIpHash(const std::vector<std::shared_ptr<ServiceInstance>>& instances,[[maybe_unused]] const std::string& ip) {
     // 暂时使用随机策略
     return selectRandom(instances);
 }
