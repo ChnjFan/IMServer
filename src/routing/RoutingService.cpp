@@ -84,7 +84,7 @@ grpc::ServerUnaryReactor* RoutingService::RouteMessage(grpc::CallbackServerConte
                                          RouteResponse* response) {
     grpc::ServerUnaryReactor* reactor = context->DefaultReactor();
     if (nullptr == reactor) {
-        static_assert(false, "DefaultReactor is nullptr");
+        std::cerr << "DefaultReactor is nullptr" << std::endl;
         return nullptr;
     }
 
@@ -106,7 +106,7 @@ grpc::ServerUnaryReactor* RoutingService::RouteMessage(grpc::CallbackServerConte
 }
 
 grpc::ServerBidiReactor<RouteRequest, RouteResponse>* RoutingService::BatchRouteMessages(
-                                         grpc::CallbackServerContext* context) {
+                                         [[maybe_unused]] grpc::CallbackServerContext* context) {
     class Reactor : public grpc::ServerBidiReactor<RouteRequest, RouteResponse> {
      public:
       explicit Reactor(MessageRouter* router) : message_router_(router) {
@@ -151,7 +151,7 @@ grpc::ServerUnaryReactor* RoutingService::CheckStatus(grpc::CallbackServerContex
 
     grpc::ServerUnaryReactor* reactor = context->DefaultReactor();
     if (nullptr == reactor) {
-        static_assert(false, "DefaultReactor is nullptr");
+        std::cerr << "DefaultReactor is nullptr" << std::endl;
         return nullptr;
     }
 

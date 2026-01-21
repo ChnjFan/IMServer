@@ -2,7 +2,10 @@
 
 #include <memory>
 #include <string>
+#include <thread>
 
+#include <grpcpp/server_builder.h>
+#include <grpcpp/server_context.h>
 #include "gateway_routing.grpc.pb.h"
 #include "MessageRouter.h"
 
