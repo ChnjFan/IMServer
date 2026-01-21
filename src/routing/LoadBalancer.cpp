@@ -49,7 +49,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
     }
 }
 
-void LoadBalancer::updateInstanceStatus(const ServiceInstance& instance, bool healthy) {
+void LoadBalancer::updateInstanceStatus(ServiceInstance& instance, bool healthy) {
     // 这里可以更新实例的健康状态
     // 实际实现中可能需要维护实例状态的映射
     instance.healthy = healthy;
