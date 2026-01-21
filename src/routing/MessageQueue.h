@@ -6,6 +6,7 @@
 #include <atomic>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include "gateway_routing.pb.h"
 
