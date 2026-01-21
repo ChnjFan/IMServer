@@ -80,7 +80,7 @@ void MessageRouter::unregisterService(const std::string& service_id) {
     metrics_->decrementCounter(Metrics::SERVICE_COUNT);
 }
 
-ServiceInstanceList MessageRouter::getServiceInstances(const std::string& service_name) {
+MessageRouter::ServiceInstanceList MessageRouter::getServiceInstances(const std::string& service_name) {
     return discovery_->getServiceInstances(service_name);
 }
 
