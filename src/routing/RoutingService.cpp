@@ -145,7 +145,7 @@ grpc::ServerBidiReactor<RouteRequest, RouteResponse>* RoutingService::BatchRoute
 }
 
 grpc::ServerUnaryReactor* RoutingService::CheckStatus(grpc::CallbackServerContext* context, 
-                                         const google::protobuf::Empty* request, 
+                                         [[maybe_unused]] const google::protobuf::Empty* request, 
                                          StatusResponse* response) {
     message_router_->checkStatus(response);
 
