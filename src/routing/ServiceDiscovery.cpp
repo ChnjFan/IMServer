@@ -94,7 +94,7 @@ void ServiceDiscovery::heartbeat() {
     }
 }
 
-bool ServiceDiscovery::checkServiceHealth(const ServiceInstance& instance) {
+bool ServiceDiscovery::checkServiceHealth([[maybe_unused]] const ServiceInstance& instance) {
     // 这里实现健康检查逻辑
     // 实际实现中可能需要：
     // 1. 发送健康检查请求到服务实例
