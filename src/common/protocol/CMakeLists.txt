@@ -60,21 +60,8 @@ foreach(PROTO_FILE ${PROTO_FILES})
 endforeach()
 
 # 添加客户端和服务端管理代码
-set(CLIENT_SRCS
-    client/ServiceClientManager.cpp
-)
-
-set(CLIENT_HDRS
-    client/ServiceClientManager.h
-)
-
-set(SERVER_SRCS
-    server/ServiceServerManager.cpp
-)
-
-set(SERVER_HDRS
-    server/ServiceServerManager.h
-)
+file(GLOB SOURCES "*.cpp")
+file(GLOB HEADERS "*.h")
 
 # 创建公共协议库
 add_library(im_common_protocol

@@ -3,7 +3,6 @@
 # 生成gRPC代码的shell脚本
 
 # 设置变量
-PROTO_FILE="gateway_routing.proto"
 GEN_DIR="generated"
 PROTOC="protoc"
 GRPC_PLUGIN="grpc_cpp_plugin"
@@ -48,21 +47,38 @@ if [ ! -d "$GEN_DIR" ]; then
     echo "Created directory: $GEN_DIR"
 fi
 
-# 生成protobuf代码
-echo "Generating protobuf code..."
-$PROTOC -I=. --cpp_out="$GEN_DIR" "$PROTO_FILE"
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to generate protobuf code"
+# 查找当前目录下所有的proto文件
+PROTO_FILES=$(find . -name "*.proto" -type f | grep -v "$GEN_DIR")
+
+if [ -z "$PROTO_FILES" ]; then
+    echo "Error: No .proto files found in current directory"
     exit 1
 fi
+
+echo "Found proto files:"
+echo "$PROTO_FILES"
+
+# 生成protobuf代码
+echo "\nGenerating protobuf code..."
+for proto_file in $PROTO_FILES; do
+    echo "Processing $proto_file..."
+    $PROTOC -I=. --cpp_out="$GEN_DIR" "$proto_file"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to generate protobuf code for $proto_file"
+        exit 1
+    fi
+done
 
 # 生成gRPC代码
-echo "Generating gRPC code..."
-$PROTOC -I=. --grpc_out="$GEN_DIR" --plugin=protoc-gen-grpc="$GRPC_PLUGIN" "$PROTO_FILE"
-if [ $? -ne 0 ]; then
-    echo "Error: Failed to generate gRPC code"
-    exit 1
-fi
+echo "\nGenerating gRPC code..."
+for proto_file in $PROTO_FILES; do
+    echo "Processing $proto_file..."
+    $PROTOC -I=. --grpc_out="$GEN_DIR" --plugin=protoc-gen-grpc="$GRPC_PLUGIN" "$proto_file"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to generate gRPC code for $proto_file"
+        exit 1
+    fi
+done
 
-echo "Success: Generated gRPC code in $GEN_DIR"
+echo "\nSuccess: Generated gRPC code in $GEN_DIR"
 ls -la "$GEN_DIR"
