@@ -3,7 +3,9 @@
 #include <vector>
 #include <string>
 #include <memory>
+
 #include "MessageRouter.h"
+#include "ServiceInstance.h"
 
 namespace routing {
 

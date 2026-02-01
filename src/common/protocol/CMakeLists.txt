@@ -32,7 +32,7 @@ set(PROTO_GEN_DIR ${CMAKE_CURRENT_SOURCE_DIR}/generated)
 file(MAKE_DIRECTORY ${PROTO_GEN_DIR})
 
 # 定义protobuf文件
-set(PROTO_FILES gateway_routing.proto)
+set(PROTO_FILES gateway_routing.proto service_user.proto common_messages.proto)
 
 # 设置protobuf输出目录
 set(protobuf_generate_PROTOC_OUT_DIR ${PROTO_GEN_DIR})
@@ -59,12 +59,33 @@ foreach(PROTO_FILE ${PROTO_FILES})
     )
 endforeach()
 
+# 添加客户端和服务端管理代码
+set(CLIENT_SRCS
+    client/ServiceClientManager.cpp
+)
+
+set(CLIENT_HDRS
+    client/ServiceClientManager.h
+)
+
+set(SERVER_SRCS
+    server/ServiceServerManager.cpp
+)
+
+set(SERVER_HDRS
+    server/ServiceServerManager.h
+)
+
 # 创建公共协议库
 add_library(im_common_protocol
     ${PROTO_SRCS}
     ${PROTO_HDRS}
     ${GRPC_SRCS}
     ${GRPC_HDRS}
+    ${CLIENT_SRCS}
+    ${CLIENT_HDRS}
+    ${SERVER_SRCS}
+    ${SERVER_HDRS}
 )
 target_link_libraries(im_common_protocol
   ${_REFLECTION}
@@ -76,6 +97,7 @@ target_link_libraries(im_common_protocol
 target_include_directories(im_common_protocol
     PUBLIC
         ${CMAKE_CURRENT_BINARY_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}
         ${Protobuf_INCLUDE_DIRS}
         ${gRPC_INCLUDE_DIRS}
 )

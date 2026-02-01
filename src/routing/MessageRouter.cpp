@@ -157,10 +157,10 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
 void MessageRouter::registerDefaultServices() {
     // 注册默认的服务实例（用于测试）
     std::vector<ServiceInstance> default_services = {
-        ServiceInstance("service_chat_1", "chat", "localhost", 50051),
-        ServiceInstance("service_chat_2", "chat", "localhost", 50052),
-        ServiceInstance("service_notify_1", "notification", "localhost", 50061),
-        ServiceInstance("service_command_1", "command", "localhost", 50071)
+        ServiceInstance("service_chat_1", "chat", "localhost", 50051, ServiceType::GRPC),
+        ServiceInstance("service_chat_2", "chat", "localhost", 50052, ServiceType::GRPC),
+        ServiceInstance("service_notify_1", "notification", "localhost", 50061, ServiceType::GRPC),
+        ServiceInstance("service_command_1", "command", "localhost", 50071, ServiceType::GRPC)
     };
     
     for (const auto& service : default_services) {

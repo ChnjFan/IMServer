@@ -15,31 +15,6 @@ using im::common::protocol::RouteResponse;
 using im::common::protocol::StatusResponse;
 
 /**
- * @brief 服务实例类
- * 表示一个可路由的服务实例
- */
-class ServiceInstance {
-public:
-    std::string service_id;
-    std::string service_name;
-    std::string host;
-    int port;
-    bool healthy;
-    int load;
-    std::unordered_map<std::string, std::string> metadata;
-    
-    ServiceInstance() : port(0), healthy(false), load(0) {}
-    
-    ServiceInstance(std::string id, std::string name, std::string h, int p)
-        : service_id(std::move(id)),
-          service_name(std::move(name)),
-          host(std::move(h)),
-          port(p),
-          healthy(true),
-          load(0) {}
-};
-
-/**
  * @brief 消息路由器类
  * 负责根据消息类型和目标服务进行路由
  */

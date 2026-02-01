@@ -13,6 +13,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/src/common/protocol
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
+    ${CMAKE_SOURCE_DIR}/src/common/protocol/client
 )
 
 # 查找依赖

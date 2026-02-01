@@ -37,6 +37,7 @@ bool ServiceDiscovery::registerServiceInstance(const ServiceInstance& instance) 
         // 更新现有实例
         (*it)->host = instance.host;
         (*it)->port = instance.port;
+        (*it)->type = instance.type;
         (*it)->healthy = true;
         (*it)->metadata = instance.metadata;
         return true;
