@@ -77,6 +77,14 @@ public:
      * @param timeout 超时时间（秒）
      */
     void setServiceTimeout(int timeout) { service_timeout_ = timeout; }
+
+private:
+    /**
+     * @brief 检查用户服务健康状态
+     * @param instance 用户服务实例
+     * @return 是否健康
+     */
+    bool checkUserServiceHealth(const ServiceInstance& instance);
 };
 
 } // namespace routing

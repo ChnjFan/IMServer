@@ -16,17 +16,26 @@ struct ServiceConfig {
     int keepalive_timeout_s;           // 保活包超时时间（秒）
 };
 
+enum class ServiceType {
+    Routing,
+    User,
+    Pay
+};
+
+
 class ServiceInstance {
 private:
     ServiceConfig config;
     bool healthy;
+    ServiceType type;
     int load;
     
 public:
-    ServiceInstance() : port(0), healthy(false), load(0) {}
-    ServiceInstance(ServiceConfig config) : config(config), healthy(false), load(0) {}
-    ServiceInstance(ServiceConfig &&config) : config(std::move(config)), healthy(false), load(0) {}
+    ServiceInstance() : type(ServiceType::Routing), healthy(false), load(0) {}
+    ServiceInstance(ServiceConfig config, ServiceType type) : config(config), type(type), healthy(false), load(0) {}
+    ServiceInstance(ServiceConfig &&config, ServiceType type) : config(std::move(config)), type(type), healthy(false), load(0) {}
 
+    ServiceType getType() { return type; }
     ServiceConfig& getConfig() { return config; }
     std::string getServiceName() { return config.name; }
     std::string getServiceId() { return config.id; }

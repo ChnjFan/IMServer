@@ -139,6 +139,9 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
         return;
     }
 
+    // 路由消息到选中的服务实例
+    routeMessageToInstance(request, response, selected_instance);
+
     // 模拟消息路由成功
     std::cout << "Routing message to service: " << target_service 
               << " instance: " << selected_instance->service_id 
@@ -154,13 +157,62 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
     response->set_accepted(true);
 }
 
-void MessageRouter::registerDefaultServices() {
+void MessageRouter::routeMessageToInstance(const RouteRequest *request, RouteResponse *response, const ServiceInstancePtr &instance) {
+    if (nullptr == request || nullptr == response || nullptr == instance) {
+        std::cerr << "request, response or instance is nullptr" << std::endl;
+        return;
+    }
+
+    switch (instance->getType()) {
+        case ServiceType::Routing:
+            break;
+        case ServiceType::User:
+            routeMessageToUserService(request, response, instance);
+            break;
+        case ServiceType::Pay:
+            break;
+        default:
+            std::cerr << "Unknown service type: " << static_cast<int>(instance->getType()) << std::endl;
+            return;
+    }
+}
+
+void MessageRouter::routeMessageToUserService(const RouteRequest *request, RouteResponse *response, const ServiceInstancePtr &instance) {
+    if (nullptr == request || nullptr == response || nullptr == instance) {
+        std::cerr << "request, response or instance is nullptr" << std::endl;
+        return;
+    }
+
+    // 调用用户服务的Stub
+    auto user_stub = ServiceFactory::GetUserServiceStub(instance->config);
+    if (nullptr == user_stub) {
+        std::cerr << "Failed to create user service stub" << std::endl;
+        return;
+    }
+
+    switch (request->base_message().message_type())
+    {
+    case im::common::protocol::MessageType::MESSAGE_TYPE_LOGIN:
+        routerMessageToUserServiceLogin(request, response, user_stub);
+        break;
+    default:
+        break;
+    }
+}
+
+void MessageRouter::registerDefaultServices()
+{
     // 注册默认的服务实例（用于测试）
+    ServiceConfig serviceUserConfig = {
+        .name = "service_user",
+        .id = "service_user_1",
+        .target = "localhost:50053",
+        .timeout = std::chrono::milliseconds(5000),
+        .keepalive_time_s = 30,
+        .keepalive_timeout_s = 10
+    };
     std::vector<ServiceInstance> default_services = {
-        ServiceInstance("service_chat_1", "chat", "localhost", 50051, ServiceType::GRPC),
-        ServiceInstance("service_chat_2", "chat", "localhost", 50052, ServiceType::GRPC),
-        ServiceInstance("service_notify_1", "notification", "localhost", 50061, ServiceType::GRPC),
-        ServiceInstance("service_command_1", "command", "localhost", 50071, ServiceType::GRPC)
+        ServiceInstance(serviceUserConfig, ServiceType::User),
     };
     
     for (const auto& service : default_services) {

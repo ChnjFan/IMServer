@@ -9,6 +9,7 @@ enum MessageType {
   MESSAGE_TYPE_NOTIFICATION = 2;
   MESSAGE_TYPE_COMMAND = 3;
   MESSAGE_TYPE_ACK = 4;
+  MESSAGE_TYPE_LOGIN = 5;
 }
 
 // 错误码枚举

@@ -93,6 +93,22 @@ private:
      */
     void routeMessageInternal(const RouteRequest* request, RouteResponse *response);
 
+    /**
+     * @brief 路由消息到选中的服务实例
+     * @param request 路由请求
+     * @param response 路由响应
+     * @param instance 选中的服务实例
+     */
+    void routeMessageToInstance(const RouteRequest* request, RouteResponse *response, const ServiceInstancePtr& instance);
+
+    /**
+     * @brief 路由消息到用户服务实例
+     * @param request 路由请求
+     * @param response 路由响应
+     * @param instance 选中的用户服务实例
+     */
+    void routeMessageToUserService(const RouteRequest* request, RouteResponse *response, const ServiceInstancePtr& instance);
+
     void registerDefaultServices();
 };
 
