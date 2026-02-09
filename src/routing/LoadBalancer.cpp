@@ -45,7 +45,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
             // 暂时使用随机策略
             return selectRandom(healthy_instances);
         default:
-            return selectRoundRobin(healthy_instances, healthy_instances[0]->service_name);
+            return selectRoundRobin(healthy_instances, healthy_instances[0]->getServiceName());
     }
 }
 

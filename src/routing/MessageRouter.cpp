@@ -61,7 +61,8 @@ void MessageRouter::routeMessage(const RouteRequest *request, RouteResponse *res
         metrics_->recordTimer(Metrics::MESSAGE_LATENCY, start);
         
         // 返回错误响应
-        response->set_message_id(request->base_message().message_id());
+        im::common::protocol::BaseMessage base_message = request->base_message();
+        response->set_base_message(base_message);
         response->set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_INTERNAL_ERROR);
         response->set_error_message(std::string("Internal error: ") + e.what());
         response->set_accepted(false);
@@ -110,10 +111,11 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
         return;
     }
 
-    response->set_message_id(request->base_message().message_id());
+    im::common::protocol::BaseMessage base_message = request->base_message();
+    response->set_base_message(base_message);
 
     // 检查目标服务
-    const std::string& target_service = request->base_message().target_service();
+    const std::string& target_service = base_message.target_service();
     if (target_service.empty()) {
         response->set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_INVALID_REQUEST);
         response->set_error_message("Target service is required");
@@ -144,12 +146,12 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
 
     // 模拟消息路由成功
     std::cout << "Routing message to service: " << target_service 
-              << " instance: " << selected_instance->service_id 
-              << " host: " << selected_instance->host 
-              << " port: " << selected_instance->port << std::endl;
+              << " instance: " << selected_instance->getServiceId() 
+              << " host: " << selected_instance->getTarget() 
+              << " port: " << selected_instance->getConfig().port << std::endl;
     
     // 更新服务实例负载
-    selected_instance->load++;
+    selected_instance->setLoad(selected_instance->getLoad() + 1);
     
     // 返回成功响应
     response->set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_SUCCESS);
@@ -184,7 +186,7 @@ void MessageRouter::routeMessageToUserService(const RouteRequest *request, Route
     }
 
     // 调用用户服务的Stub
-    auto user_stub = ServiceFactory::GetUserServiceStub(instance->config);
+    auto user_stub = ServiceFactory::GetUserServiceStub(instance->getConfig());
     if (nullptr == user_stub) {
         std::cerr << "Failed to create user service stub" << std::endl;
         return;
