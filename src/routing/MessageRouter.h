@@ -7,6 +7,7 @@
 #include <string>
 
 #include "gateway_routing.pb.h"
+#include "service_user.grpc.pb.h"
 
 #include "ServiceInstance.h"
 

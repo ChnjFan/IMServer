@@ -31,11 +31,18 @@ private:
     int load;
     
 public:
-    ServiceInstance() : type(ServiceType::Routing), healthy(false), load(0) {}
+    ServiceInstance() : healthy(false), type(ServiceType::Routing), load(0) {}
     ServiceInstance(ServiceConfig config, ServiceType type) : config(config), healthy(false), type(type), load(0) {}
     ServiceInstance(ServiceConfig &&config, ServiceType type) : config(std::move(config)), healthy(false), type(type), load(0) {}
+    
+    bool isHealthy() { return healthy; }
+    void setHealthy(bool value) { healthy = value; }
 
     ServiceType getType() { return type; }
+
+    int getLoad() { return load; }
+    void setLoad(int value) { load = value; }
+
     ServiceConfig& getConfig() { return config; }
     std::string getServiceName() { return config.name; }
     std::string getServiceId() { return config.id; }
