@@ -8,6 +8,8 @@
 
 #include "gateway_routing.pb.h"
 
+#include "ServerInstance.h"
+
 namespace routing {
 
 using im::common::protocol::RouteRequest;

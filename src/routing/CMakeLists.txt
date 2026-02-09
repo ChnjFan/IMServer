@@ -23,21 +23,8 @@ find_package(Boost REQUIRED COMPONENTS system thread)
 find_package(OpenSSL REQUIRED)
 
 # 源文件
-set(SOURCE_FILES
-    RoutingService.cpp
-    RoutingService.h
-    MessageRouter.cpp
-    MessageRouter.h
-    ServiceDiscovery.cpp
-    ServiceDiscovery.h
-    LoadBalancer.cpp
-    LoadBalancer.h
-    MessageQueue.cpp
-    MessageQueue.h
-    Metrics.cpp
-    Metrics.h
-    main.cpp
-)
+file(GLOB SOURCES "*.cpp")
+file(GLOB HEADERS "*.h")
 
 # 链接库
 set(LIBS
@@ -51,7 +38,7 @@ set(LIBS
 )
 
 # 创建可执行文件
-add_executable(im_routing_service ${SOURCE_FILES})
+add_executable(im_routing_service ${SOURCES} ${HEADERS})
 
 # 链接依赖
 target_link_libraries(im_routing_service ${LIBS})
