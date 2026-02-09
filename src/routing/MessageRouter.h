@@ -109,6 +109,8 @@ private:
      */
     void routeMessageToUserService(const RouteRequest* request, RouteResponse *response, const ServiceInstancePtr& instance);
 
+    void routerMessageToUserServiceLogin(const RouteRequest* request, RouteResponse *response, std::unique_ptr<im::common::protocol::UserService::Stub> &user_stub);
+
     void registerDefaultServices();
 };
 

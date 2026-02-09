@@ -200,6 +200,35 @@ void MessageRouter::routeMessageToUserService(const RouteRequest *request, Route
     }
 }
 
+void MessageRouter::routerMessageToUserServiceLogin(const RouteRequest *request, RouteResponse *response, std::unique_ptr<im::common::protocol::UserService::Stub> &user_stub)
+{
+    if (nullptr == request || nullptr == response || nullptr == user_stub) {
+        std::cerr << "request, response or user_stub is nullptr" << std::endl;
+        return;
+    }
+
+    // 调用用户服务的Login方法
+    im::common::protocol::LoginRequest login_request;
+    im::common::protocol::LoginResponse login_response;
+    grpc::ClientContext context;
+    grpc::Status status = user_stub->Login(&context, login_request, &login_response);
+    if (!status.ok()) {
+        std::cerr << "UserService Login failed: " << status.error_message() << std::endl;
+        return;
+    }
+
+    // 处理登录响应
+    if (login_response.error_code() == im::common::protocol::ErrorCode::ERROR_CODE_SUCCESS) {
+        response->set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_SUCCESS);
+        response->set_error_message("Login successful");
+        response->set_accepted(true);
+    } else {
+        response->set_error_code(login_response.error_code());
+        response->set_error_message(login_response.error_message());
+        response->set_accepted(false);
+    }
+}
+
 void MessageRouter::registerDefaultServices()
 {
     // 注册默认的服务实例（用于测试）
