@@ -1,6 +1,7 @@
 #include "LoadBalancer.h"
 #include <iostream>
 #include <random>
+#include <mutex>
 #include <algorithm>
 #include <chrono>
 
@@ -20,7 +21,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
     // 过滤健康的实例
     std::vector<std::shared_ptr<ServiceInstance>> healthy_instances;
     for (const auto& instance : instances) {
-        if (instance->healthy) {
+        if (instance->isHealthy()) {
             healthy_instances.push_back(instance);
         }
     }
@@ -32,7 +33,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
     // 根据策略选择实例
     switch (strategy_) {
         case LoadBalanceStrategy::ROUND_ROBIN:
-            return selectRoundRobin(healthy_instances, healthy_instances[0]->service_name);
+            return selectRoundRobin(healthy_instances, healthy_instances[0]->getServiceName());
         case LoadBalanceStrategy::RANDOM:
             return selectRandom(healthy_instances);
         case LoadBalanceStrategy::LEAST_LOAD:
@@ -44,13 +45,14 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectInstance(const std::vector<
             // 暂时使用随机策略
             return selectRandom(healthy_instances);
         default:
-            return selectRoundRobin(healthy_instances, healthy_instances[0]->service_name);
+            return selectRoundRobin(healthy_instances, healthy_instances[0]->getServiceName());
     }
 }
 
-void LoadBalancer::updateInstanceStatus(const ServiceInstance& instance, bool healthy) {
+void LoadBalancer::updateInstanceStatus(ServiceInstance& instance, bool healthy) {
     // 这里可以更新实例的健康状态
     // 实际实现中可能需要维护实例状态的映射
+    instance.setHealthy(healthy);
 }
 
 std::shared_ptr<ServiceInstance> LoadBalancer::selectRoundRobin(const std::vector<std::shared_ptr<ServiceInstance>>& instances, const std::string& service_name) {
@@ -93,11 +95,11 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectLeastLoad(const std::vector
 
     // 找到负载最小的实例
     auto min_instance = instances[0];
-    int min_load = instances[0]->load;
+    int min_load = instances[0]->getLoad();
 
     for (size_t i = 1; i < instances.size(); i++) {
-        if (instances[i]->load < min_load) {
-            min_load = instances[i]->load;
+        if (instances[i]->getLoad() < min_load) {
+            min_load = instances[i]->getLoad();
             min_instance = instances[i];
         }
     }
@@ -110,7 +112,7 @@ std::shared_ptr<ServiceInstance> LoadBalancer::selectLeastConn(const std::vector
     return selectLeastLoad(instances);
 }
 
-std::shared_ptr<ServiceInstance> LoadBalancer::selectIpHash(const std::vector<std::shared_ptr<ServiceInstance>>& instances, const std::string& ip) {
+std::shared_ptr<ServiceInstance> LoadBalancer::selectIpHash(const std::vector<std::shared_ptr<ServiceInstance>>& instances,[[maybe_unused]] const std::string& ip) {
     // 暂时使用随机策略
     return selectRandom(instances);
 }

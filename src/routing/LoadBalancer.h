@@ -47,7 +47,7 @@ public:
      * @param instance 服务实例
      * @param healthy 是否健康
      */
-    void updateInstanceStatus(const ServiceInstance& instance, bool healthy);
+    void updateInstanceStatus(ServiceInstance& instance, bool healthy);
 
     /**
      * @brief 设置负载均衡策略

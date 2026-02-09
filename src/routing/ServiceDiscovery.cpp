@@ -2,6 +2,12 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <mutex>
+#include <grpc++/grpc++.h>
+
+#include "common_messages.pb.h"
+
+#include "ServiceFactory.h"
 
 namespace routing {
 
@@ -36,6 +42,7 @@ bool ServiceDiscovery::registerServiceInstance(const ServiceInstance& instance) 
         // 更新现有实例
         (*it)->host = instance.host;
         (*it)->port = instance.port;
+        (*it)->type = instance.type;
         (*it)->healthy = true;
         (*it)->metadata = instance.metadata;
         return true;
@@ -93,16 +100,50 @@ void ServiceDiscovery::heartbeat() {
     }
 }
 
-bool ServiceDiscovery::checkServiceHealth(const ServiceInstance& instance) {
+bool ServiceDiscovery::checkServiceHealth([[maybe_unused]] const ServiceInstance& instance) {
     // 这里实现健康检查逻辑
     // 实际实现中可能需要：
     // 1. 发送健康检查请求到服务实例
     // 2. 检查服务实例是否响应
     // 3. 检查响应时间是否在合理范围内
+    switch (instance.getType()) {
+        case ServiceType::Routing:
+            break;
+        case ServiceType::User:
+            return checkUserServiceHealth(instance);
+            break;
+        case ServiceType::Pay:
+            break;
+        default:
+            return false;
+    }
     
     // 暂时返回true，表示所有实例都是健康的
     // 实际实现中应该根据具体情况进行健康检查
     return true;
+}
+
+bool ServiceDiscovery::checkUserServiceHealth(const ServiceInstance& instance) {
+    try {
+        grpc::ClientContext context;
+        context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(2));
+        
+        google::protobuf::Empty request;
+        std::unique_ptr<im::common::protocol::UserService::Stub> stub = ServiceFactory::createUserServiceStub(instance);
+        im::common::protocol::StatusResponse response;
+        grpc::Status status = stub->CheckStatus(&context, request, &response);
+
+        if (status.ok()) {
+            return true;
+        } else {
+            std::cerr << "[ServiceDiscovery] CheckStatus failed: " 
+                      << status.error_code() << " - " << status.error_message() << std::endl;
+            return false;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[ServiceDiscovery] Exception in CheckStatus: " << e.what() << std::endl;
+        return false;
+    }
 }
 
 } // namespace routing

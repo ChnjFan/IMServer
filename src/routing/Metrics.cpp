@@ -39,7 +39,7 @@ void Metrics::decrementCounter(const std::string& name, int64_t value) {
 int64_t Metrics::getCounter(const std::string& name) const {
     auto it = counters_.find(name);
     if (it != counters_.end()) {
-        return it->second;
+        return it->second.load();
     }
     return 0;
 }
@@ -58,8 +58,8 @@ void Metrics::recordTimer(const std::string& name, const std::chrono::steady_clo
 double Metrics::getTimerAverage(const std::string& name) const {
     auto it = timers_.find(name);
     auto count_it = timer_counters_.find(name);
-    if (it != timers_.end() && count_it != timer_counters_.end() && count_it->second > 0) {
-        return static_cast<double>(it->second) / count_it->second;
+    if (it != timers_.end() && count_it != timer_counters_.end() && count_it->second.load() > 0) {
+        return static_cast<double>(it->second.load()) / count_it->second.load();
     }
     return 0.0;
 }
@@ -67,7 +67,7 @@ double Metrics::getTimerAverage(const std::string& name) const {
 int64_t Metrics::getTimerTotal(const std::string& name) const {
     auto it = timers_.find(name);
     if (it != timers_.end()) {
-        return it->second;
+        return it->second.load();
     }
     return 0;
 }
@@ -99,7 +99,7 @@ std::string Metrics::exportToJson() const {
     // 导出计数器
     nlohmann::json counters_json;
     for (const auto& [name, value] : counters_) {
-        counters_json[name] = value;
+        counters_json[name] = value.load();
     }
     j["counters"] = counters_json;
     
@@ -109,10 +109,10 @@ std::string Metrics::exportToJson() const {
         auto count_it = timer_counters_.find(name);
         if (count_it != timer_counters_.end()) {
             nlohmann::json timer_info;
-            timer_info["total"] = value;
-            timer_info["count"] = count_it->second;
-            if (count_it->second > 0) {
-                timer_info["average"] = static_cast<double>(value) / count_it->second;
+            timer_info["total"] = value.load();
+            timer_info["count"] = count_it->second.load();
+            if (count_it->second.load() > 0) {
+                timer_info["average"] = static_cast<double>(value.load()) / count_it->second.load();
             } else {
                 timer_info["average"] = 0.0;
             }
@@ -132,17 +132,17 @@ std::string Metrics::exportToPrometheus() const {
     
     // 导出计数器
     for (const auto& [name, value] : counters_) {
-        ss << "im_routing_" << name << " " << value << "\n";
+        ss << "im_routing_" << name << " " << value.load() << "\n";
     }
     
     // 导出计时器
     for (const auto& [name, value] : timers_) {
         auto count_it = timer_counters_.find(name);
         if (count_it != timer_counters_.end()) {
-            ss << "im_routing_" << name << "_total " << value << "\n";
-            ss << "im_routing_" << name << "_count " << count_it->second << "\n";
-            if (count_it->second > 0) {
-                double average = static_cast<double>(value) / count_it->second;
+            ss << "im_routing_" << name << "_total " << value.load() << "\n";
+            ss << "im_routing_" << name << "_count " << count_it->second.load() << "\n";
+            if (count_it->second.load() > 0) {
+                double average = static_cast<double>(value.load()) / count_it->second.load();
                 ss << "im_routing_" << name << "_average " << average << "\n";
             }
         }

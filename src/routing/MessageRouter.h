@@ -7,33 +7,15 @@
 #include <string>
 
 #include "gateway_routing.pb.h"
+#include "service_user.grpc.pb.h"
+
+#include "ServiceInstance.h"
 
 namespace routing {
 
-/**
- * @brief 服务实例类
- * 表示一个可路由的服务实例
- */
-class ServiceInstance {
-public:
-    std::string service_id;
-    std::string service_name;
-    std::string host;
-    int port;
-    bool healthy;
-    int load;
-    std::unordered_map<std::string, std::string> metadata;
-    
-    ServiceInstance() : port(0), healthy(false), load(0) {}
-    
-    ServiceInstance(std::string id, std::string name, std::string h, int p)
-        : service_id(std::move(id)),
-          service_name(std::move(name)),
-          host(std::move(h)),
-          port(p),
-          healthy(true),
-          load(0) {}
-};
+using im::common::protocol::RouteRequest;
+using im::common::protocol::RouteResponse;
+using im::common::protocol::StatusResponse;
 
 /**
  * @brief 消息路由器类
@@ -43,9 +25,6 @@ class MessageRouter {
 using ServiceInstancePtr = std::shared_ptr<ServiceInstance>;
 using ServiceInstanceList = std::vector<ServiceInstancePtr>;
 using ServiceInstanceMap = std::unordered_map<std::string, ServiceInstanceList>;
-using im::common::protocol::RouteRequest;
-using im::common::protocol::RouteResponse;
-using im::common::protocol::StatusResponse;
 
 private:
     // 服务实例映射：服务名称 -> 服务实例列表
@@ -74,9 +53,9 @@ public:
     /**
      * @brief 路由消息
      * @param request 路由请求
-     * @return 路由响应
+     * @param response 路由响应
      */
-    RouteResponse routeMessage(const RouteRequest* request, RouteResponse *response);
+    void routeMessage(const RouteRequest* request, RouteResponse *response);
 
     /**
      * @brief 注册服务实例
@@ -116,6 +95,24 @@ private:
      * @param response 路由响应
      */
     void routeMessageInternal(const RouteRequest* request, RouteResponse *response);
+
+    /**
+     * @brief 路由消息到选中的服务实例
+     * @param request 路由请求
+     * @param response 路由响应
+     * @param instance 选中的服务实例
+     */
+    void routeMessageToInstance(const RouteRequest* request, RouteResponse *response, const ServiceInstancePtr& instance);
+
+    /**
+     * @brief 路由消息到用户服务实例
+     * @param request 路由请求
+     * @param response 路由响应
+     * @param instance 选中的用户服务实例
+     */
+    void routeMessageToUserService(const RouteRequest* request, RouteResponse *response, const ServiceInstancePtr& instance);
+
+    void routerMessageToUserServiceLogin(const RouteRequest* request, RouteResponse *response, std::unique_ptr<im::common::protocol::UserService::Stub> &user_stub);
 
     void registerDefaultServices();
 };

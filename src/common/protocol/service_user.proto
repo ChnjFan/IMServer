@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package im.common.protocol;
+
+// 用户服务
+
+// 导入公共消息定义
+import "common_messages.proto";
+
+// 登录请求消息
+message LoginRequest {
+  BaseMessage base_message = 1;   // 基础消息
+}
+
+// 登录响应消息
+message LoginResponse {
+  BaseMessage base_message = 1;   // 对应请求的消息ID
+  ErrorCode error_code = 2;       // 错误码
+  string error_message = 3;       // 错误信息
+}
+
+// 路由服务定义
+service UserService {
+  // 登录请求消息
+  rpc Login(LoginRequest) returns (LoginResponse);
+  // 检查用户服务状态
+  rpc CheckStatus(google.protobuf.Empty) returns (StatusResponse);
+}
+
+// 导入空消息类型
+import "google/protobuf/empty.proto";
