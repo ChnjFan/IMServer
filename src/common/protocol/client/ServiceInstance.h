@@ -32,8 +32,8 @@ private:
     
 public:
     ServiceInstance() : type(ServiceType::Routing), healthy(false), load(0) {}
-    ServiceInstance(ServiceConfig config, ServiceType type) : config(config), type(type), healthy(false), load(0) {}
-    ServiceInstance(ServiceConfig &&config, ServiceType type) : config(std::move(config)), type(type), healthy(false), load(0) {}
+    ServiceInstance(ServiceConfig config, ServiceType type) : config(config), healthy(false), type(type), load(0) {}
+    ServiceInstance(ServiceConfig &&config, ServiceType type) : config(std::move(config)), healthy(false), type(type), load(0) {}
 
     ServiceType getType() { return type; }
     ServiceConfig& getConfig() { return config; }

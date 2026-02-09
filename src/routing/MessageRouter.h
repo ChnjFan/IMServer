@@ -8,7 +8,7 @@
 
 #include "gateway_routing.pb.h"
 
-#include "ServerInstance.h"
+#include "ServiceInstance.h"
 
 namespace routing {
 
