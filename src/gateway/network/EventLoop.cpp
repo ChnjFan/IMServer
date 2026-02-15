@@ -3,7 +3,7 @@
 namespace network {
 
 EventLoop::EventLoop() 
-    : work_(std::make_unique<boost::asio::io_context::work>(io_context_)),
+    : work_(boost::asio::make_work_guard(io_context_)),
       running_(false) {
 }
 

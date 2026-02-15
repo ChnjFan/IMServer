@@ -10,7 +10,7 @@ namespace network {
 class EventLoop {
 private:
     boost::asio::io_context io_context_;
-    std::unique_ptr<boost::asio::io_context::work> work_;
+    boost::asio::executor_work_guard<boost::asio::io_context::executor_type> work_;
     std::thread thread_;
     std::atomic<bool> running_;
 
@@ -33,7 +33,7 @@ public:
     // 延迟执行任务
     template<typename CompletionHandler>
     void post(CompletionHandler handler) {
-        io_context_.post(handler);
+        boost::asio::post(io_context_, handler);
     }
     
     // 定时执行任务

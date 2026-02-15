@@ -12,25 +12,35 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Find Boost library
-find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Boost REQUIRED)
 
 # Find OpenSSL library
 find_package(OpenSSL REQUIRED)
 
 # Add include directories
-include_directories(include ${Boost_INCLUDE_DIRS} ${OPENSSL_INCLUDE_DIR})
+include_directories(include ${Boost_INCLUDE_DIR} ${OPENSSL_INCLUDE_DIR})
 
 # Add compiler warnings
 if(MSVC)
     add_compile_options(/W4 /WX)
 else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    add_compile_options(-Wno-nullability-extension)
+    add_compile_options(-Wno-gcc-compat)
+    add_compile_options(-Wno-variadic-macro-arguments-omitted)
 endif()
 
 # Add debug symbols and gdb support
 set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb -O0")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -ggdb -O0")
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # 仅对GCC添加专属优化（如果需要）
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-delete-null-pointer-checks")
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # 仅对Clang添加专属优化（如果需要）
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-limit-debug-info")
+endif()
 
 # Ensure debug flags are passed to all targets
 add_compile_options(

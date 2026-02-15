@@ -30,7 +30,7 @@ struct GatewayConfig {
     uint16_t http_port = 8080;
     
     // 路由服务地址
-    std::string routing_server_address = "localhost:50051";
+    std::string routing_server_address = "localhost:50050";
     
     // 最大连接数
     size_t max_connections = 10000;

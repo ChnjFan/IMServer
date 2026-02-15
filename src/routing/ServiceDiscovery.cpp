@@ -32,19 +32,14 @@ bool ServiceDiscovery::registerServiceInstance(const ServiceInstance& instance) 
     std::unique_lock<std::shared_mutex> lock(services_mutex_);
     
     // 检查服务实例是否已存在
-    auto& instances = services_[instance.service_name];
+    auto& instances = services_[instance.getServiceName()];
     auto it = std::find_if(instances.begin(), instances.end(),
         [&instance](const std::shared_ptr<ServiceInstance>& existing_instance) {
-            return existing_instance->service_id == instance.service_id;
+            return existing_instance->getServiceId() == instance.getServiceId();
         });
     
     if (it != instances.end()) {
-        // 更新现有实例
-        (*it)->host = instance.host;
-        (*it)->port = instance.port;
-        (*it)->type = instance.type;
-        (*it)->healthy = true;
-        (*it)->metadata = instance.metadata;
+        // todo 更新现有实例
         return true;
     }
     
@@ -61,7 +56,7 @@ bool ServiceDiscovery::unregisterServiceInstance(const std::string& service_id) 
         // 查找并移除实例
         auto it = std::remove_if(instances.begin(), instances.end(),
             [&service_id](const std::shared_ptr<ServiceInstance>& instance) {
-                return instance->service_id == service_id;
+                return instance->getServiceId() == service_id;
             });
         
         if (it != instances.end()) {
@@ -87,7 +82,7 @@ void ServiceDiscovery::heartbeat() {
             [this](const std::shared_ptr<ServiceInstance>& instance) {
                 // 检查实例健康状态
                 bool healthy = checkServiceHealth(*instance);
-                instance->healthy = healthy;
+                instance->setHealthy(healthy);
                 return !healthy;
             });
         
@@ -129,7 +124,11 @@ bool ServiceDiscovery::checkUserServiceHealth(const ServiceInstance& instance) {
         context.set_deadline(std::chrono::system_clock::now() + std::chrono::seconds(2));
         
         google::protobuf::Empty request;
-        std::unique_ptr<im::common::protocol::UserService::Stub> stub = ServiceFactory::createUserServiceStub(instance);
+        std::unique_ptr<im::common::protocol::UserService::Stub> stub =
+            ServiceFactory::GetUserServiceStub(instance.getConfig());
+        if (!stub) {
+            return false;
+        }
         im::common::protocol::StatusResponse response;
         grpc::Status status = stub->CheckStatus(&context, request, &response);
 

@@ -24,6 +24,7 @@
 #include <grpcpp/support/status.h>
 #include <grpcpp/support/stub_options.h>
 #include <grpcpp/support/sync_stream.h>
+#include <grpcpp/ports_def.inc>
 
 namespace im {
 namespace common {
@@ -34,4 +35,5 @@ namespace protocol {
 }  // namespace im
 
 
+#include <grpcpp/ports_undef.inc>
 #endif  // GRPC_common_5fmessages_2eproto__INCLUDED

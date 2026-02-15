@@ -72,7 +72,6 @@ private:
  */
 class WebSocketServer : public std::enable_shared_from_this<WebSocketServer> {
 private:
-    asio::io_context& io_context_;
     asio::ip::tcp::acceptor acceptor_;
     ConnectionManager& connection_manager_;
     std::atomic<bool> running_;

@@ -319,7 +319,7 @@ std::string HttpConnection::getMimeType(const std::string& file_path) {
 // HttpServer实现
 HttpServer::HttpServer(net::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
     : io_context_(io_context),
-      acceptor_(io_context, ip::tcp::endpoint(ip::address::from_string(address), port)),
+      acceptor_(io_context, ip::tcp::endpoint(boost::asio::ip::make_address(address), port)),
       connection_manager_(connection_manager),
       running_(false),
       static_file_directory_(""),

@@ -1,11 +1,13 @@
 #include "MessageRouter.h"
+
+#include <iostream>
+#include <chrono>
+
 #include "ServiceDiscovery.h"
 #include "LoadBalancer.h"
 #include "MessageQueue.h"
 #include "Metrics.h"
-#include <iostream>
-#include <chrono>
-#include <sstream>
+#include "ServiceFactory.h"
 
 namespace routing {
 
@@ -61,8 +63,6 @@ void MessageRouter::routeMessage(const RouteRequest *request, RouteResponse *res
         metrics_->recordTimer(Metrics::MESSAGE_LATENCY, start);
         
         // 返回错误响应
-        im::common::protocol::BaseMessage base_message = request->base_message();
-        response->set_base_message(base_message);
         response->set_error_code(im::common::protocol::ErrorCode::ERROR_CODE_INTERNAL_ERROR);
         response->set_error_message(std::string("Internal error: ") + e.what());
         response->set_accepted(false);
@@ -112,7 +112,6 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
     }
 
     im::common::protocol::BaseMessage base_message = request->base_message();
-    response->set_base_message(base_message);
 
     // 检查目标服务
     const std::string& target_service = base_message.target_service();
@@ -147,8 +146,7 @@ void MessageRouter::routeMessageInternal(const RouteRequest *request, RouteRespo
     // 模拟消息路由成功
     std::cout << "Routing message to service: " << target_service 
               << " instance: " << selected_instance->getServiceId() 
-              << " host: " << selected_instance->getTarget() 
-              << " port: " << selected_instance->getConfig().port << std::endl;
+              << " target: " << selected_instance->getTarget() << std::endl;
     
     // 更新服务实例负载
     selected_instance->setLoad(selected_instance->getLoad() + 1);

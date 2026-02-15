@@ -157,9 +157,8 @@ void WebSocketConnection::doRead() {
                 return;
             }
 
-            std::vector<char> data(
-                boost::asio::buffer_cast<const char*>(buffer.data()),
-                boost::asio::buffer_cast<const char*>(buffer.data()) + buffer.size());
+            std::string data_str = beast::buffers_to_string(buffer.data());
+            std::vector<char> data(data_str.begin(), data_str.end());
 
             triggerMessageHandler(data);
             buffer.consume(bytes_transferred);
@@ -170,7 +169,7 @@ void WebSocketConnection::doRead() {
 void WebSocketConnection::doWrite(const std::vector<char>& data) {
     auto self = shared_from_this();
     ws_.async_write(
-        boost::asio::buffer(data),
+        asio::buffer(data),
         [this, self, data = std::move(data)](beast::error_code ec, std::size_t /*bytes_transferred*/) {
             if (ec) {
                 std::cerr << "WebSocket write error: " << ec.message() << std::endl;
@@ -189,8 +188,7 @@ void WebSocketConnection::doWrite(const std::vector<char>& data) {
 
 // WebSocketServer实现
 WebSocketServer::WebSocketServer(asio::io_context& io_context, ConnectionManager& connection_manager, const std::string& address, uint16_t port)
-    : io_context_(io_context),
-      acceptor_(io_context, asio::ip::tcp::endpoint(asio::ip::make_address(address), port)),
+      : acceptor_(io_context, asio::ip::tcp::endpoint(boost::asio::ip::make_address(address), port)),
       connection_manager_(connection_manager),
       running_(false) {
 }

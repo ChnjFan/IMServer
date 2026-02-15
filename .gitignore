@@ -32,6 +32,7 @@
 *.app
 
 # 忽略第三方库文件
+bin/**
 third_party/**
 !third_party/**/*.sh
 server/base/zmq.hpp

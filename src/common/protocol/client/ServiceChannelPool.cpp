@@ -11,11 +11,9 @@ ServiceChannelPool &ServiceChannelPool::Instance() {
 grpc::ChannelArguments ServiceChannelPool::BuildChannelArgs(const ServiceConfig& cfg) {
     grpc::ChannelArguments args;
     // 设置长连接保活参数（gRPC基于HTTP/2，保活避免TCP连接被防火墙断开）
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, cfg.keepalive_time_s * 1000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, cfg.keepalive_timeout_s * 1000);
-    args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1); // 无调用时也发送保活包
-    // 设置最大重试次数（可选，结合服务端配置）
-    args.SetInt(GRPC_ARG_MAX_RETRY_ATTEMPTS, 2);
+    args.SetInt("grpc.keepalive_time_ms", cfg.keepalive_time_s * 1000);
+    args.SetInt("grpc.keepalive_timeout_ms", cfg.keepalive_timeout_s * 1000);
+    args.SetInt("grpc.keepalive_permit_without_calls", 1); // 无调用时也发送保活包
     return args;
 }
 
@@ -44,12 +42,11 @@ std::shared_ptr<grpc::Channel> ServiceChannelPool::GetChannel(const ServiceConfi
     );
 
     // 验证Channel是否就绪（可选，阻塞直到就绪或超时）
-    grpc::Status status = channel->WaitForConnected(
+    if (!channel->WaitForConnected(
         std::chrono::system_clock::now() + std::chrono::seconds(5)
-    );
-    if (!status.ok()) {
+    )) {
         throw std::runtime_error("create grpc channel failed, target: " + cfg.target 
-                                 + ", error: " + status.error_message());
+                                 + ", error: timeout");
     }
 
     // 存入Channel池并返回

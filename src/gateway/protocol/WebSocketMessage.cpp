@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <cstdint>
 
 // 字节序转换函数所需的头文件
 #ifdef _WIN32
@@ -9,6 +10,27 @@
 #include <ws2tcpip.h>
 #else
 #include <arpa/inet.h>
+#endif
+
+// 为不支持htobe64的平台提供 fallback 实现
+#ifndef htobe64
+inline uint64_t htobe64(uint64_t host64) {
+    #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+    return ((uint64_t)htons((uint16_t)((host64) & 0xffff)) << 48) |
+           ((uint64_t)htons((uint16_t)(((host64) >> 16) & 0xffff)) << 32) |
+           ((uint64_t)htons((uint16_t)(((host64) >> 32) & 0xffff)) << 16) |
+           (uint64_t)htons((uint16_t)(((host64) >> 48) & 0xffff));
+    #else
+    return host64;
+    #endif
+}
+#endif
+
+// 为不支持betoh64的平台提供 fallback 实现
+#ifndef betoh64
+inline uint64_t betoh64(uint64_t big64) {
+    return htobe64(big64);
+}
 #endif
 
 namespace protocol {
@@ -196,7 +218,7 @@ bool WebSocketMessage::deserializeMaskingKey(size_t &consumed)
 bool WebSocketMessage::deserializePayload(size_t &consumed)
 {
     size_t remaining = data_buffer_.size() - consumed;
-    size_t bytes_to_read = std::min(remaining, expected_body_length_);
+    size_t bytes_to_read = std::min(remaining, static_cast<size_t>(expected_body_length_));
 
     body_.insert(body_.end(), data_buffer_.begin() + consumed, data_buffer_.begin() + consumed + bytes_to_read);
     consumed += bytes_to_read;

@@ -156,7 +156,7 @@ void Gateway::handleMessage(network::ConnectionId connection_id, const std::vect
     if (config_.enable_debug_log) {
         std::cout << "Received message from connection " << connection_id << " with data: " << std::string(data.begin(), data.end()) << " bytes" << std::endl;
     }
-    protocol_manager_->asyncProcessData(connection_id, data, [this, connection_id](const boost::system::error_code& ec) {
+    protocol_manager_->asyncProcessData(connection_id, data, [connection_id](const boost::system::error_code& ec) {
         if (!ec) {
             // 消息处理成功
         } else {
@@ -202,7 +202,7 @@ void Gateway::initializeServers() {
 
 void Gateway::initializeConnectionManager() {
     connection_manager_ = std::make_shared<network::ConnectionManager>();
-    connection_manager_->setConnectionEventHandler([this](network::ConnectionId connection_id, network::ConnectionEvent event) {
+    connection_manager_->setConnectionEventHandler([](network::ConnectionId connection_id, network::ConnectionEvent event) {
         std::cout << "[Gateway]Connection event: " << connection_id << " - " << network::connectionEventToString(event) << std::endl;
     });
 }

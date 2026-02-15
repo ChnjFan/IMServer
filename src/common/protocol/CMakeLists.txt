@@ -63,6 +63,11 @@ endforeach()
 file(GLOB SOURCES "*.cpp")
 file(GLOB HEADERS "*.h")
 
+# 添加客户端文件
+file(GLOB CLIENT_SRCS "client/*.cpp")
+file(GLOB CLIENT_HDRS "client/*.h")
+
+
 # 创建公共协议库
 add_library(im_common_protocol
     ${PROTO_SRCS}
@@ -71,8 +76,6 @@ add_library(im_common_protocol
     ${GRPC_HDRS}
     ${CLIENT_SRCS}
     ${CLIENT_HDRS}
-    ${SERVER_SRCS}
-    ${SERVER_HDRS}
 )
 target_link_libraries(im_common_protocol
   ${_REFLECTION}
@@ -104,8 +107,18 @@ target_compile_features(im_common_protocol PRIVATE cxx_std_17)
 # 添加编译选项来减少警告
 target_compile_options(im_common_protocol PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-unused-result>
-    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-relocation>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-nullability-extension>
+    $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wno-gcc-compat>
 )
+
+# 编译器特定的警告选项
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # 仅 GCC 支持该选项
+    target_compile_options(im_common_protocol PRIVATE -Wno-relocation)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Clang 使用替代选项
+    target_compile_options(im_common_protocol PRIVATE -Wno-section)
+endif()
 
 # 安装配置
 install(TARGETS im_common_protocol

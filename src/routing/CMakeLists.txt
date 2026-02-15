@@ -14,12 +14,13 @@ include_directories(
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
     ${CMAKE_SOURCE_DIR}/src/common/protocol/client
+    /opt/homebrew/include
 )
 
 # 查找依赖
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
-find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(Boost REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 # 源文件
@@ -32,7 +33,7 @@ set(LIBS
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF}
-    ${Boost_LIBRARIES}
+    Boost::boost
     ${OPENSSL_LIBRARIES}
     -lpthread
 )

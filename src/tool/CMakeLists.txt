@@ -26,7 +26,7 @@ target_link_libraries(tool_module
 # 设置包含目录
 target_include_directories(tool_module PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/src/third_party/nlohmann
+    /opt/homebrew/include
 )
 
 # 设置C++标准

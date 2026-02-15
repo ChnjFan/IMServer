@@ -35,21 +35,22 @@ public:
     ServiceInstance(ServiceConfig config, ServiceType type) : config(config), healthy(false), type(type), load(0) {}
     ServiceInstance(ServiceConfig &&config, ServiceType type) : config(std::move(config)), healthy(false), type(type), load(0) {}
     
-    bool isHealthy() { return healthy; }
+    bool isHealthy() const { return healthy; }
     void setHealthy(bool value) { healthy = value; }
 
-    ServiceType getType() { return type; }
+    ServiceType getType() const { return type; }
 
-    int getLoad() { return load; }
+    int getLoad() const { return load; }
     void setLoad(int value) { load = value; }
 
     ServiceConfig& getConfig() { return config; }
-    std::string getServiceName() { return config.name; }
-    std::string getServiceId() { return config.id; }
-    std::string getTarget() { return config.target; }
-    std::chrono::milliseconds getTimeout() { return config.timeout; }
-    int getKeepaliveTimeS() { return config.keepalive_time_s; }
-    int getKeepaliveTimeoutS() { return config.keepalive_timeout_s; }
+    const ServiceConfig& getConfig() const { return config; }
+    std::string getServiceName() const { return config.name; }
+    std::string getServiceId() const { return config.id; }
+    std::string getTarget() const { return config.target; }
+    std::chrono::milliseconds getTimeout() const { return config.timeout; }
+    int getKeepaliveTimeS() const { return config.keepalive_time_s; }
+    int getKeepaliveTimeoutS() const { return config.keepalive_timeout_s; }
 
 };
 

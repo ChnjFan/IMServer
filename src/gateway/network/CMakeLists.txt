@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(BOOST_MIN_VERSION "1.70")
 
 # 查找Boost库
-find_package(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS system)
+find_package(Boost ${BOOST_MIN_VERSION} REQUIRED)
 
 # 查找OpenSSL
 find_package(OpenSSL REQUIRED)
@@ -22,7 +22,7 @@ set(HEADER_DIR
 
 # 包含目录
 include_directories(${HEADER_DIR})
-include_directories(${Boost_INCLUDE_DIRS})
+include_directories(${Boost_INCLUDE_DIR})
 
 # 源文件
 set(SOURCES
@@ -38,7 +38,7 @@ add_library(gateway_network STATIC ${SOURCES})
 
 # 链接库
 target_link_libraries(gateway_network
-    ${Boost_LIBRARIES}
+    Boost::boost
     OpenSSL::SSL
     OpenSSL::Crypto
 )

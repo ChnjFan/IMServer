@@ -119,7 +119,7 @@ private:
      */
     template<typename Func, typename... Args>
     auto submitImpl(PoolType pool_type, Func&& func, Args&&... args) {
-        using ReturnType = typename std::result_of<Func(Args...)>::type;
+        using ReturnType = std::invoke_result_t<Func, Args...>;
         
         auto task = std::make_shared<std::packaged_task<ReturnType()>>(
             std::bind(std::forward<Func>(func), std::forward<Args>(args)...));
