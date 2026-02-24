@@ -55,8 +55,8 @@ target_link_libraries(${TARGET_NAME} PUBLIC
 )
 
 # 添加示例可执行文件
-add_executable(gateway_example main.cpp)
-target_link_libraries(gateway_example PRIVATE ${TARGET_NAME})
+add_executable(gateway_server main.cpp)
+target_link_libraries(gateway_server PRIVATE ${TARGET_NAME})
 
 # 安装目标
 install(TARGETS ${TARGET_NAME} EXPORT ${PROJECT_NAME}Targets
@@ -70,4 +70,4 @@ install(TARGETS ${TARGET_NAME} EXPORT ${PROJECT_NAME}Targets
 install(FILES ${HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gateway)
 
 # 安装示例可执行文件
-install(TARGETS gateway_example DESTINATION ${CMAKE_INSTALL_BINDIR}/examples)
+install(TARGETS gateway_server DESTINATION ${CMAKE_INSTALL_BINDIR}/examples)

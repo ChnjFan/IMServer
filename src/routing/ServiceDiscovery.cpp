@@ -75,6 +75,9 @@ bool ServiceDiscovery::unregisterServiceInstance(const std::string& service_id) 
 void ServiceDiscovery::heartbeat() {
     std::unique_lock<std::shared_mutex> lock(services_mutex_);
     
+    // 存储需要删除的服务名称
+    std::vector<std::string> services_to_remove;
+    
     // 检查所有服务实例
     for (auto& [service_name, instances] : services_) {
         // 过滤出健康的实例
@@ -88,10 +91,15 @@ void ServiceDiscovery::heartbeat() {
         
         instances.erase(it, instances.end());
         
-        // 如果服务没有实例了，移除服务
+        // 如果服务没有实例了，标记为需要删除
         if (instances.empty()) {
-            services_.erase(service_name);
+            services_to_remove.push_back(service_name);
         }
+    }
+    
+    // 遍历完成后再删除空服务
+    for (const auto& service_name : services_to_remove) {
+        services_.erase(service_name);
     }
 }
 

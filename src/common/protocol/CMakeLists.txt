@@ -64,8 +64,8 @@ file(GLOB SOURCES "*.cpp")
 file(GLOB HEADERS "*.h")
 
 # 添加客户端文件
-file(GLOB CLIENT_SRCS "client/*.cpp")
-file(GLOB CLIENT_HDRS "client/*.h")
+file(GLOB CLIENT_SRCS "lib/*.cpp")
+file(GLOB CLIENT_HDRS "lib/*.h")
 
 
 # 创建公共协议库

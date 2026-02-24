@@ -18,15 +18,33 @@ MessageRouter::MessageRouter()
       metrics_(new Metrics()),
       start_time_(std::chrono::steady_clock::now().time_since_epoch().count() / 1000),
       message_count_(0),
-      message_error_count_(0) {
+      message_error_count_(0),
+      io_context_(std::make_shared<boost::asio::io_context>()) {
     // 启动消息队列
     message_queue_->start(4);
     
     // 注册一些默认服务实例（用于测试）
     registerDefaultServices();
+    
+    // 启动心跳定时器
+    startHeartbeatTimer();
+    
+    // 启动IO上下文线程
+    std::thread io_thread([this]() {
+        io_context_->run();
+    });
+    io_thread.detach();
 }
 
 MessageRouter::~MessageRouter() {
+    // 停止心跳定时器
+    stopHeartbeatTimer();
+    
+    // 停止IO上下文
+    if (io_context_) {
+        io_context_->stop();
+    }
+    
     // 停止消息队列
     message_queue_->stop();
     
@@ -246,6 +264,37 @@ void MessageRouter::registerDefaultServices()
     
     for (const auto& service : default_services) {
         registerService(service);
+    }
+}
+
+void MessageRouter::startHeartbeatTimer() {
+    heartbeat_timer_ = std::make_shared<boost::asio::steady_timer>(*io_context_);
+    // 立即执行一次心跳检测
+    performHeartbeat();
+    std::cout << "Heartbeat timer started" << std::endl;
+}
+
+void MessageRouter::stopHeartbeatTimer() {
+    if (heartbeat_timer_) {
+        heartbeat_timer_->cancel();
+        std::cout << "Heartbeat timer stopped" << std::endl;
+    }
+}
+
+void MessageRouter::performHeartbeat() {
+    // 调用服务发现的心跳检测
+    discovery_->heartbeat();
+    std::cout << "Heartbeat check performed" << std::endl;
+    
+    // 30秒后再次执行心跳检测
+    if (heartbeat_timer_) {
+        heartbeat_timer_->expires_after(std::chrono::seconds(30));
+        auto self = this;
+        heartbeat_timer_->async_wait([self](const boost::system::error_code& ec) {
+            if (!ec) {
+                self->performHeartbeat();
+            }
+        });
     }
 }
 

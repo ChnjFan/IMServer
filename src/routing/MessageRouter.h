@@ -5,6 +5,10 @@
 #include <unordered_map>
 #include <shared_mutex>
 #include <string>
+#include <thread>
+#include <atomic>
+
+#include <boost/asio.hpp>
 
 #include "gateway_routing.pb.h"
 #include "service_user.grpc.pb.h"
@@ -45,6 +49,10 @@ private:
     std::atomic<int64_t> message_count_;
     // 消息处理失败计数
     std::atomic<int64_t> message_error_count_;
+    // Boost Asio IO上下文
+    std::shared_ptr<boost::asio::io_context> io_context_;
+    // 心跳定时器
+    std::shared_ptr<boost::asio::steady_timer> heartbeat_timer_;
 
 public:
     MessageRouter();
@@ -89,6 +97,20 @@ public:
     std::unordered_map<std::string, int64_t> getStats();
 
 private:
+    /**
+     * @brief 启动心跳定时器
+     */
+    void startHeartbeatTimer();
+
+    /**
+     * @brief 停止心跳定时器
+     */
+    void stopHeartbeatTimer();
+
+    /**
+     * @brief 执行心跳检测
+     */
+    void performHeartbeat();
     /**
      * @brief 内部路由消息处理
      * @param request 路由请求

@@ -22,7 +22,6 @@ enum class ServiceType {
     Pay
 };
 
-
 class ServiceInstance {
 private:
     ServiceConfig config;

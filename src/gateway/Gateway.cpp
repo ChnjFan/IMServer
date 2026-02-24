@@ -271,16 +271,16 @@ void Gateway::checkRoutingServiceStatus(std::shared_ptr<boost::asio::steady_time
         }
     } else {
         routing_service_available_ = false;
-        std::cerr << "[Gateway] Failed to check routing service status, will retry in 30 seconds" << std::endl;
-        // 30秒后再次检查路由服务状态
-        timer->expires_after(std::chrono::seconds(30));
-        auto self = this;
-        timer->async_wait([self, timer](const boost::system::error_code& ec) {
-            if (!ec) {
-                self->checkRoutingServiceStatus(timer);
-            }
-        });
+        std::cerr << "[Gateway] Failed to check routing service status" << std::endl;
     }
+    // 30秒后再次检查路由服务状态
+    timer->expires_after(std::chrono::seconds(30));
+    auto self = this;
+    timer->async_wait([self, timer](const boost::system::error_code& ec) {
+        if (!ec) {
+            self->checkRoutingServiceStatus(timer);
+        }
+    });
 }
 
 void Gateway::messageConverter(const protocol::Message &message, im::common::protocol::BaseMessage *pBaseMessage) {
