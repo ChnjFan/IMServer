@@ -13,6 +13,7 @@ bool LogicSystem::handleGet(std::string url, std::shared_ptr<HttpConnection> con
     }
 
     getHandlers_[url](connection);
+    return true;
 }
 
 void LogicSystem::registerGet(const std::string& url, const HttpRequestCallback& handler) {
