@@ -139,4 +139,17 @@ void HttpConnection::handleRequest() {
         response_.set(http::field::server, "GateServer");
         writeResponse();
     }
+    else if (request_.method() == http::verb::post) {
+        if (!LogicSystem::getInstance()->handlePost(request_.target(), shared_from_this())) {
+            response_.result(http::status::not_found);
+            response_.set(http::field::content_type, "text/plain");
+            beast::ostream(response_.body()) << "url not found\r\n";
+            writeResponse();
+            return;
+        }
+
+        response_.result(http::status::ok);
+        response_.set(http::field::server, "GateServer");
+        writeResponse();
+    }
 }
