@@ -17,8 +17,11 @@ typedef std::function<void(std::shared_ptr<HttpConnection>)> HttpRequestCallback
 class LogicSystem : public Singleton<LogicSystem> {
 public:
     ~LogicSystem();
-    bool handleGet(std::string url, std::shared_ptr<HttpConnection> connection);
-    void registerGet(const std::string& url, const HttpRequestCallback& handler);
+    bool handleGet(const std::string& path, std::shared_ptr<HttpConnection> connection);
+    void registerGet(const std::string& path, const HttpRequestCallback& handler);
+
+    bool handlePost(const std::string& path, std::shared_ptr<HttpConnection> connection);
+    void registerPost(const std::string& path, const HttpRequestCallback& handler);
 
 private:
     friend class Singleton<LogicSystem>;

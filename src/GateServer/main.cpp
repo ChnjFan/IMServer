@@ -16,6 +16,7 @@ int main()
             io_context.stop();
         });
         std::make_shared<GateServer>(io_context, port)->start();
+        std::cout << "GateServer started on port: " << port << std::endl;
         io_context.run();
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;

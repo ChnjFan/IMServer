@@ -6,14 +6,35 @@
 #define IMSERVER_HTTPCONNECTION_H
 
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "const.h"
 
 class HttpConnection : public std::enable_shared_from_this<HttpConnection> {
 public:
+    typedef std::unordered_map<std::string, std::string> UrlParams;
+
     friend class LogicSystem;
+
     explicit HttpConnection(tcp::socket socket);
     void start();
+
+    class UrlParser {
+    public:
+        UrlParser() = default;
+        void parse(const std::string& url);
+        const std::string& getPath() const;
+        const UrlParams& getParams() const;
+        bool hasParam(const std::string& key) const;
+        std::string getParam(const std::string& key, const std::string& defaultValue = "") const;
+    private:
+        std::string path_;
+        UrlParams params_;
+
+        static std::string urlDecode(const std::string& encoded);
+    };
+
 private:
     void checkDeadline();
     void writeResponse();
@@ -24,6 +45,8 @@ private:
     http::request<http::dynamic_body> request_;
     http::response<http::dynamic_body> response_;
     net::steady_timer deadline_{socket_.get_executor(), std::chrono::seconds(60)};
+
+    UrlParser urlParser_;
 };
 
 

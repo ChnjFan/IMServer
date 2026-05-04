@@ -14,4 +14,10 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
+enum class ErrorCodes {
+    SUCCESS = 0,
+    ERROR_JSON = 1001,
+    RPC_FAILED = 1002,
+};
+
 #endif //IMSERVER_CONST_H
