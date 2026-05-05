@@ -8,6 +8,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <queue>
 #include <condition_variable>
 #include <grpcpp/grpcpp.h>
 

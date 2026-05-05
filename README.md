@@ -13,29 +13,39 @@
 
 | 库 | 版本 | 描述 |
 |---------|---------|-------------|
-| Boost | >= 1.70 | C++ 网络和线程库 |
-| jsoncpp | >= 1.9.5 | JSON 解析和序列化 |
+| Boost | >= 1.90 | C++ 网络和线程库 |
+| jsoncpp | >= 1.9.6 | JSON 解析和序列化 |
+| gRPC | >= 1.77 | 高性能 RPC 框架 |
+| Protobuf | >= 3.31 | 数据序列化协议 |
 
 ### 使用的 Boost 组件
 
 - **boost_system** - 系统级操作和错误处理
 - **boost_thread** - 多线程支持
+- **boost_filesystem** - 文件系统操作
 
 ### 安装方式
 
 #### macOS (Homebrew)
 ```bash
-brew install boost jsoncpp
+brew install boost jsoncpp grpc protobuf
 ```
 
 #### Ubuntu/Debian
 ```bash
-sudo apt-get install libboost-all-dev libjsoncpp-dev
+sudo apt-get install libboost-all-dev libjsoncpp-dev libgrpc-dev libprotobuf-dev protobuf-compiler-grpc
 ```
 
 #### CentOS/RHEL
 ```bash
-sudo yum install boost-devel jsoncpp-devel
+sudo yum install boost-devel jsoncpp-devel grpc-devel protobuf-devel
+```
+
+### Node.js 依赖 (VerifyServer)
+
+```bash
+cd src/VerifyServer
+npm install
 ```
 
 ## 构建
