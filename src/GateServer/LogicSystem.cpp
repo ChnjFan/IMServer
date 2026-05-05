@@ -9,6 +9,7 @@
 #include <json/reader.h>
 
 #include "LogicSystem.h"
+#include "VerifyGrpcClient.h"
 
 LogicSystem::~LogicSystem() {
 }
@@ -43,7 +44,7 @@ void LogicSystem::registerPost(const std::string &path, const HttpRequestCallbac
 
 LogicSystem::LogicSystem() {
     registerGet("/get_test", [](std::shared_ptr<HttpConnection> connection) {
-        beast::ostream(connection->response_.body()) << "receive get_test request\r\n";
+        beast::ostream(connection->response_.body()) << "receive get_test request.\r\n";
         HttpConnection::UrlParams urlParams = connection->urlParser_.getParams();
         for (auto&[param, value] : urlParams) {
             beast::ostream(connection->response_.body()) << "Param " << param << "=" << value << "\r\n";
@@ -60,7 +61,7 @@ LogicSystem::LogicSystem() {
         Json::Value srcRoot;
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int16_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -68,7 +69,7 @@ LogicSystem::LogicSystem() {
 
         if (!srcRoot.isMember("email") || !srcRoot["email"].isString()) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int16_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -76,7 +77,11 @@ LogicSystem::LogicSystem() {
 
         auto email = srcRoot["email"].asString();
         std::cout << "email is: " << email << std::endl;
-        root["error"] = static_cast<int16_t>(ErrorCodes::SUCCESS);
+
+        // 给验证服务发送验证码请求
+        GetVerifyRsp response = VerifyGrpcClient::getInstance()->GetVerifyCode(email);
+
+        root["error"] = response.error();
         root["email"] = email;
 
         const std::string jsonStr = root.toStyledString();

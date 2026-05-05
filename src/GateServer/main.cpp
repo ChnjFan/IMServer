@@ -1,11 +1,14 @@
 #include <iostream>
 
+#include "ConfigMgr.h"
 #include "GateServer.h"
 
 int main()
 {
+    ConfigMgr gConfigMgr;
+    auto port = std::stoi(gConfigMgr["GateServer"]["Port"]);
+
     try {
-        auto port = static_cast<unsigned short>(8080);
         net::io_context io_context{1};
         // 捕获信号结束进程
         boost::asio::signal_set signals(io_context, SIGINT, SIGTERM);

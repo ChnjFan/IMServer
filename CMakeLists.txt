@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 
-cmake_policy(SET CMP0167 NEW)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.30")
+    cmake_policy(SET CMP0167 NEW)
+endif()
 
 project(IMServer
     VERSION 1.0.0
@@ -20,7 +22,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-find_package(Boost 1.90 REQUIRED)
+find_package(Boost 1.90 REQUIRED COMPONENTS filesystem)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
@@ -28,6 +30,16 @@ pkg_check_modules(JSONCPP REQUIRED jsoncpp)
 add_library(jsoncpp_deps INTERFACE)
 target_include_directories(jsoncpp_deps INTERFACE ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(jsoncpp_deps INTERFACE ${JSONCPP_LINK_LIBRARIES})
+
+find_package(Protobuf REQUIRED)
+find_package(gRPC REQUIRED)
+
+add_library(grpc_deps INTERFACE)
+target_link_libraries(grpc_deps INTERFACE
+    gRPC::grpc++
+    gRPC::grpc
+    protobuf::libprotobuf
+)
 
 if(BUILD_GATE_SERVER)
     add_subdirectory(src/GateServer)

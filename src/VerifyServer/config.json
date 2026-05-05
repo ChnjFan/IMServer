@@ -1,0 +1,18 @@
+{
+  "email": {
+    "user": "lvfan6514@163.com",
+    "password": "AMwjgrLdZcVCTSbG"
+  },
+  "mysql": {
+    "host": "localhost",
+    "port": 3306,
+    "user": "root",
+    "password": "123456",
+    "database": "verify_server"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "123456"
+  }
+}
