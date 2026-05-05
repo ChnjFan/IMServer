@@ -48,6 +48,8 @@ set(GATE_SERVER_SOURCES
         VerifyGrpcClient.h
         ConfigMgr.cpp
         ConfigMgr.h
+        AsioIOServicePool.cpp
+        AsioIOServicePool.h
 )
 
 add_executable(GateServer ${GATE_SERVER_SOURCES})

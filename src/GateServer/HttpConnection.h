@@ -17,8 +17,10 @@ public:
 
     friend class LogicSystem;
 
-    explicit HttpConnection(tcp::socket socket);
+    explicit HttpConnection(boost::asio::io_context& io_context);
     void start();
+
+    tcp::socket& getSocket() { return socket_; }
 
     class UrlParser {
     public:

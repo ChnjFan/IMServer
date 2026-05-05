@@ -5,8 +5,7 @@
 
 int main()
 {
-    ConfigMgr gConfigMgr;
-    auto port = std::stoi(gConfigMgr["GateServer"]["Port"]);
+    auto port = std::stoi(ConfigMgr::getInstance()["GateServer"]["Port"]);
 
     try {
         net::io_context io_context{1};

@@ -14,6 +14,8 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
+constexpr int DEFAULT_RPC_POOL_SIZE = 10;
+
 enum class ErrorCodes : int32_t {
     SUCCESS = 0,
     ERROR_JSON = 1001,

@@ -36,18 +36,6 @@ ConfigMgr::ConfigMgr() {
     }
 }
 
-ConfigMgr::ConfigMgr(const ConfigMgr &other) {
-    this->configMap_ = other.configMap_;
-}
-
-ConfigMgr & ConfigMgr::operator=(const ConfigMgr &other) {
-    if (this == &other) {
-        return *this;
-    }
-    this->configMap_ = other.configMap_;
-    return *this;
-}
-
 SectionInfo ConfigMgr::operator[](const std::string &key) {
     if (configMap_.find(key) == configMap_.end()) {
         return {};

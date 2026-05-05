@@ -8,8 +8,6 @@
 #include <map>
 #include <string>
 
-#include "Singleton.h"
-
 struct SectionInfo {
     SectionInfo() = default;
     ~SectionInfo() { section_data_.clear(); }
@@ -38,20 +36,22 @@ struct SectionInfo {
 
 class ConfigMgr {
 public:
-    ConfigMgr();
-
     ~ConfigMgr() {
         configMap_.clear();
     }
 
-    ConfigMgr(const ConfigMgr& other);
-    ConfigMgr& operator=(const ConfigMgr& other);
+    static ConfigMgr& getInstance() {
+        static ConfigMgr configMgr; // 静态变量只初始化一次，线程安全
+        return configMgr;
+    }
+
+    ConfigMgr(const ConfigMgr& other) = delete;
+    ConfigMgr& operator=(const ConfigMgr& other) = delete;
     SectionInfo operator[](const std::string& key);
 
 private:
+    ConfigMgr();
     std::map<std::string, SectionInfo> configMap_;
 };
-
-extern ConfigMgr gConfigMgr;
 
 #endif //IMSERVER_CONFIGMGR_H

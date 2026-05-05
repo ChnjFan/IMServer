@@ -6,16 +6,18 @@
 
 #include "GateServer.h"
 #include "HttpConnection.h"
+#include "AsioIOServicePool.h"
 
 GateServer::GateServer(net::io_context &ioContext, const unsigned short &port)
     : acceptor_(ioContext, tcp::endpoint(tcp::v4(), port))
-    , ioContext_(ioContext)
-    , socket_(ioContext, port) {
+    , ioContext_(ioContext) {
 }
 
 void GateServer::start() {
     auto self = shared_from_this();
-    acceptor_.async_accept(socket_, [self](boost::system::error_code ec) {
+    auto & io_contex = AsioIOServicePool::getInstance()->getIOService();
+    auto connection = std::make_shared<HttpConnection>(io_contex);
+    acceptor_.async_accept(connection->getSocket(), [self, connection](boost::system::error_code ec) {
         try {
             // 错误处理放弃连接，继续监听其他连接
             if (ec) {
@@ -24,7 +26,7 @@ void GateServer::start() {
             }
 
             // 管理连接的读写
-            std::make_shared<HttpConnection>(std::move(self->socket_))->start();
+            connection->start();
             // 继续监听
             self->start();
         } catch (std::exception) {

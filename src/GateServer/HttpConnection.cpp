@@ -79,7 +79,7 @@ std::string HttpConnection::UrlParser::urlDecode(const std::string& encoded) {
     return decoded;
 }
 
-HttpConnection::HttpConnection(tcp::socket socket) : socket_(std::move(socket)) {
+HttpConnection::HttpConnection(boost::asio::io_context &io_context) : socket_(io_context) {
 }
 
 void HttpConnection::start() {

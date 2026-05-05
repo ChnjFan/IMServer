@@ -16,7 +16,6 @@ public:
 private:
     tcp::acceptor acceptor_;
     net::io_context& ioContext_;
-    tcp::socket socket_;
 };
 
 
