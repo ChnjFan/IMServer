@@ -57,6 +57,7 @@ add_executable(GateServer ${GATE_SERVER_SOURCES})
 target_link_libraries(GateServer
     jsoncpp_deps
     grpc_deps
+    hiredis_deps
     Boost::filesystem
 )
 

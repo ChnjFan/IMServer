@@ -41,6 +41,12 @@ target_link_libraries(grpc_deps INTERFACE
     protobuf::libprotobuf
 )
 
+pkg_check_modules(HIREDIS REQUIRED hiredis)
+
+add_library(hiredis_deps INTERFACE)
+target_include_directories(hiredis_deps INTERFACE ${HIREDIS_INCLUDE_DIRS})
+target_link_libraries(hiredis_deps INTERFACE ${HIREDIS_LINK_LIBRARIES})
+
 if(BUILD_GATE_SERVER)
     add_subdirectory(src/GateServer)
 endif()
