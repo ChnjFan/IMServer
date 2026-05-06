@@ -5,6 +5,9 @@
 #include <exception>
 
 #include "GateServer.h"
+
+#include <iostream>
+
 #include "HttpConnection.h"
 #include "AsioIOServicePool.h"
 
@@ -15,8 +18,8 @@ GateServer::GateServer(net::io_context &ioContext, const unsigned short &port)
 
 void GateServer::start() {
     auto self = shared_from_this();
-    auto & io_contex = AsioIOServicePool::getInstance()->getIOService();
-    auto connection = std::make_shared<HttpConnection>(io_contex);
+    auto & io_context = AsioIOServicePool::getInstance()->getIOService();
+    auto connection = std::make_shared<HttpConnection>(io_context);
     acceptor_.async_accept(connection->getSocket(), [self, connection](boost::system::error_code ec) {
         try {
             // 错误处理放弃连接，继续监听其他连接
@@ -29,7 +32,8 @@ void GateServer::start() {
             connection->start();
             // 继续监听
             self->start();
-        } catch (std::exception) {
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << std::endl;
         }
     });
 }

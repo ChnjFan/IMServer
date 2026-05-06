@@ -18,7 +18,7 @@ ConfigMgr::ConfigMgr() {
     boost::property_tree::read_ini(configFilePath.string(), pt);
 
     for (const auto& [sectionName, sectionTree] : pt) {
-        std::map<std::string, std::string> sectionData;
+        std::unordered_map<std::string, std::string> sectionData;
         for (const auto& [key, value] : sectionTree) {
             sectionData[key] = value.get_value<std::string>();
         }

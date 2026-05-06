@@ -15,6 +15,7 @@ namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
 constexpr int DEFAULT_RPC_POOL_SIZE = 10;
+constexpr int DEFAULT_REDIS_POOL_SIZE = 5;
 
 enum class ErrorCodes : int32_t {
     SUCCESS = 0,

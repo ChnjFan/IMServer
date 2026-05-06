@@ -4,6 +4,7 @@ const emailModule = require('./email');
 const const_module = require('./const');
 const { v4: uuidv4 } = require('uuid');
 const config_mod = require('./config');
+const redis_module = require('./redis');
 
 async function GetVerifyCode(call, callback) {
     console.log('GetVerifyCode email:', call.request.email);

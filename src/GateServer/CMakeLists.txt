@@ -50,6 +50,8 @@ set(GATE_SERVER_SOURCES
         ConfigMgr.h
         AsioIOServicePool.cpp
         AsioIOServicePool.h
+        RedisMgr.cpp
+        RedisMgr.h
 )
 
 add_executable(GateServer ${GATE_SERVER_SOURCES})

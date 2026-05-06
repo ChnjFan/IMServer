@@ -5,7 +5,7 @@
 #ifndef IMSERVER_CONFIGMGR_H
 #define IMSERVER_CONFIGMGR_H
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 struct SectionInfo {
@@ -31,7 +31,7 @@ struct SectionInfo {
         return section_data_[key];
     }
 
-    std::map<std::string, std::string> section_data_;
+    std::unordered_map<std::string, std::string> section_data_;
 };
 
 class ConfigMgr {
@@ -51,7 +51,7 @@ public:
 
 private:
     ConfigMgr();
-    std::map<std::string, SectionInfo> configMap_;
+    std::unordered_map<std::string, SectionInfo> configMap_;
 };
 
 #endif //IMSERVER_CONFIGMGR_H
