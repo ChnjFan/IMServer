@@ -1,5 +1,5 @@
+const Redis = require('ioredis');
 const config_module = require('./config')
-const Redis = require('./ioredis');
 const {code_prefix} = require("./const");
 
 // 创建 Redis 客户端实例
@@ -54,7 +54,7 @@ async function QueryRedis(key) {
 async function SetRedisExpire(key, value, expires) {
     try {
         await RedisClient.set(key, value)
-        RedisClient.expires(key, expires)
+        RedisClient.expire(key, expires)
         return true
     }
     catch (error) {

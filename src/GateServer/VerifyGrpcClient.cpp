@@ -64,6 +64,7 @@ GetVerifyRsp VerifyGrpcClient::GetVerifyCode(std::string email) const {
     request.set_email(email);
     auto stub = connPool_->getConnection();
     if (const Status status = stub->GetVerifyCode(&context, request, &reply); !status.ok()) {
+        std::cout << "Error getting verify code" << std::endl;
         reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
     }
     connPool_->returnConnection(std::move(stub));

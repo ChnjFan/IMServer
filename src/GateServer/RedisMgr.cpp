@@ -85,7 +85,7 @@ bool RedisMgr::get(const std::string &key, std::string &value) {
     
     auto reply = static_cast<redisReply *>(redisCommand(conn, "GET %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_STRING) {
-        std::cout << "RedisMgr::get: RedisCommand() GET "<< key <<"failed!" << std::endl;
+        std::cout << "RedisMgr::get: RedisCommand() GET ["<< key <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -95,7 +95,7 @@ bool RedisMgr::get(const std::string &key, std::string &value) {
     freeReplyObject(reply);
     reply = nullptr;
 
-    std::cout << "RedisMgr::get: RedisCommand() GET " << key << " OK!" << std::endl;
+    std::cout << "RedisMgr::get: RedisCommand() GET [" << key << "] OK!" << std::endl;
 
     return true;
 }
@@ -108,14 +108,14 @@ bool RedisMgr::set(const std::string &key, const std::string &value) {
     
     auto reply = static_cast<redisReply *>(redisCommand(conn, "SET %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
-        std::cout << "RedisMgr::set: RedisCommand() SET "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::set: RedisCommand() SET ["<< key << " : " << value << "] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
     }
 
     if (!(reply->type == REDIS_REPLY_STATUS && (0 == strcmp(reply->str, "OK") || 0 == strcmp(reply->str, "ok")))) {
-        std::cout << "RedisMgr::set: RedisCommand() SET "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::set: RedisCommand() SET ["<< key << " : " << value << "] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -123,7 +123,7 @@ bool RedisMgr::set(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::set: RedisCommand() SET " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::set: RedisCommand() SET [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -135,14 +135,14 @@ bool RedisMgr::lPush(const std::string &key, const std::string &value) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "LPUSH %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
-        std::cout << "RedisMgr::lPush: RedisCommand() LPUSH "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::lPush: RedisCommand() LPUSH ["<< key << " : " << value <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
     }
 
     if (reply->type != REDIS_REPLY_INTEGER || reply->integer < 0) {
-        std::cout << "RedisMgr::lPush: RedisCommand() LPUSH "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::lPush: RedisCommand() LPUSH ["<< key << " : " << value << "] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -150,7 +150,7 @@ bool RedisMgr::lPush(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::lPush: RedisCommand() LPUSH " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::lPush: RedisCommand() LPUSH [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -162,7 +162,7 @@ bool RedisMgr::lPop(const std::string &key, std::string &value) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "LPOP %s", key.c_str()));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
-        std::cout << "RedisMgr::lPop: RedisCommand() LPOP "<< key <<"failed!" << std::endl;
+        std::cout << "RedisMgr::lPop: RedisCommand() LPOP ["<< key <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -171,7 +171,7 @@ bool RedisMgr::lPop(const std::string &key, std::string &value) {
     value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::lPop: RedisCommand() LPOP " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::lPop: RedisCommand() LPOP [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -183,14 +183,14 @@ bool RedisMgr::rPush(const std::string &key, const std::string &value) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "RPUSH %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
-        std::cout << "RedisMgr::rPush: RedisCommand() RPUSH "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::rPush: RedisCommand() RPUSH ["<< key << " : " << value <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
     }
 
     if (reply->type != REDIS_REPLY_INTEGER || reply->integer < 0) {
-        std::cout << "RedisMgr::rPush: RedisCommand() RPUSH "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::rPush: RedisCommand() RPUSH ["<< key << " : " << value <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -198,7 +198,7 @@ bool RedisMgr::rPush(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::rPush: RedisCommand() RPUSH " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::rPush: RedisCommand() RPUSH [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -210,7 +210,7 @@ bool RedisMgr::rPop(const std::string &key, std::string &value) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "RPOP %s", key.c_str()));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
-        std::cout << "RedisMgr::rPop: RedisCommand() RPOP "<< key <<"failed!" << std::endl;
+        std::cout << "RedisMgr::rPop: RedisCommand() RPOP ["<< key <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -219,7 +219,7 @@ bool RedisMgr::rPop(const std::string &key, std::string &value) {
     value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::rPop: RedisCommand() RPOP " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::rPop: RedisCommand() RPOP [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -232,7 +232,7 @@ bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::
     auto reply = static_cast<redisReply *>(redisCommand(conn,
         "HSET %s %s %s", key.c_str(), hKey.c_str(), value.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
-        std::cout << "RedisMgr::hSet: RedisCommand() HSET "<< key << " " << value <<"failed!" << std::endl;
+        std::cout << "RedisMgr::hSet: RedisCommand() HSET ["<< key << " : " << value <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -240,7 +240,7 @@ bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::hSet: RedisCommand() HSET " << key << " " << value << " OK!" << std::endl;
+    std::cout << "RedisMgr::hSet: RedisCommand() HSET [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -313,7 +313,7 @@ bool RedisMgr::del(const std::string &key) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "DEL %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
-        std::cout << "RedisMgr::del: RedisCommand() " << key << " failed!" << std::endl;
+        std::cout << "RedisMgr::del: RedisCommand() [" << key << "] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -321,7 +321,7 @@ bool RedisMgr::del(const std::string &key) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::del: RedisCommand() " << key << " OK!" << std::endl;
+    std::cout << "RedisMgr::del: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -333,7 +333,7 @@ bool RedisMgr::existsKey(const std::string &key) {
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "exists %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
-        std::cout << "RedisMgr::existsKey: RedisCommand()" << key << "not found!" << std::endl;
+        std::cout << "RedisMgr::existsKey: RedisCommand() [" << key << "] not found!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -341,7 +341,7 @@ bool RedisMgr::existsKey(const std::string &key) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::existsKey: RedisCommand() " << key << " OK!" << std::endl;
+    std::cout << "RedisMgr::existsKey: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -351,10 +351,11 @@ void RedisMgr::close() {
 
 RedisMgr::RedisMgr() {
     auto& config = ConfigMgr::getInstance();
-    size_t poolSize = std::stoi(config["Redis"]["PoolSize"]);
-    if (poolSize == 0) {
-        poolSize = DEFAULT_REDIS_POOL_SIZE;
+    size_t poolSize = DEFAULT_REDIS_POOL_SIZE;
+    if (!config["Redis"]["PoolSize"].empty()) {
+        poolSize = std::stoi(config["Redis"]["PoolSize"]);
     }
+
     const std::string host = config["Redis"]["Host"];
     int port = std::stoi(config["Redis"]["Port"]);
     const std::string password = config["Redis"]["Password"];

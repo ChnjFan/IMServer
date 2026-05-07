@@ -9,9 +9,30 @@ const redis_module = require('./redis');
 async function GetVerifyCode(call, callback) {
     console.log('GetVerifyCode email:', call.request.email);
     try {
-        let uniqueId = uuidv4(); // 生成唯一ID
+        // 现在 Redis 查询是否有没有过期的验证码
+        console.log('Redis GET ', config_mod.code_prefix + call.request.email);
+        let query_res = await redis_module.GetRedis(config_mod.code_prefix + call.request.email);
+        console.log("query_res is ", query_res);
+        let uniqueId = query_res;
+        if (query_res == null) {
+            uniqueId = uuidv4(); // 生成唯一ID
+            if (uniqueId.length > 4) {// 截取前 4 位作为验证码
+                uniqueId = uniqueId.substring(0, 4);
+            }
+            // 设置 10 分钟的过期时间
+            let bres = await redis_module.SetRedisExpire(config_mod.code_prefix + call.request.email, uniqueId, 600);
+             if (!bres) {
+                 callback(null, {
+                     email: call.request.emcall.request.emailail,
+                     error: const_module.Errors.RedisErr
+                 });
+                 return;
+             }
+             console.log('Redis Expired with ', config_mod.code_prefix + config_mod.email_user);
+        }
+
         console.log('uniqueId:', uniqueId);
-        let text_str = '您的验证码是' + uniqueId + '，请在 3 分钟内输入';
+        let text_str = '您的验证码是 ' + uniqueId + '，请在 3 分钟内输入';
         // 发送邮件
         let mailOptions = {
             from: config_mod.email_user,
