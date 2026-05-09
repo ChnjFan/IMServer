@@ -133,6 +133,13 @@ LogicSystem::LogicSystem() {
         auto user = srcRoot["user"].asString();
         auto passwd = srcRoot["passwd"].asString();
         auto confirm = srcRoot["confirm"].asString();
+        if (passwd != confirm) {
+            std::cout << "passwd and confirm is not match" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
         int uid = MysqlMgr::getInstance()->registerUser(user, email, passwd);
         if (uid == 0 || uid == -1) {
             std::cout << "Register user email or name exist" << std::endl;
@@ -146,6 +153,76 @@ LogicSystem::LogicSystem() {
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
         root["email"] = email;
         root["uid"] = uid;
+        root["user"] = user;
+        root["passwd"] = passwd;
+        root["confirm"] = confirm;
+        root["verify_code"] = verifyCode;
+
+        const std::string jsonStr = root.toStyledString();
+        std::cout << "Response: " << jsonStr << std::endl;
+        boost::beast::ostream(connection->response_.body()) << jsonStr;
+    });
+
+    // 重置密码
+    registerPost("/reset_passwd", [](std::shared_ptr<HttpConnection> connection) {
+        auto bodyString = boost::beast::buffers_to_string(connection->request_.body().data());
+        std::cout << "receive body: " << bodyString << std::endl;
+
+        connection->response_.set(http::field::content_type, "application/json");
+        Json::Value root;
+        Json::Value srcRoot;
+        if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
+            std::cout << "Failed to parse JSON data" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        // 先校验验证码是否正确
+        auto email = srcRoot["email"].asString();
+        auto codeEmail = CODE_PREFIX + email;
+        auto verifyCode = srcRoot["verify_code"].asString();
+        std::string expectCode;
+        if (auto res = RedisMgr::getInstance()->get(codeEmail, expectCode); !res) {
+            std::cout << "Verify code expired" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::VERIFY_CODE_EXPIRED);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        if (verifyCode != expectCode) {
+            std::cout << "Invalid verify code, expect: " << expectCode << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::VERIFY_CODE_NOT_REACHED);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        // 数据库校验用户名和邮箱是否匹配
+        auto user = srcRoot["user"].asString();
+        if (bool result = MysqlMgr::getInstance()->checkEmail(user, email); !result) {
+            std::cout << "User email not match" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        auto passwd = srcRoot["passwd"].asString();
+        auto confirm = srcRoot["confirm"].asString();
+        if (bool result = MysqlMgr::getInstance()->updatePasswd(user, passwd); !result) {
+            std::cout << "User email not match" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        // 给验证服务发送验证码请求
+        root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+        root["email"] = email;
         root["user"] = user;
         root["passwd"] = passwd;
         root["confirm"] = confirm;

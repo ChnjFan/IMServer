@@ -30,6 +30,7 @@ enum class ErrorCodes : int32_t {
     VERIFY_CODE_EXPIRED = 1003,
     VERIFY_CODE_NOT_REACHED = 1004,
     USER_EXISTS = 1005,
+    USER_EMAIL_NOT_EXISTS = 1006,
 };
 
 class Defer {

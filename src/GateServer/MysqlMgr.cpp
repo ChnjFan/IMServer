@@ -11,3 +11,11 @@ int MysqlMgr::registerUser(const std::string &name, const std::string &email, co
     return db_.registerUser(name, email, password);
 }
 
+bool MysqlMgr::checkEmail(const std::string &user, const std::string &email) {
+    return db_.checkEmail(user, email);
+}
+
+bool MysqlMgr::updatePasswd(const std::string &user, const std::string &passwd) {
+    return db_.updatePasswd(user, passwd);
+}
+
