@@ -5,6 +5,9 @@
 #ifndef IMSERVER_CONST_H
 #define IMSERVER_CONST_H
 
+#include <utility>
+#include <functional>
+
 #include <boost/beast/http.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
@@ -16,6 +19,7 @@ using tcp = boost::asio::ip::tcp;
 
 constexpr int DEFAULT_RPC_POOL_SIZE = 10;
 constexpr int DEFAULT_REDIS_POOL_SIZE = 5;
+constexpr int DEFAULT_MYSQL_POOL_SIZE = 5;
 
 #define CODE_PREFIX "code_"
 
@@ -25,6 +29,18 @@ enum class ErrorCodes : int32_t {
     RPC_FAILED = 1002,
     VERIFY_CODE_EXPIRED = 1003,
     VERIFY_CODE_NOT_REACHED = 1004,
+    USER_EXISTS = 1005,
+};
+
+class Defer {
+public:
+    explicit Defer(std::function<void()> func) : func_(std::move(func)) {};
+    ~Defer() {
+        func_();
+    }
+
+private:
+    std::function<void()> func_;
 };
 
 #endif //IMSERVER_CONST_H

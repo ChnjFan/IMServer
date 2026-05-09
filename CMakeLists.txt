@@ -31,6 +31,10 @@ add_library(jsoncpp_deps INTERFACE)
 target_include_directories(jsoncpp_deps INTERFACE ${JSONCPP_INCLUDE_DIRS})
 target_link_libraries(jsoncpp_deps INTERFACE ${JSONCPP_LINK_LIBRARIES})
 
+find_package(mysql-concpp REQUIRED CONFIG COMPONENTS jdbc)
+add_library(mysqlcppconn_deps INTERFACE)
+target_link_libraries(mysqlcppconn_deps INTERFACE mysql::concpp-jdbc)
+
 find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 

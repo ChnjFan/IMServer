@@ -12,6 +12,7 @@
 #include "LogicSystem.h"
 #include "VerifyGrpcClient.h"
 #include "RedisMgr.h"
+#include "MysqlMgr.h"
 
 LogicSystem::~LogicSystem() {
 }
@@ -108,7 +109,8 @@ LogicSystem::LogicSystem() {
         }
 
         // 先校验验证码是否正确
-        auto codeEmail = CODE_PREFIX + srcRoot["email"].asString();
+        auto email = srcRoot["email"].asString();
+        auto codeEmail = CODE_PREFIX + email;
         auto verifyCode = srcRoot["verify_code"].asString();
         std::string expectCode;
         if (auto res = RedisMgr::getInstance()->get(codeEmail, expectCode); !res) {
@@ -120,7 +122,7 @@ LogicSystem::LogicSystem() {
         }
 
         if (verifyCode != expectCode) {
-            std::cout << "Invalid verify code" << std::endl;
+            std::cout << "Invalid verify code, expect: " << expectCode << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::VERIFY_CODE_NOT_REACHED);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
@@ -128,14 +130,26 @@ LogicSystem::LogicSystem() {
         }
 
         // MySql 中查找并注册用户
+        auto user = srcRoot["user"].asString();
+        auto passwd = srcRoot["passwd"].asString();
+        auto confirm = srcRoot["confirm"].asString();
+        int uid = MysqlMgr::getInstance()->registerUser(user, email, passwd);
+        if (uid == 0 || uid == -1) {
+            std::cout << "Register user email or name exist" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::USER_EXISTS);
+            const std::string jsonStr = root.toStyledString();
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
 
         // 给验证服务发送验证码请求
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-        root["email"] = srcRoot["email"].asString();
-        root["user"] = srcRoot["user"].asString();
-        root["passwd"] = srcRoot["passwd"].asString();
-        root["confirm"] = srcRoot["user"].asString();
-        root["verify_code"] = srcRoot["verify_code"].asString();
+        root["email"] = email;
+        root["uid"] = uid;
+        root["user"] = user;
+        root["passwd"] = passwd;
+        root["confirm"] = confirm;
+        root["verify_code"] = verifyCode;
 
         const std::string jsonStr = root.toStyledString();
         std::cout << "Response: " << jsonStr << std::endl;

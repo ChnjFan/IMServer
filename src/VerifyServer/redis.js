@@ -54,7 +54,7 @@ async function QueryRedis(key) {
 async function SetRedisExpire(key, value, expires) {
     try {
         await RedisClient.set(key, value)
-        RedisClient.expire(key, expires)
+        await RedisClient.expire(key, expires)
         return true
     }
     catch (error) {

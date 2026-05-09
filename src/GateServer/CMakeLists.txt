@@ -52,6 +52,10 @@ set(GATE_SERVER_SOURCES
         AsioIOServicePool.h
         RedisMgr.cpp
         RedisMgr.h
+        MysqlDao.cpp
+        MysqlDao.h
+        MysqlMgr.cpp
+        MysqlMgr.h
 )
 
 add_executable(GateServer ${GATE_SERVER_SOURCES})
@@ -60,6 +64,7 @@ target_link_libraries(GateServer
     jsoncpp_deps
     grpc_deps
     hiredis_deps
+    mysqlcppconn_deps
     Boost::filesystem
 )
 
