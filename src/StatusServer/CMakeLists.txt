@@ -3,19 +3,13 @@ set(PROTO_BIN_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 generate_grpc_code("${PROTO_FILES}" ${PROTO_BIN_DIR})
 
-set(GATE_SERVER_SOURCES
+set(STATUS_SERVER_SOURCES
     main.cpp
-    GateServer.cpp
-    GateServer.h
-    const.h
-    HttpConnection.cpp
-    HttpConnection.h
-    Singleton.h
-    LogicSystem.cpp
-    LogicSystem.h
     ${GENERATED_PROTO_SRCS}
-    VerifyGrpcClient.cpp
-    VerifyGrpcClient.h
+    StatusServer.cpp
+    StatusServer.h
+    const.h
+    Singleton.h
     ConfigMgr.cpp
     ConfigMgr.h
     AsioIOServicePool.cpp
@@ -26,13 +20,13 @@ set(GATE_SERVER_SOURCES
     MysqlDao.h
     MysqlMgr.cpp
     MysqlMgr.h
-        StatusGrpcClient.cpp
-        StatusGrpcClient.h
+        StatusServiceImpl.cpp
+        StatusServiceImpl.h
 )
 
-add_executable(GateServer ${GATE_SERVER_SOURCES})
+add_executable(StatusServer ${STATUS_SERVER_SOURCES})
 
-target_link_libraries(GateServer
+target_link_libraries(StatusServer
     jsoncpp_deps
     grpc_deps
     hiredis_deps
@@ -40,20 +34,20 @@ target_link_libraries(GateServer
     Boost::filesystem
 )
 
-target_include_directories(GateServer
+target_include_directories(StatusServer
     PRIVATE ${PROJECT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${PROTO_BIN_DIR}
 )
 
-add_custom_command(TARGET GateServer POST_BUILD
+add_custom_command(TARGET StatusServer POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/config.ini
-        $<TARGET_FILE_DIR:GateServer>/config.ini
+        $<TARGET_FILE_DIR:StatusServer>/config.ini
     COMMENT "Copying config.ini to runtime directory"
 )
 
-install(TARGETS GateServer
+install(TARGETS StatusServer
     RUNTIME DESTINATION bin
 )
 

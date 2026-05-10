@@ -63,19 +63,27 @@ GetVerifyRsp VerifyGrpcClient::GetVerifyCode(std::string email) const {
 
     request.set_email(email);
     auto stub = connPool_->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+
+    Defer defer([this, &stub] () {
+        connPool_->returnConnection(std::move(stub));
+    });
     if (const Status status = stub->GetVerifyCode(&context, request, &reply); !status.ok()) {
         std::cout << "Error getting verify code" << std::endl;
         reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
     }
-    connPool_->returnConnection(std::move(stub));
     return reply;
 }
 
 VerifyGrpcClient::VerifyGrpcClient() {
     auto& config = ConfigMgr::getInstance();
-    size_t size = std::stoi(config["GateServer"]["RPCConnPoolSize"]);
-    if (0 == size) {
-        size = DEFAULT_RPC_POOL_SIZE;
+    size_t size = DEFAULT_RPC_POOL_SIZE;
+    if (!config["GateServer"]["RPCConnPoolSize"].empty()) {
+        size = std::stoi(config["GateServer"]["RPCConnPoolSize"]);
     }
 
     connPool_ = std::make_unique<RPCConnPool>(size,

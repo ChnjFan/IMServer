@@ -248,7 +248,6 @@ bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, 
             break;
         }
         if (originPassword != passwd) {
-            std::cout << "Input passwd: " << passwd << std::endl;
             return false;
         }
 

@@ -16,6 +16,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_GATE_SERVER "Build GateServer" ON)
 option(BUILD_CHAT_SERVER "Build ChatServer" ON)
+option(BUILD_STATUS_SERVER "Build StatusServer" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
@@ -51,10 +52,51 @@ add_library(hiredis_deps INTERFACE)
 target_include_directories(hiredis_deps INTERFACE ${HIREDIS_INCLUDE_DIRS})
 target_link_libraries(hiredis_deps INTERFACE ${HIREDIS_LINK_LIBRARIES})
 
+function(generate_grpc_code proto_files output_dir)
+    set(PROTO_SRC_DIR ${PROJECT_SOURCE_DIR}/proto)
+    
+    foreach(proto_file ${proto_files})
+        get_filename_component(proto_name ${proto_file} NAME_WE)
+        
+        set(generated_srcs
+            ${output_dir}/${proto_name}.pb.cc
+            ${output_dir}/${proto_name}.grpc.pb.cc
+        )
+        set(generated_hdrs
+            ${output_dir}/${proto_name}.pb.h
+            ${output_dir}/${proto_name}.grpc.pb.h
+        )
+        
+        add_custom_command(
+            OUTPUT ${generated_srcs} ${generated_hdrs}
+            COMMAND protobuf::protoc
+            ARGS 
+                --grpc_out=${output_dir}
+                --cpp_out=${output_dir}
+                -I${PROTO_SRC_DIR}
+                --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin>
+                ${PROTO_SRC_DIR}/${proto_file}
+            MAIN_DEPENDENCY ${PROTO_SRC_DIR}/${proto_file}
+            COMMENT "Generating gRPC code from ${proto_file}"
+            VERBATIM
+        )
+        
+        list(APPEND GENERATED_PROTO_SRCS ${generated_srcs})
+        list(APPEND GENERATED_PROTO_HDRS ${generated_hdrs})
+    endforeach()
+    
+    set(GENERATED_PROTO_SRCS ${GENERATED_PROTO_SRCS} PARENT_SCOPE)
+    set(GENERATED_PROTO_HDRS ${GENERATED_PROTO_HDRS} PARENT_SCOPE)
+endfunction()
+
 if(BUILD_GATE_SERVER)
     add_subdirectory(src/GateServer)
 endif()
 
 if(BUILD_CHAT_SERVER)
     add_subdirectory(src/ChatServer)
+endif()
+
+if(BUILD_STATUS_SERVER)
+    add_subdirectory(src/StatusServer)
 endif()

@@ -16,7 +16,6 @@
 #include "message.grpc.pb.h"
 
 #include "Singleton.h"
-#include "VerifyGrpcClient.h"
 
 using grpc::Channel;
 using grpc::Status;
