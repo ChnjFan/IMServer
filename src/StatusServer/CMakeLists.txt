@@ -8,34 +8,18 @@ set(STATUS_SERVER_SOURCES
     ${GENERATED_PROTO_SRCS}
     StatusServer.cpp
     StatusServer.h
-    const.h
-    Singleton.h
-    ConfigMgr.cpp
-    ConfigMgr.h
-    AsioIOServicePool.cpp
-    AsioIOServicePool.h
-    RedisMgr.cpp
-    RedisMgr.h
-    MysqlDao.cpp
-    MysqlDao.h
-    MysqlMgr.cpp
-    MysqlMgr.h
-        StatusServiceImpl.cpp
-        StatusServiceImpl.h
+    StatusServiceImpl.cpp
+    StatusServiceImpl.h
 )
 
 add_executable(StatusServer ${STATUS_SERVER_SOURCES})
 
 target_link_libraries(StatusServer
-    jsoncpp_deps
+    common
     grpc_deps
-    hiredis_deps
-    mysqlcppconn_deps
-    Boost::filesystem
 )
 
 target_include_directories(StatusServer
-    PRIVATE ${PROJECT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${PROTO_BIN_DIR}
 )

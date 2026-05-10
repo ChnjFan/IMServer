@@ -7,41 +7,25 @@ set(GATE_SERVER_SOURCES
     main.cpp
     GateServer.cpp
     GateServer.h
-    const.h
     HttpConnection.cpp
     HttpConnection.h
-    Singleton.h
     LogicSystem.cpp
     LogicSystem.h
     ${GENERATED_PROTO_SRCS}
     VerifyGrpcClient.cpp
     VerifyGrpcClient.h
-    ConfigMgr.cpp
-    ConfigMgr.h
-    AsioIOServicePool.cpp
-    AsioIOServicePool.h
-    RedisMgr.cpp
-    RedisMgr.h
-    MysqlDao.cpp
-    MysqlDao.h
-    MysqlMgr.cpp
-    MysqlMgr.h
-        StatusGrpcClient.cpp
-        StatusGrpcClient.h
+    StatusGrpcClient.cpp
+    StatusGrpcClient.h
 )
 
 add_executable(GateServer ${GATE_SERVER_SOURCES})
 
 target_link_libraries(GateServer
-    jsoncpp_deps
+    common
     grpc_deps
-    hiredis_deps
-    mysqlcppconn_deps
-    Boost::filesystem
 )
 
 target_include_directories(GateServer
-    PRIVATE ${PROJECT_SOURCE_DIR}/include
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
     PRIVATE ${PROTO_BIN_DIR}
 )

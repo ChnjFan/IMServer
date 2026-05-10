@@ -6,6 +6,7 @@
 
 - GateServer：网关服务器，负责客户端连接管理和协议路由。
 - ChatServer：核心聊天服务器，处理消息处理、房间管理和用户交互。
+- StatusServer：状态服务器，管理用户在线状态和好友关系。
 
 ## 依赖
 
@@ -108,5 +109,11 @@ make -j$(nproc)
 
 ```bash
 ./bin/ChatServer
+```
+
+### StatusServer
+
+```bash
+./bin/StatusServer
 ```
 
