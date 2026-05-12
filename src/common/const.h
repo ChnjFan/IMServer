@@ -21,6 +21,11 @@ constexpr int DEFAULT_RPC_POOL_SIZE = 10;
 constexpr int DEFAULT_REDIS_POOL_SIZE = 5;
 constexpr int DEFAULT_MYSQL_POOL_SIZE = 5;
 
+constexpr int HEAD_TOTAL_LEN = 4;
+constexpr int HEAD_MSG_ID_LEN = 2;
+constexpr int HEAD_MSG_SIZE_LEN = 2;
+constexpr int MAX_BUFFER_SIZE = 8196;
+
 #define CODE_PREFIX "code_"
 
 enum class ErrorCodes : int32_t {
@@ -31,6 +36,12 @@ enum class ErrorCodes : int32_t {
     VERIFY_CODE_NOT_REACHED = 1004,
     USER_EXISTS = 1005,
     USER_EMAIL_NOT_EXISTS = 1006,
+};
+
+enum class MessageID : uint16_t {
+    CHAT_LOGIN = 2001,
+    CHAT_LOGIN_RSP = 2002,
+    INVALID_ID,
 };
 
 struct UserInfo {

@@ -90,6 +90,7 @@ function(generate_grpc_code proto_files output_dir)
 endfunction()
 
 add_subdirectory(src/common)
+add_subdirectory(src/proto_client)
 
 if(BUILD_GATE_SERVER)
     add_subdirectory(src/GateServer)
@@ -102,3 +103,11 @@ endif()
 if(BUILD_STATUS_SERVER)
     add_subdirectory(src/StatusServer)
 endif()
+
+add_custom_target(copy_config ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/config.ini
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/config.ini
+    COMMENT "Copying config.ini to bin directory"
+)

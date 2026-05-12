@@ -5,7 +5,8 @@ generate_grpc_code("${PROTO_FILES}" ${PROTO_BIN_DIR})
 
 set(STATUS_SERVER_SOURCES
     main.cpp
-    ${GENERATED_PROTO_SRCS}
+    ${PROTO_BIN_DIR}/message.pb.cc
+    ${PROTO_BIN_DIR}/message.grpc.pb.cc
     StatusServer.cpp
     StatusServer.h
     StatusServiceImpl.cpp
@@ -13,6 +14,8 @@ set(STATUS_SERVER_SOURCES
 )
 
 add_executable(StatusServer ${STATUS_SERVER_SOURCES})
+
+add_dependencies(StatusServer copy_config)
 
 target_link_libraries(StatusServer
     common
@@ -24,15 +27,6 @@ target_include_directories(StatusServer
     PRIVATE ${PROTO_BIN_DIR}
 )
 
-add_custom_command(TARGET StatusServer POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/config.ini
-        $<TARGET_FILE_DIR:StatusServer>/config.ini
-    COMMENT "Copying config.ini to runtime directory"
-)
-
 install(TARGETS StatusServer
     RUNTIME DESTINATION bin
 )
-
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/config.ini DESTINATION bin)

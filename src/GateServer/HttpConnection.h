@@ -26,10 +26,10 @@ public:
     public:
         UrlParser() = default;
         void parse(const std::string& url);
-        const std::string& getPath() const;
-        const UrlParams& getParams() const;
-        bool hasParam(const std::string& key) const;
-        std::string getParam(const std::string& key, const std::string& defaultValue = "") const;
+        [[nodiscard]] const std::string& getPath() const;
+        [[nodiscard]] const UrlParams& getParams() const;
+        [[nodiscard]] bool hasParam(const std::string& key) const;
+        [[nodiscard]] std::string getParam(const std::string& key, const std::string& defaultValue = "") const;
     private:
         std::string path_;
         UrlParams params_;

@@ -58,7 +58,7 @@ void StatusConnPool::returnConnection(std::unique_ptr<StatusService::Stub> stub)
     std::cout << "Returning RPC connection success" << std::endl;
 }
 
-GetChatServerRsp StatusGrpcClient::GetChatServer(int uid) {
+GetChatServerRsp StatusGrpcClient::GetChatServer(const int uid) const {
     ClientContext context;
     GetChatServerReq request;
     GetChatServerRsp reply;
@@ -74,6 +74,31 @@ GetChatServerRsp StatusGrpcClient::GetChatServer(int uid) {
     });
     request.set_uid(uid);
     if (const auto status = stub->GetChatServer(&context, request, &reply); status.ok()) {
+        std::cout << "Get RPC connection success" << std::endl;
+        return reply;
+    }
+
+    reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+    return reply;
+}
+
+LoginRsp StatusGrpcClient::Login(const int uid, const std::string &token) const {
+    ClientContext context;
+    LoginReq request;
+    LoginRsp reply;
+    auto stub = pool_->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+
+    Defer defer([this, &stub] () {
+        pool_->returnConnection(std::move(stub));
+    });
+    request.set_uid(uid);
+    request.set_token(token);
+    if (const auto status = stub->Login(&context, request, &reply); status.ok()) {
         std::cout << "Get RPC connection success" << std::endl;
         return reply;
     }
