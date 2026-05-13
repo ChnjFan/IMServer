@@ -16,9 +16,9 @@ ChatServer::ChatServer(net::io_context &io_context, const unsigned short port)
 
 void ChatServer::start() {
     auto self = shared_from_this();
-    auto& io_contex = AsioIOServicePool::getInstance()->getIOService();
+    auto& io_context = AsioIOServicePool::getInstance()->getIOService();
     // 创建一个 Session 会话等待 TCP 连接
-    auto session = std::make_shared<Session>(io_contex, self);
+    auto session = std::make_shared<Session>(io_context, self);
     acceptor_.async_accept(session->getSocket(), [self, session](const boost::system::error_code &ec) {
         try {
             if (!ec) {

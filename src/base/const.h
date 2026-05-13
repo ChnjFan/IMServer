@@ -36,6 +36,8 @@ enum class ErrorCodes : int32_t {
     VERIFY_CODE_NOT_REACHED = 1004,
     USER_EXISTS = 1005,
     USER_EMAIL_NOT_EXISTS = 1006,
+    CHAT_LOGIN_TOKEN_ERROR = 1007,
+    CHAT_LOGIN_UID_ERROR = 1008,
 };
 
 enum class MessageID : uint16_t {

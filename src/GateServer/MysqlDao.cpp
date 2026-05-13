@@ -98,7 +98,7 @@ bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) 
     }
 }
 
-bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, UserInfo userInfo) {
+bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, UserInfo& userInfo) {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;

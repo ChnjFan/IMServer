@@ -14,7 +14,7 @@ public:
 
     bool updatePasswd(const std::string & user, const std::string & passwd);
 
-    bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo userInfo);
+    bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo& userInfo);
 
 private:
     std::unique_ptr<MysqlPool> pool_;

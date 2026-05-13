@@ -13,7 +13,7 @@
 #include "const.h"
 #include "Session.h"
 
-class ChatServer : std::enable_shared_from_this<ChatServer> {
+class ChatServer : public std::enable_shared_from_this<ChatServer> {
 public:
     ChatServer(net::io_context &io_context, unsigned short port);
     void start();

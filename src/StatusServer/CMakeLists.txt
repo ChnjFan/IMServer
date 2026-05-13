@@ -11,10 +11,6 @@ set(STATUS_SERVER_SOURCES
     StatusServer.h
     StatusServiceImpl.cpp
     StatusServiceImpl.h
-    MysqlDao.cpp
-    MysqlDao.h
-    MysqlMgr.cpp
-    MysqlMgr.h
 )
 
 add_executable(StatusServer ${STATUS_SERVER_SOURCES})

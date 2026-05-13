@@ -31,12 +31,15 @@ struct ChatServerInfo {
 
 class StatusServiceImpl : public message::StatusService::Service {
 public:
-    StatusServiceImpl() = default;
+    StatusServiceImpl();
     Status GetChatServer(ServerContext* context, const GetChatServerReq* request, GetChatServerRsp* response) override;
+    Status Login(ServerContext *context, const message::LoginReq *request, message::LoginRsp *response) override;
 
 private:
     ChatServerInfo getChatServerInfo();
-    void insertToken(int uid, std::string token);
+
+    void insertToken(int uid, const std::string& token);
+    bool checkToken(int uid, const std::string& token);
 
     std::unordered_map<std::string, ChatServerInfo> chatServers_;
     std::unordered_map<int, std::string> tokens_;

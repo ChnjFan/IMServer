@@ -13,6 +13,7 @@
 #include "StatusGrpcClient.h"
 
 #include "Session.h"
+#include "MysqlMgr.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -98,7 +99,29 @@ void ChatLogicSystem::loginHandle(std::shared_ptr<Session> session, const uint16
         root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
         return;
     }
-    auto uid = srcRoot["uid"].asInt();
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    const auto uid = srcRoot["uid"].asInt();
     std::cout << "user login uid is " << uid << std::endl;
-    auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
+    const auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
+    if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
+        || reply.token() != srcRoot["token"].asString()) {
+        std::cout << "Login token error" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_TOKEN_ERROR);
+        return;
+    }
+
+    //  todo: 用户上线下线，这里要注意加锁保护
+    if (users_.find(uid) == users_.end()) {
+        std::shared_ptr<UserInfo> user = nullptr;
+        user = MysqlMgr::getInstance()->getUser(uid);
+        if (nullptr == user) {
+            std::cout << "User not found" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
+            return;
+        }
+        users_.insert({uid, user});
+    }
+
+    root["uid"] = uid;
+    root["token"] = reply.token();
 }

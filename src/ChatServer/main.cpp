@@ -27,7 +27,7 @@ int main()
             io_context.stop();
             pool->stop();
         });
-        std::make_shared<ChatServer>(io_context, port);
+        std::make_shared<ChatServer>(io_context, port)->start();
         std::cout << "ChatServer started on port: " << port << std::endl;
         io_context.run();
     } catch (std::exception &e) {

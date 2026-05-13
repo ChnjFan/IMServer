@@ -8,6 +8,10 @@ set(CHAT_SERVER_SOURCES
     MsgNode.h
     ChatLogicSystem.cpp
     ChatLogicSystem.h
+    MysqlMgr.h
+    MysqlMgr.cpp
+    MysqlDao.h
+    MysqlDao.cpp
 )
 
 add_executable(ChatServer ${CHAT_SERVER_SOURCES})

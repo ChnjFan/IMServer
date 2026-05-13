@@ -41,6 +41,8 @@ private:
     std::condition_variable cond_;
 
     std::unordered_map<uint16_t, msgHandler> handlers_;
+    std::unordered_map<int, std::shared_ptr<UserInfo>> users_;
+    std::mutex users_mutex_;
 };
 
 
