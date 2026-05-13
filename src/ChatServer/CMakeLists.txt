@@ -15,7 +15,7 @@ add_executable(ChatServer ${CHAT_SERVER_SOURCES})
 add_dependencies(ChatServer copy_config)
 
 target_link_libraries(ChatServer
-    proto_client
+    proto
 )
 
 target_include_directories(ChatServer

@@ -41,7 +41,7 @@ ChatLogicSystem::ChatLogicSystem() : stop_(false) {
 
 void ChatLogicSystem::initHandlers() {
     registerHandler(static_cast<uint16_t>(MessageID::CHAT_LOGIN),
-        std::bind(&ChatLogicSystem::loginHanlde, this,
+        std::bind(&ChatLogicSystem::loginHandle, this,
         std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 }
 
@@ -86,7 +86,7 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     handlers_[node->msgId_](node->session_, node->msgId_, std::string(node->buffer_));
 }
 
-void ChatLogicSystem::loginHanlde(std::shared_ptr<Session> session, const uint16_t msgId, const std::string &data) {
+void ChatLogicSystem::loginHandle(std::shared_ptr<Session> session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
     Defer defer([&root, session]() {

@@ -90,7 +90,7 @@ function(generate_grpc_code proto_files output_dir)
 endfunction()
 
 add_subdirectory(src/base)
-add_subdirectory(src/proto_client)
+add_subdirectory(src/proto)
 
 if(BUILD_GATE_SERVER)
     add_subdirectory(src/GateServer)

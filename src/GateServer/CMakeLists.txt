@@ -17,7 +17,7 @@ add_executable(GateServer ${GATE_SERVER_SOURCES})
 add_dependencies(GateServer copy_config)
 
 target_link_libraries(GateServer
-    proto_client
+    proto
     mysqlcppconn_deps
 )
 

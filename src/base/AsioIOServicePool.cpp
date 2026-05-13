@@ -20,8 +20,7 @@ AsioIOServicePool::IOService & AsioIOServicePool::getIOService() {
 }
 
 void AsioIOServicePool::stop() {
-    bool expected = false;
-    if (!stopped_.compare_exchange_strong(expected, true)) {
+    if (bool expected = false; !stopped_.compare_exchange_strong(expected, true)) {
         return;
     }
 
