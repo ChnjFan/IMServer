@@ -89,7 +89,7 @@ function(generate_grpc_code proto_files output_dir)
     set(GENERATED_PROTO_HDRS ${GENERATED_PROTO_HDRS} PARENT_SCOPE)
 endfunction()
 
-add_subdirectory(src/common)
+add_subdirectory(src/base)
 add_subdirectory(src/proto_client)
 
 if(BUILD_GATE_SERVER)

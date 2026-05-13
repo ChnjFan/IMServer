@@ -15,7 +15,7 @@ add_library(proto_client STATIC ${PROTO_CLIENT_SOURCES})
 
 target_link_libraries(proto_client
     grpc_deps
-    common
+    base
 )
 
 target_include_directories(proto_client

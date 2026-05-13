@@ -1,11 +1,12 @@
-//
-// Created by Fan on 2026/5/8.
-//
-
-#ifndef IMSERVER_MYSQLDAO_H
-#define IMSERVER_MYSQLDAO_H
+#ifndef IMSERVER_MYSQLPOOL_H
+#define IMSERVER_MYSQLPOOL_H
 
 #include <memory>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <atomic>
+#include <thread>
 
 #include <jdbc/mysql_driver.h>
 #include <jdbc/mysql_connection.h>
@@ -47,25 +48,7 @@ private:
     std::mutex mutex_;
     std::condition_variable cond_;
     std::atomic<bool> stop_{false};
-    std::thread thread_;    // 后台线程，每分钟检测 sql 连接是否正常
+    std::thread thread_;
 };
 
-class MysqlDao {
-public:
-    MysqlDao();
-    ~MysqlDao();
-
-    int registerUser(const std::string& user, const std::string& email, const std::string& password);
-
-    bool checkEmail(const std::string & user, const std::string & email);
-
-    bool updatePasswd(const std::string & user, const std::string & passwd);
-
-    bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo userInfo);
-
-private:
-    std::unique_ptr<MysqlPool> pool_;
-};
-
-
-#endif //IMSERVER_MYSQLDAO_H
+#endif //IMSERVER_MYSQLPOOL_H
