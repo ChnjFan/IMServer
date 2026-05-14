@@ -40,10 +40,8 @@ ChatLogicSystem::ChatLogicSystem() : stop_(false) {
 }
 
 void ChatLogicSystem::initHandlers() {
-    auto self = shared_from_this();
-    registerHandler(static_cast<uint16_t>(MessageID::CHAT_LOGIN),
-        [self, this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
-            boost::ignore_unused(self);
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return loginHandle(session, msgId, data);
         });
 }
@@ -81,7 +79,7 @@ void ChatLogicSystem::dealMsg() {
 }
 
 void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
-    std::cout << "Handle msg id is " << node->msgId_;
+    std::cout << "Handle msg id is " << node->msgId_ << std::endl;
     if (handlers_.find(node->msgId_) == handlers_.end()) {
         std::cout << "Msg id [" << node->msgId_ << "] handler not found" << std::endl;
         return;
@@ -94,7 +92,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     Json::Value srcRoot;
     Defer defer([&root, session]() {
         const std::string jsonStr = root.toStyledString();
-        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::CHAT_LOGIN_RSP));
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN_RSP));
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
@@ -107,26 +105,29 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     const auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
     if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
         || reply.token() != srcRoot["token"].asString()) {
-        std::cout << "Login token error" << std::endl;
+        std::cout << "Login token error, expect: " << reply.token() << std::endl;
         root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_TOKEN_ERROR);
         return;
     }
 
     //  todo: 用户上线下线，这里要注意加锁保护
-    {
-        std::lock_guard<std::mutex> lock(users_mutex_);
-        if (users_.find(uid) == users_.end()) {
-            std::shared_ptr<UserInfo> user = nullptr;
-            user = MysqlMgr::getInstance()->getUser(uid);
-            if (nullptr == user) {
-                std::cout << "User not found" << std::endl;
-                root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
-                return;
-            }
-            users_.insert({uid, user});
+    std::lock_guard<std::mutex> lock(users_mutex_);
+    std::shared_ptr<UserInfo> user = nullptr;
+    if (users_.find(uid) == users_.end()) {
+        user = MysqlMgr::getInstance()->getUser(uid);
+        if (nullptr == user) {
+            std::cout << "User not found" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
+            return;
         }
+        users_.insert({uid, user});
+    }
+    else {
+        user = users_[uid];
     }
 
     root["uid"] = uid;
+    root["name"] = user->name;
+    root["email"] = user->email;
     root["token"] = reply.token();
 }

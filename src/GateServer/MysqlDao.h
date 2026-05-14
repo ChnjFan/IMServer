@@ -8,13 +8,13 @@ public:
     MysqlDao();
     ~MysqlDao();
 
-    int registerUser(const std::string& user, const std::string& email, const std::string& password) const;
+    [[nodiscard]] int registerUser(const std::string& user, const std::string& email, const std::string& password) const;
 
-    bool checkEmail(const std::string & user, const std::string & email) const;
+    [[nodiscard]] bool checkEmail(const std::string & user, const std::string & email) const;
 
-    bool updatePasswd(const std::string & user, const std::string & passwd) const;
+    [[nodiscard]] bool updatePasswd(const std::string & user, const std::string & passwd) const;
 
-    bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo& userInfo) const;
+    [[nodiscard]] bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo& userInfo) const;
 
 private:
     std::unique_ptr<MysqlPool> pool_;

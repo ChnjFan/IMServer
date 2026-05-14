@@ -7,6 +7,8 @@
 #include <boost/uuid.hpp>
 
 #include "Session.h"
+
+#include "ChatLogicSystem.h"
 #include "ChatServer.h"
 
 using boost::uuids::uuid;
@@ -41,7 +43,7 @@ std::string Session::getSessionId() {
 }
 
 void Session::asyncSend(const std::string &msg, const std::uint16_t msgId) {
-    asyncSend(msg.c_str(), msg.length(), msgId);
+    asyncSend(msg.c_str(), msg.size(), msgId);
 }
 
 void Session::asyncSend(const char *msg, std::uint16_t size, std::uint16_t msgId) {
@@ -92,6 +94,7 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
                 return;
             }
 
+            std::cout << "Recv msg head id: " << msgId << " len: " << msgLen << std::endl;
             recvNode_ = std::make_shared<RecvNode>(msgLen, msgId);
             asyncReadBody(msgLen);
         } catch (std::exception& e) {
@@ -114,8 +117,11 @@ void Session::asyncReadBody(std::uint16_t size) {
         memcpy(recvNode_->buffer_, buffer_, bytes_transfer);
         recvNode_->used_ += bytes_transfer;
         recvNode_->buffer_[recvNode_->capacity_] = '\0';
+        std::cout << "Recv msg body: " << recvNode_->buffer_ << std::endl;
 
-        // TODO: 处理接收数据
+        // 处理接收数据
+        const auto logicNode = std::make_shared<LogicNode>(self, *recvNode_);
+        ChatLogicSystem::getInstance()->insertMsgNode(logicNode);
 
         // 继续接收头部数据
         asyncReadHead(HEAD_TOTAL_LEN);
@@ -145,6 +151,7 @@ void Session::asyncReadSome(std::uint16_t readLen, std::uint16_t totalLen,
 void Session::asyncSend() {
     const auto& node = sendNodeQueue_.front();
     auto self = shared_from_this();
+    std::cout << "async_write: " << node->used_ << " body: " << node->buffer_ + HEAD_TOTAL_LEN << std::endl;
     boost::asio::async_write(socket_, boost::asio::buffer(node->buffer_, node->used_),
         [self, this](const boost::system::error_code& error, size_t bytes_transfer) {
             if (error) {

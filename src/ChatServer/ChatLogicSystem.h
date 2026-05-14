@@ -15,7 +15,7 @@
 #include "MsgNode.h"
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
-class ChatLogicSystem : public Singleton<ChatLogicSystem>, public boost::enable_shared_from_this<ChatLogicSystem> {
+class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
     ~ChatLogicSystem();
     void close();

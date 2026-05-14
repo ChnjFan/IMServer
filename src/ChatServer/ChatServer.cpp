@@ -21,7 +21,7 @@ void ChatServer::start() {
     auto session = std::make_shared<Session>(io_context, self);
     acceptor_.async_accept(session->getSocket(), [self, session](const boost::system::error_code &ec) {
         try {
-            if (!ec) {
+            if (ec) {
                 self->start();
                 return;
             }

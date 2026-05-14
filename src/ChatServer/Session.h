@@ -12,7 +12,7 @@
 
 class ChatServer;
 
-class Session : public boost::enable_shared_from_this<Session> {
+class Session : public std::enable_shared_from_this<Session> {
 public:
     Session(net::io_context &io_context, const std::shared_ptr<ChatServer> &chatServer);
     ~Session();

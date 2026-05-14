@@ -70,13 +70,20 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
 
 void StatusServiceImpl::insertToken(int uid, const std::string& token) {
     std::lock_guard<std::mutex> lock(tokenMutex_);
+    std::cout << "Insert [uid: " << uid << ", token: " << token << "]" << std::endl;
+    if (tokens_.find(uid) != tokens_.end()) {
+        std::cout << "erase old token" << std::endl;
+        tokens_.erase(uid);
+    }
     tokens_.insert({uid, token});
 }
 
 bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
     std::lock_guard<std::mutex> lock(tokenMutex_);
     if (tokens_.find(uid) == tokens_.end()) {
+        std::cout << "Check [uid: " << uid << "not found" << std::endl;
         return false;
     }
+    std::cout << "Check [uid: " << uid << ", token: " << token << "]" << std::endl;
     return tokens_[uid] == token;
 }
