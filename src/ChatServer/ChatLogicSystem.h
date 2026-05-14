@@ -15,23 +15,23 @@
 #include "MsgNode.h"
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
-class ChatLogicSystem : public Singleton<ChatLogicSystem>{
+class ChatLogicSystem : public Singleton<ChatLogicSystem>, public boost::enable_shared_from_this<ChatLogicSystem> {
 public:
     ~ChatLogicSystem();
     void close();
 
-    void insertMsgNode(std::shared_ptr<LogicNode> msg);
+    void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 private:
     friend class Singleton<ChatLogicSystem>;
 
     ChatLogicSystem();
     void initHandlers();
-    void registerHandler(uint16_t msgId, msgHandler handler);
+    void registerHandler(uint16_t msgId, const msgHandler& handler);
 
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
-    void loginHandle(std::shared_ptr<Session> session, uint16_t msgId, const std::string& data);
+    void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;

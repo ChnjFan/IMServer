@@ -19,7 +19,7 @@ MysqlDao::~MysqlDao() {
     pool_->close();
 }
 
-int MysqlDao::registerUser(const std::string &user, const std::string &email, const std::string &password) {
+int MysqlDao::registerUser(const std::string &user, const std::string &email, const std::string &password) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return -1;
@@ -49,7 +49,7 @@ int MysqlDao::registerUser(const std::string &user, const std::string &email, co
     }
 }
 
-bool MysqlDao::checkEmail(const std::string &user, const std::string &email) {
+bool MysqlDao::checkEmail(const std::string &user, const std::string &email) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -76,7 +76,7 @@ bool MysqlDao::checkEmail(const std::string &user, const std::string &email) {
     }
 }
 
-bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) {
+bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -98,7 +98,7 @@ bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) 
     }
 }
 
-bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, UserInfo& userInfo) {
+bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, UserInfo& userInfo) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;

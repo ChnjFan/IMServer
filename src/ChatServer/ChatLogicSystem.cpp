@@ -2,7 +2,6 @@
 // Created by Fan on 2026/5/12.
 //
 
-#include <json/json.h>
 #include <json/value.h>
 #include <json/reader.h>
 
@@ -25,7 +24,7 @@ void ChatLogicSystem::close() {
     stop_.store(true);
 }
 
-void ChatLogicSystem::insertMsgNode(std::shared_ptr<LogicNode> msg) {
+void ChatLogicSystem::insertMsgNode(const std::shared_ptr<LogicNode> &msg) {
     std::unique_lock<std::mutex> lock(mutex_);
     msgQueue_.push(msg);
     if (1 == msgQueue_.size()) {
@@ -41,12 +40,15 @@ ChatLogicSystem::ChatLogicSystem() : stop_(false) {
 }
 
 void ChatLogicSystem::initHandlers() {
+    auto self = shared_from_this();
     registerHandler(static_cast<uint16_t>(MessageID::CHAT_LOGIN),
-        std::bind(&ChatLogicSystem::loginHandle, this,
-        std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+        [self, this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            boost::ignore_unused(self);
+            return loginHandle(session, msgId, data);
+        });
 }
 
-void ChatLogicSystem::registerHandler(uint16_t msgId, msgHandler handler) {
+void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler) {
     if (handlers_.find(msgId) != handlers_.end()) {
         return;
     }
@@ -87,7 +89,7 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     handlers_[node->msgId_](node->session_, node->msgId_, std::string(node->buffer_));
 }
 
-void ChatLogicSystem::loginHandle(std::shared_ptr<Session> session, const uint16_t msgId, const std::string &data) {
+void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
     Defer defer([&root, session]() {
@@ -111,15 +113,18 @@ void ChatLogicSystem::loginHandle(std::shared_ptr<Session> session, const uint16
     }
 
     //  todo: 用户上线下线，这里要注意加锁保护
-    if (users_.find(uid) == users_.end()) {
-        std::shared_ptr<UserInfo> user = nullptr;
-        user = MysqlMgr::getInstance()->getUser(uid);
-        if (nullptr == user) {
-            std::cout << "User not found" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
-            return;
+    {
+        std::lock_guard<std::mutex> lock(users_mutex_);
+        if (users_.find(uid) == users_.end()) {
+            std::shared_ptr<UserInfo> user = nullptr;
+            user = MysqlMgr::getInstance()->getUser(uid);
+            if (nullptr == user) {
+                std::cout << "User not found" << std::endl;
+                root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
+                return;
+            }
+            users_.insert({uid, user});
         }
-        users_.insert({uid, user});
     }
 
     root["uid"] = uid;
