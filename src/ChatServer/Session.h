@@ -23,6 +23,9 @@ public:
     tcp::socket & getSocket();
     std::string getSessionId();
 
+    void setUserId(int uid);
+    int getUserId();
+
     void asyncSend(const std::string &msg, std::uint16_t msgId);
     void asyncSend(const char* msg, std::uint16_t size, std::uint16_t msgId);
 
@@ -39,6 +42,7 @@ private:
     static constexpr int MAX_SEND_QUEUE = 1024;
 
     std::atomic<bool> stop_;
+    int uid_;
     std::string sessionId_;
     boost::asio::io_context& io_context_;
     tcp::socket socket_;

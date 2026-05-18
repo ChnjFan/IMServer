@@ -16,6 +16,7 @@
 #include "message.grpc.pb.h"
 
 #include "Singleton.h"
+#include "ServiceConnPool.h"
 
 using grpc::Channel;
 using grpc::Status;
@@ -55,7 +56,7 @@ private:
 
     VerifyGrpcClient();
 
-    std::unique_ptr<RPCConnPool> connPool_;
+    std::unique_ptr<ServiceConnPool<VerifyService>> connPool_;
 };
 
 

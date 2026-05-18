@@ -42,3 +42,7 @@ SectionInfo ConfigMgr::operator[](const std::string &key) {
     }
     return configMap_[key];
 }
+
+std::string ConfigMgr::getValue(const std::string &key, const std::string &section) {
+    return configMap_[key][section];
+}

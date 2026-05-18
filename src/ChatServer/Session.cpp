@@ -15,7 +15,7 @@ using boost::uuids::uuid;
 using boost::uuids::random_generator;
 
 Session::Session(net::io_context &io_context, const std::shared_ptr<ChatServer> &chatServer)
-    : stop_(false), io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
+    : stop_(false), uid_(0), io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
     random_generator generator;
     sessionId_ = boost::uuids::to_string(generator());
     headNode_ = std::make_shared<MsgNode>(HEAD_TOTAL_LEN);
@@ -40,6 +40,14 @@ tcp::socket & Session::getSocket() {
 
 std::string Session::getSessionId() {
     return sessionId_;
+}
+
+void Session::setUserId(int uid) {
+    uid_ = uid;
+}
+
+int Session::getUserId() {
+    return uid_;
 }
 
 void Session::asyncSend(const std::string &msg, const std::uint16_t msgId) {

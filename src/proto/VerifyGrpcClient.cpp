@@ -86,7 +86,7 @@ VerifyGrpcClient::VerifyGrpcClient() {
         size = std::stoi(config["GateServer"]["RPCConnPoolSize"]);
     }
 
-    connPool_ = std::make_unique<RPCConnPool>(size,
+    connPool_ = std::make_unique<ServiceConnPool<VerifyService>>(size,
         config["VerifyServer"]["Host"],
         config["VerifyServer"]["Port"]);
 }

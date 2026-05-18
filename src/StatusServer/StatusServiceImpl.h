@@ -29,7 +29,7 @@ struct ChatServerInfo {
     int connCount;          // 连接计数
 };
 
-class StatusServiceImpl : public message::StatusService::Service {
+class StatusServiceImpl final : public StatusService::Service {
 public:
     StatusServiceImpl();
     Status GetChatServer(ServerContext* context, const GetChatServerReq* request, GetChatServerRsp* response) override;
@@ -42,9 +42,7 @@ private:
     bool checkToken(int uid, const std::string& token);
 
     std::unordered_map<std::string, ChatServerInfo> chatServers_;
-    std::unordered_map<int, std::string> tokens_;
     std::mutex serverMutex_;
-    std::mutex tokenMutex_;
 };
 
 

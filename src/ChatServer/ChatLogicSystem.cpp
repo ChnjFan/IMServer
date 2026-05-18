@@ -7,12 +7,12 @@
 
 #include "ChatLogicSystem.h"
 
-#include <boost/any/detail/placeholder.hpp>
-
 #include "StatusGrpcClient.h"
-
 #include "Session.h"
 #include "MysqlMgr.h"
+#include "RedisMgr.h"
+#include "ConfigMgr.h"
+#include "UserMgr.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -87,6 +87,39 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     handlers_[node->msgId_](node->session_, node->msgId_, std::string(node->buffer_));
 }
 
+bool ChatLogicSystem::getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo> &userInfo) {
+    std::string info;
+    if (RedisMgr::getInstance()->get(key, info)) {
+        Json::Value root;
+        if (Json::Reader reader; !reader.parse(info, root)) {
+            std::cout << "Failed to parse JSON data" << std::endl;
+            return false;
+        }
+        userInfo->uid = root["uid"].asInt();
+        userInfo->name = root["name"].asString();
+        userInfo->password = root["passwd"].asString();
+        userInfo->email = root["email"].asString();
+    }
+    else {
+        std::shared_ptr<UserInfo> user = nullptr;
+        user = MysqlMgr::getInstance()->getUser(uid);
+        if (nullptr == user) {
+            std::cout << "Not found user by uid " << uid << std::endl;
+            return false;
+        }
+        Json::Value root;
+        root["uid"] = user->uid;
+        userInfo->uid = user->uid;
+        root["name"] = user->name;
+        userInfo->name = user->name;
+        root["passwd"] = user->password;
+        userInfo->password = user->password;
+        root["email"] = user->password;
+        userInfo->email = user->email;
+    }
+    return true;
+}
+
 void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
@@ -100,7 +133,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    const auto uid = srcRoot["uid"].asInt();
+    const auto uid = std::stoi(srcRoot["uid"].asString());
     std::cout << "user login uid is " << uid << std::endl;
     const auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
     if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
@@ -110,24 +143,34 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
         return;
     }
 
-    //  todo: 用户上线下线，这里要注意加锁保护
-    std::lock_guard<std::mutex> lock(users_mutex_);
+    // 查询用户是否存在
     std::shared_ptr<UserInfo> user = nullptr;
-    if (users_.find(uid) == users_.end()) {
-        user = MysqlMgr::getInstance()->getUser(uid);
-        if (nullptr == user) {
-            std::cout << "User not found" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
-            return;
-        }
-        users_.insert({uid, user});
-    }
-    else {
-        user = users_[uid];
+    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(uid), uid, user)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
+        return;
     }
 
     root["uid"] = uid;
     root["name"] = user->name;
     root["email"] = user->email;
     root["token"] = reply.token();
+
+    // 获取申请列表
+    // 获取好友列表
+    // 增加登录数量
+    auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
+    auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName);
+    int count = 0;
+    if (res.empty()) {
+        count = std::stoi(res);
+    }
+    ++count;
+    RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
+
+    // Session 与 uid 绑定
+    session->setUserId(uid);
+    UserMgr::getInstance()->setUserSession(uid, session);
+
+    // 设置用户登录地址服务名
+    RedisMgr::getInstance()->set(USER_IP_PREFIX + std::to_string(uid), serverName);
 }

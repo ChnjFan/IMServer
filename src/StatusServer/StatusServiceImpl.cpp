@@ -10,18 +10,31 @@
 
 #include "const.h"
 #include "ConfigMgr.h"
+#include "RedisMgr.h"
 
 using boost::uuids::uuid;
 using boost::uuids::random_generator;
 
 StatusServiceImpl::StatusServiceImpl() {
     auto& config = ConfigMgr::getInstance();
-    ChatServerInfo server;
-    server.name = "ChatServer";
-    server.host = config["ChatServer"]["Host"];
-    server.port = config["ChatServer"]["Port"];
-    server.connCount = 0;
-    chatServers_.insert({"ChatServer", server});
+    if (config["ChatServers"]["Name"].empty()) {
+        std::cout << "ChatServers not config" << std::endl;
+        return;
+    }
+
+    std::stringstream ss(config["ChatServers"]["Name"]);
+    std::string serverName;
+    while (std::getline(ss, serverName, ',')) {
+        if (serverName.empty()) {
+            continue;
+        }
+        ChatServerInfo server;
+        server.name = serverName;
+        server.host = config[serverName]["Host"];
+        server.port = config[serverName]["Port"];
+        server.connCount = 0;
+        chatServers_.insert({serverName, server});
+    }
 }
 
 Status StatusServiceImpl::GetChatServer(ServerContext *context, const GetChatServerReq *request,
@@ -60,30 +73,48 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
         return {};
     }
     auto minServer = chatServers_.begin()->second;
+    const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name);
+    if (countStr.empty()) {// 没有找到服务器可能没有开
+        minServer.connCount = INT_MAX;
+    }
+    else {
+        minServer.connCount = std::stoi(countStr);
+    }
+
     for (auto& [name, server] : chatServers_) {
+        if (name == minServer.name) {
+            continue;
+        }
+
+        const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name);
+        if (countStr.empty()) {// 没有找到服务器可能没有开
+            server.connCount = INT_MAX;
+        }
+        else {
+            server.connCount = std::stoi(countStr);
+        }
+
         if (server.connCount < minServer.connCount) {
-            minServer = server; // 找到最小负载的服务
+            minServer = server;
         }
     }
     return minServer;
 }
 
-void StatusServiceImpl::insertToken(int uid, const std::string& token) {
-    std::lock_guard<std::mutex> lock(tokenMutex_);
+void StatusServiceImpl::insertToken(const int uid, const std::string& token) {
     std::cout << "Insert [uid: " << uid << ", token: " << token << "]" << std::endl;
-    if (tokens_.find(uid) != tokens_.end()) {
-        std::cout << "erase old token" << std::endl;
-        tokens_.erase(uid);
-    }
-    tokens_.insert({uid, token});
+    RedisMgr::getInstance()->set(USER_TOKEN_PREFIX + std::to_string(uid), token);
 }
 
 bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
-    std::lock_guard<std::mutex> lock(tokenMutex_);
-    if (tokens_.find(uid) == tokens_.end()) {
+    if (token.empty()) {
+        return false;
+    }
+    std::string expect;
+    if (!RedisMgr::getInstance()->get(USER_TOKEN_PREFIX + std::to_string(uid), expect)) {
         std::cout << "Check [uid: " << uid << "not found" << std::endl;
         return false;
     }
     std::cout << "Check [uid: " << uid << ", token: " << token << "]" << std::endl;
-    return tokens_[uid] == token;
+    return expect == token;
 }

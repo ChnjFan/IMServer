@@ -10,7 +10,7 @@ public:
 
     [[nodiscard]] int registerUser(const std::string& user, const std::string& email, const std::string& password) const;
 
-    [[nodiscard]] bool checkEmail(const std::string & user, const std::string & email) const;
+    [[nodiscard]] bool checkEmail(const std::string & email) const;
 
     [[nodiscard]] bool updatePasswd(const std::string & user, const std::string & passwd) const;
 

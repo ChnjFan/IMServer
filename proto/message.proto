@@ -42,3 +42,73 @@ message LoginRsp {
     int32 uid = 2;
     string token = 3;
 }
+
+service ChatService {
+    rpc NotifyAddFriend(AddFriendReq) returns (AddFriendRsp);
+    rpc ReplyAddFriend(ReplyFriendReq) returns (ReplyFriendRsp);
+    rpc SendChatMsg(SendChatMsgReq) returns (SendChatMsgRsp);
+    rpc NotifyAuthFriend(AuthFriendReq) returns (AuthFriendRsp);
+    rpc NotifyTextChatMsg(TextChatData) returns (TextChatMsgRsp);
+}
+
+message AddFriendReq {
+    int32 from_uid = 1;
+    int32 to_uid = 2;
+    string name = 3;
+    string desc = 4;
+}
+
+message AddFriendRsp {
+    int32 error = 1;
+    int32 from_uid = 2;
+    int32 to_uid = 3;
+}
+
+message ReplyFriendReq {
+    int32 from_uid = 1;
+    int32 to_uid = 2;
+    bool agree = 3;
+}
+
+message ReplyFriendRsp {
+    int32 error = 1;
+    int32 from_uid = 2;
+    int32 to_uid = 3;
+}
+
+message SendChatMsgReq {
+    int32 from_uid = 1;
+    int32 to_uid = 2;
+    string message = 3;
+}
+
+message SendChatMsgRsp {
+    int32 error = 1;
+    int32 from_uid = 2;
+    int32 to_uid = 3;
+}
+
+// 认证好友
+message AuthFriendReq {
+    int32 from_uid = 1;
+    int32 to_uid = 2;
+}
+
+message AuthFriendRsp {
+    int32 error = 1;
+    int32 from_uid = 2;
+    int32 to_uid = 3;
+}
+
+ message TextChatData {
+     string msg_id = 1;
+     string msg_content = 2;
+ }
+
+message TextChatMsgRsp {
+    int32 error = 1;
+    int32 from_uid = 2;
+    int32 to_uid = 3;
+    repeated TextChatData text_msg = 4;
+}
+

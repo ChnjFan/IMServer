@@ -28,6 +28,12 @@ constexpr int MAX_BUFFER_SIZE = 8196;
 
 #define CODE_PREFIX "code_"
 
+#define USER_IP_PREFIX "user_ip_"
+#define USER_TOKEN_PREFIX "user_token_"
+#define IP_COUNT_PREFIX "ip_count_"
+#define USER_BASE_INFO_PREFIX "user_base_info_"
+#define LOGIN_COUNT "login_chat_server_count"
+
 enum class ErrorCodes : int32_t {
     SUCCESS = 0,
     ERROR_JSON = 1001,
@@ -51,10 +57,10 @@ enum class MessageID : uint16_t {
 };
 
 struct UserInfo {
+    int uid = 0;
     std::string name;
     std::string email;
     std::string password;
-    int uid = 0;
 };
 
 class Defer {

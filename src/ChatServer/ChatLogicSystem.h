@@ -31,6 +31,8 @@ private:
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
+    bool getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo>& userInfo);
+
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
@@ -41,8 +43,6 @@ private:
     std::condition_variable cond_;
 
     std::unordered_map<uint16_t, msgHandler> handlers_;
-    std::unordered_map<int, std::shared_ptr<UserInfo>> users_;
-    std::mutex users_mutex_;
 };
 
 
