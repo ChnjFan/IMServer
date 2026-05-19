@@ -3267,7 +3267,8 @@ class AddFriendReq final : public ::google::protobuf::Message
   // accessors -------------------------------------------------------
   enum : int {
     kNameFieldNumber = 3,
-    kDescFieldNumber = 4,
+    kEmailFieldNumber = 4,
+    kDescFieldNumber = 5,
     kFromUidFieldNumber = 1,
     kToUidFieldNumber = 2,
   };
@@ -3286,7 +3287,22 @@ class AddFriendReq final : public ::google::protobuf::Message
   ::std::string* PROTOBUF_NONNULL _internal_mutable_name();
 
   public:
-  // string desc = 4;
+  // string email = 4;
+  void clear_email() ;
+  const ::std::string& email() const;
+  template <typename Arg_ = const ::std::string&, typename... Args_>
+  void set_email(Arg_&& arg, Args_... args);
+  ::std::string* PROTOBUF_NONNULL mutable_email();
+  [[nodiscard]] ::std::string* PROTOBUF_NULLABLE release_email();
+  void set_allocated_email(::std::string* PROTOBUF_NULLABLE value);
+
+  private:
+  const ::std::string& _internal_email() const;
+  PROTOBUF_ALWAYS_INLINE void _internal_set_email(const ::std::string& value);
+  ::std::string* PROTOBUF_NONNULL _internal_mutable_email();
+
+  public:
+  // string desc = 5;
   void clear_desc() ;
   const ::std::string& desc() const;
   template <typename Arg_ = const ::std::string&, typename... Args_>
@@ -3325,8 +3341,8 @@ class AddFriendReq final : public ::google::protobuf::Message
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<2, 4,
-                                   0, 37,
+  static const ::google::protobuf::internal::TcParseTable<3, 5,
+                                   0, 42,
                                    2>
       _table_;
 
@@ -3348,6 +3364,7 @@ class AddFriendReq final : public ::google::protobuf::Message
     ::google::protobuf::internal::HasBits<1> _has_bits_;
     ::google::protobuf::internal::CachedSize _cached_size_;
     ::google::protobuf::internal::ArenaStringPtr name_;
+    ::google::protobuf::internal::ArenaStringPtr email_;
     ::google::protobuf::internal::ArenaStringPtr desc_;
     ::int32_t from_uid_;
     ::int32_t to_uid_;
@@ -4301,7 +4318,7 @@ inline void LoginRsp::set_allocated_token(::std::string* PROTOBUF_NULLABLE value
 inline void AddFriendReq::clear_from_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.from_uid_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000004u;
+  _impl_._has_bits_[0] &= ~0x00000008u;
 }
 inline ::int32_t AddFriendReq::from_uid() const {
   // @@protoc_insertion_point(field_get:message.AddFriendReq.from_uid)
@@ -4309,7 +4326,7 @@ inline ::int32_t AddFriendReq::from_uid() const {
 }
 inline void AddFriendReq::set_from_uid(::int32_t value) {
   _internal_set_from_uid(value);
-  _impl_._has_bits_[0] |= 0x00000004u;
+  _impl_._has_bits_[0] |= 0x00000008u;
   // @@protoc_insertion_point(field_set:message.AddFriendReq.from_uid)
 }
 inline ::int32_t AddFriendReq::_internal_from_uid() const {
@@ -4325,7 +4342,7 @@ inline void AddFriendReq::_internal_set_from_uid(::int32_t value) {
 inline void AddFriendReq::clear_to_uid() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.to_uid_ = 0;
-  _impl_._has_bits_[0] &= ~0x00000008u;
+  _impl_._has_bits_[0] &= ~0x00000010u;
 }
 inline ::int32_t AddFriendReq::to_uid() const {
   // @@protoc_insertion_point(field_get:message.AddFriendReq.to_uid)
@@ -4333,7 +4350,7 @@ inline ::int32_t AddFriendReq::to_uid() const {
 }
 inline void AddFriendReq::set_to_uid(::int32_t value) {
   _internal_set_to_uid(value);
-  _impl_._has_bits_[0] |= 0x00000008u;
+  _impl_._has_bits_[0] |= 0x00000010u;
   // @@protoc_insertion_point(field_set:message.AddFriendReq.to_uid)
 }
 inline ::int32_t AddFriendReq::_internal_to_uid() const {
@@ -4410,11 +4427,76 @@ inline void AddFriendReq::set_allocated_name(::std::string* PROTOBUF_NULLABLE va
   // @@protoc_insertion_point(field_set_allocated:message.AddFriendReq.name)
 }
 
-// string desc = 4;
+// string email = 4;
+inline void AddFriendReq::clear_email() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.email_.ClearToEmpty();
+  _impl_._has_bits_[0] &= ~0x00000002u;
+}
+inline const ::std::string& AddFriendReq::email() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:message.AddFriendReq.email)
+  return _internal_email();
+}
+template <typename Arg_, typename... Args_>
+PROTOBUF_ALWAYS_INLINE void AddFriendReq::set_email(Arg_&& arg, Args_... args) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.email_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:message.AddFriendReq.email)
+}
+inline ::std::string* PROTOBUF_NONNULL AddFriendReq::mutable_email()
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  ::std::string* _s = _internal_mutable_email();
+  // @@protoc_insertion_point(field_mutable:message.AddFriendReq.email)
+  return _s;
+}
+inline const ::std::string& AddFriendReq::_internal_email() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.email_.Get();
+}
+inline void AddFriendReq::_internal_set_email(const ::std::string& value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_.email_.Set(value, GetArena());
+}
+inline ::std::string* PROTOBUF_NONNULL AddFriendReq::_internal_mutable_email() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_._has_bits_[0] |= 0x00000002u;
+  return _impl_.email_.Mutable( GetArena());
+}
+inline ::std::string* PROTOBUF_NULLABLE AddFriendReq::release_email() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  // @@protoc_insertion_point(field_release:message.AddFriendReq.email)
+  if ((_impl_._has_bits_[0] & 0x00000002u) == 0) {
+    return nullptr;
+  }
+  _impl_._has_bits_[0] &= ~0x00000002u;
+  auto* released = _impl_.email_.Release();
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
+    _impl_.email_.Set("", GetArena());
+  }
+  return released;
+}
+inline void AddFriendReq::set_allocated_email(::std::string* PROTOBUF_NULLABLE value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  if (value != nullptr) {
+    _impl_._has_bits_[0] |= 0x00000002u;
+  } else {
+    _impl_._has_bits_[0] &= ~0x00000002u;
+  }
+  _impl_.email_.SetAllocated(value, GetArena());
+  if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.email_.IsDefault()) {
+    _impl_.email_.Set("", GetArena());
+  }
+  // @@protoc_insertion_point(field_set_allocated:message.AddFriendReq.email)
+}
+
+// string desc = 5;
 inline void AddFriendReq::clear_desc() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.desc_.ClearToEmpty();
-  _impl_._has_bits_[0] &= ~0x00000002u;
+  _impl_._has_bits_[0] &= ~0x00000004u;
 }
 inline const ::std::string& AddFriendReq::desc() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
@@ -4424,7 +4506,7 @@ inline const ::std::string& AddFriendReq::desc() const
 template <typename Arg_, typename... Args_>
 PROTOBUF_ALWAYS_INLINE void AddFriendReq::set_desc(Arg_&& arg, Args_... args) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000004u;
   _impl_.desc_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
   // @@protoc_insertion_point(field_set:message.AddFriendReq.desc)
 }
@@ -4440,21 +4522,21 @@ inline const ::std::string& AddFriendReq::_internal_desc() const {
 }
 inline void AddFriendReq::_internal_set_desc(const ::std::string& value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000004u;
   _impl_.desc_.Set(value, GetArena());
 }
 inline ::std::string* PROTOBUF_NONNULL AddFriendReq::_internal_mutable_desc() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
-  _impl_._has_bits_[0] |= 0x00000002u;
+  _impl_._has_bits_[0] |= 0x00000004u;
   return _impl_.desc_.Mutable( GetArena());
 }
 inline ::std::string* PROTOBUF_NULLABLE AddFriendReq::release_desc() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   // @@protoc_insertion_point(field_release:message.AddFriendReq.desc)
-  if ((_impl_._has_bits_[0] & 0x00000002u) == 0) {
+  if ((_impl_._has_bits_[0] & 0x00000004u) == 0) {
     return nullptr;
   }
-  _impl_._has_bits_[0] &= ~0x00000002u;
+  _impl_._has_bits_[0] &= ~0x00000004u;
   auto* released = _impl_.desc_.Release();
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString()) {
     _impl_.desc_.Set("", GetArena());
@@ -4464,9 +4546,9 @@ inline ::std::string* PROTOBUF_NULLABLE AddFriendReq::release_desc() {
 inline void AddFriendReq::set_allocated_desc(::std::string* PROTOBUF_NULLABLE value) {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   if (value != nullptr) {
-    _impl_._has_bits_[0] |= 0x00000002u;
+    _impl_._has_bits_[0] |= 0x00000004u;
   } else {
-    _impl_._has_bits_[0] &= ~0x00000002u;
+    _impl_._has_bits_[0] &= ~0x00000004u;
   }
   _impl_.desc_.SetAllocated(value, GetArena());
   if (::google::protobuf::internal::DebugHardenForceCopyDefaultString() && _impl_.desc_.IsDefault()) {

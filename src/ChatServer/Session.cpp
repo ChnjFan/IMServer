@@ -128,7 +128,7 @@ void Session::asyncReadBody(std::uint16_t size) {
         std::cout << "Recv msg body: " << recvNode_->buffer_ << std::endl;
 
         // 处理接收数据
-        const auto logicNode = std::make_shared<LogicNode>(self, *recvNode_);
+        const auto logicNode = std::make_shared<LogicNode>(self, recvNode_);
         ChatLogicSystem::getInstance()->insertMsgNode(logicNode);
 
         // 继续接收头部数据

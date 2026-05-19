@@ -30,3 +30,31 @@ ChatGrpcClient::ChatGrpcClient() {
         pools_.insert({config[service]["Name"], std::move(pool)});
     }
 }
+
+AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string &serviceName, AddFriendReq request) {
+    ClientContext context;
+    AddFriendRsp reply;
+
+    if (pools_.find(serviceName) == pools_.end()) {
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+    auto stub = pools_[serviceName]->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+
+    Defer defer([this, &stub, &serviceName] () {
+        pools_[serviceName]->returnConnection(std::move(stub));
+    });
+
+    if (const auto status = stub->NotifyAddFriend(&context, request, &reply); status.ok()) {
+        std::cout << "Get RPC connection success" << std::endl;
+        return reply;
+    }
+
+    reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+    return reply;
+}

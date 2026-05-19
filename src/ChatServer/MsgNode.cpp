@@ -34,6 +34,6 @@ SendNode::SendNode(const char *msg, const uint16_t size, const uint16_t msgId)
     used_ = size + HEAD_TOTAL_LEN;
 }
 
-LogicNode::LogicNode(const std::shared_ptr<Session> &session, const RecvNode &node) : RecvNode(node) {
-    session_ = session;
+LogicNode::LogicNode(const std::shared_ptr<Session> &session, const std::shared_ptr<RecvNode> &node)
+    : session_(session), node_(node){
 }

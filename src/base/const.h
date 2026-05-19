@@ -44,6 +44,7 @@ enum class ErrorCodes : int32_t {
     USER_EMAIL_NOT_EXISTS = 1006,
     CHAT_LOGIN_TOKEN_ERROR = 1007,
     CHAT_LOGIN_UID_ERROR = 1008,
+    MYSQL_ERROR = 1100,
 };
 
 enum class MessageID : uint16_t {
@@ -53,6 +54,11 @@ enum class MessageID : uint16_t {
     ID_USER_LOGIN = 1004,       // 登录用户
     ID_CHAT_LOGIN = 1005,       // 登录聊天服务器
     ID_CHAT_LOGIN_RSP = 1006,   // 登录聊天服务器响应
+    ID_USER_SEARCH_REQ = 1007,  // 用户搜索请求
+    ID_USER_SEARCH_RSP = 1008,  // 用户搜索响应
+    ID_ADD_FRIEND_REQ = 1009,   // 添加用户请求
+    ID_ADD_FRIEND_RSP = 1010,   // 添加用户响应
+    ID_NOTIFY_ADD_FRIEND_REQ = 1011,   // 通知用户好友申请
     INVALID_ID,
 };
 

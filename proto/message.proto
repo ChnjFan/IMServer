@@ -55,7 +55,8 @@ message AddFriendReq {
     int32 from_uid = 1;
     int32 to_uid = 2;
     string name = 3;
-    string desc = 4;
+    string email = 4;
+    string desc = 5;
 }
 
 message AddFriendRsp {

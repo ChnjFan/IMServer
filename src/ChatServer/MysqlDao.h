@@ -10,6 +10,9 @@ public:
     ~MysqlDao();
 
     std::shared_ptr<UserInfo> getUser(int uid) const;
+    std::shared_ptr<UserInfo> getUser(const std::string& name) const;
+
+    bool addFriendApply(const int& from, const int& to);
 
 private:
     std::unique_ptr<MysqlPool> pool_;

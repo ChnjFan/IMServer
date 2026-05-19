@@ -10,6 +10,8 @@
 #include <functional>
 #include <string>
 
+#include <json/json.h>
+
 #include "const.h"
 #include "Singleton.h"
 #include "MsgNode.h"
@@ -19,6 +21,8 @@ class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
     ~ChatLogicSystem();
     void close();
+
+    void setServerName(const std::string& name);
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 private:
@@ -32,11 +36,16 @@ private:
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
     bool getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo>& userInfo);
+    bool getUserInfoByName(const std::string &name, Json::Value& root);
 
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;
+
+    std::string selfServerName_;
 
     std::queue<std::shared_ptr<LogicNode>> msgQueue_;
     std::mutex mutex_;

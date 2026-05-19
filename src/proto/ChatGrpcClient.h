@@ -25,6 +25,9 @@ using message::ChatService;
 class ChatGrpcClient : public Singleton<ChatGrpcClient> {
 public:
     typedef std::unique_ptr<ServiceConnPool<ChatService>> ChatServicePool;
+
+    AddFriendRsp NotifyAddFriend(std::string& serviceName, AddFriendReq request);
+
 private:
     friend class Singleton<ChatGrpcClient>;
 

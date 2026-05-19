@@ -45,10 +45,13 @@ public:
     bool hSet(const std::string& key, const std::string& hKey, const std::string& value);
     // 处理二进制数据
     bool hSet(const char* key, const char* hKey, const char* hValue, size_t hSize);
+    bool hDel(const std::string& key, const std::string & hKey);
+
     std::string hGet(const std::string& key, const std::string& hKey);
     bool del(const std::string& key);
     bool existsKey(const std::string& key);
     void close();
+
 
 private:
     friend class Singleton<RedisMgr>;

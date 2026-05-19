@@ -35,10 +35,11 @@ public:
 
 class Session;
 
-class LogicNode : public RecvNode {
+class LogicNode {
 public:
-    LogicNode(const std::shared_ptr<Session> &session, const RecvNode &node);
+    LogicNode(const std::shared_ptr<Session> &session, const std::shared_ptr<RecvNode> &node);
     std::shared_ptr<Session> session_;
+    std::shared_ptr<RecvNode> node_;
 };
 
 

@@ -5,6 +5,8 @@
 #ifndef IMSERVER_CHATSERVICEIMPL_H
 #define IMSERVER_CHATSERVICEIMPL_H
 
+#include <grpcpp/grpcpp.h>
+
 #include "message.pb.h"
 #include "message.grpc.pb.h"
 

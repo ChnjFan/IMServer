@@ -14,6 +14,9 @@ public:
     ~MysqlMgr();
 
     std::shared_ptr<UserInfo> getUser(int uid);
+    std::shared_ptr<UserInfo> getUser(const std::string &name);
+
+    bool addFriendApply(const int& from, const int& to);
 
 private:
     friend class Singleton<MysqlMgr>;

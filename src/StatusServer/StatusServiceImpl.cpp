@@ -22,6 +22,7 @@ StatusServiceImpl::StatusServiceImpl() {
         return;
     }
 
+    std::string servers = config["ChatServers"]["Name"];
     std::stringstream ss(config["ChatServers"]["Name"]);
     std::string serverName;
     while (std::getline(ss, serverName, ',')) {

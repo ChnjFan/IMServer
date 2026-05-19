@@ -13,6 +13,7 @@
 #include "RedisMgr.h"
 #include "ConfigMgr.h"
 #include "UserMgr.h"
+#include "ChatGrpcClient.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -22,6 +23,10 @@ ChatLogicSystem::~ChatLogicSystem() {
 
 void ChatLogicSystem::close() {
     stop_.store(true);
+}
+
+void ChatLogicSystem::setServerName(const std::string &name) {
+    selfServerName_ = name;
 }
 
 void ChatLogicSystem::insertMsgNode(const std::shared_ptr<LogicNode> &msg) {
@@ -43,6 +48,14 @@ void ChatLogicSystem::initHandlers() {
     registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return loginHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_USER_SEARCH_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return searchUserHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_ADD_FRIEND_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return addFriendHandle(session, msgId, data);
         });
 }
 
@@ -79,17 +92,17 @@ void ChatLogicSystem::dealMsg() {
 }
 
 void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
-    std::cout << "Handle msg id is " << node->msgId_ << std::endl;
-    if (handlers_.find(node->msgId_) == handlers_.end()) {
-        std::cout << "Msg id [" << node->msgId_ << "] handler not found" << std::endl;
+    std::cout << "Handle msg id is " << node->node_->msgId_ << std::endl;
+    if (handlers_.find(node->node_->msgId_) == handlers_.end()) {
+        std::cout << "Msg id [" << node->node_->msgId_ << "] handler not found" << std::endl;
+        // todo 回复异常响应
         return;
     }
-    handlers_[node->msgId_](node->session_, node->msgId_, std::string(node->buffer_));
+    handlers_[node->node_->msgId_](node->session_, node->node_->msgId_, std::string(node->node_->buffer_));
 }
 
 bool ChatLogicSystem::getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo> &userInfo) {
-    std::string info;
-    if (RedisMgr::getInstance()->get(key, info)) {
+    if (std::string info; RedisMgr::getInstance()->get(key, info)) {
         Json::Value root;
         if (Json::Reader reader; !reader.parse(info, root)) {
             std::cout << "Failed to parse JSON data" << std::endl;
@@ -120,6 +133,29 @@ bool ChatLogicSystem::getUserBaseInfo(const std::string &key, int uid, std::shar
     return true;
 }
 
+bool ChatLogicSystem::getUserInfoByName(const std::string &name, Json::Value& root) {
+    if (std::string info; RedisMgr::getInstance()->get(USER_BASE_INFO_PREFIX + name, info)) {
+        if (Json::Reader reader; !reader.parse(info, root)) {
+            std::cout << "Failed to parse JSON data" << std::endl;
+            return false;
+        }
+    }
+    else {
+        std::shared_ptr<UserInfo> user = nullptr;
+        user = MysqlMgr::getInstance()->getUser(name);
+        if (nullptr == user) {
+            std::cout << "Not found user by name " << name << std::endl;
+            return false;
+        }
+        root["uid"] = user->uid;
+        root["name"] = user->name;
+        root["email"] = user->email;
+        const std::string jsonStr = root.toStyledString();
+        RedisMgr::getInstance()->set(USER_BASE_INFO_PREFIX + user->name, jsonStr);
+    }
+    return true;
+}
+
 void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
@@ -133,7 +169,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    const auto uid = std::stoi(srcRoot["uid"].asString());
+    const auto uid = srcRoot["uid"].asInt();
     std::cout << "user login uid is " << uid << std::endl;
     const auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
     if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
@@ -144,7 +180,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     }
 
     // 查询用户是否存在
-    std::shared_ptr<UserInfo> user = nullptr;
+    auto user = std::make_shared<UserInfo>();
     if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(uid), uid, user)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
         return;
@@ -173,4 +209,76 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
 
     // 设置用户登录地址服务名
     RedisMgr::getInstance()->set(USER_IP_PREFIX + std::to_string(uid), serverName);
+}
+
+void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_USER_SEARCH_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    Json::Value dataRoot;
+    if (!srcRoot["name"].asString().empty()) {
+        const auto name = srcRoot["name"].asString();
+        getUserInfoByName(name, dataRoot);
+        root["data"] = dataRoot;
+    }
+}
+
+void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_ADD_FRIEND_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    // 保存好友申请记录
+    const auto from = srcRoot["fromUid"].asInt();
+    const auto to = srcRoot["toUid"].asInt();
+    if (!MysqlMgr::getInstance()->addFriendApply(from, to)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
+
+    // 查找用户是否在线
+    std::string toServiceName;
+    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(to), toServiceName)) {
+        return; // 用户不在线直接返回，等到上线直接从数据库拉取
+    }
+
+    // 同一服务器直接发送申请消息
+    if (toServiceName == selfServerName_) {
+        if (auto toSession = UserMgr::getInstance()->getSession(to)) {
+            Json::Value applyRoot;
+            applyRoot["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+            applyRoot["fromUid"] = from;
+            applyRoot["applyName"] = srcRoot["applyName"];
+            applyRoot["applyEmail"] = srcRoot["applyEmail"];
+            toSession->asyncSend(applyRoot.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_ADD_FRIEND_REQ));
+        }
+        return;
+    }
+
+    // 不同服务器调用 grpc 请求
+    AddFriendReq request;
+    request.set_from_uid(from);
+    request.set_to_uid(to);
+    request.set_name(srcRoot["applyName"].asString());
+    request.set_email(srcRoot["applyEmail"].asString());
+    ChatGrpcClient::getInstance()->NotifyAddFriend(toServiceName, request);
 }
