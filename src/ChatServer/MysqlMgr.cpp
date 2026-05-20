@@ -19,4 +19,12 @@ bool MysqlMgr::addFriendApply(const int &from, const int &to) {
     return db_.addFriendApply(from, to);
 }
 
+bool MysqlMgr::getApplyUserList(int uid, ApplyUserList &applyUserList) {
+    return db_.getApplyUserList(uid, applyUserList, 0, 10);
+}
+
+bool MysqlMgr::updateFriendRelation(int authUid, int applyUid) {
+    return db_.updateFriendRelation(authUid, applyUid);
+}
+
 

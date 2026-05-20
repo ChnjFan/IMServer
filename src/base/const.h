@@ -58,7 +58,10 @@ enum class MessageID : uint16_t {
     ID_USER_SEARCH_RSP = 1008,  // 用户搜索响应
     ID_ADD_FRIEND_REQ = 1009,   // 添加用户请求
     ID_ADD_FRIEND_RSP = 1010,   // 添加用户响应
-    ID_NOTIFY_ADD_FRIEND_REQ = 1011,   // 通知用户好友申请
+    ID_NOTIFY_FRIEND_ADD = 1011,   // 通知用户好友申请
+    ID_FRIEND_AUTH_REQ = 1012,   // 同意添加好友请求
+    ID_FRIEND_AUTH_RSP = 1013,   // 同意添加好友响应
+    ID_NOTIFY_FRIEND_AUTH = 1014,   // 通知用户好友认证
     INVALID_ID,
 };
 

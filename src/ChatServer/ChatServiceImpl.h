@@ -16,6 +16,10 @@ using grpc::ServerBuilder;
 using grpc::ServerUnaryReactor;
 using grpc::Status;
 
+using message::AddFriendReq;
+using message::AddFriendRsp;
+using message::AuthFriendReq;
+using message::AuthFriendRsp;
 using message::ChatService;
 
 class ChatServiceImpl final : public ChatService::Service {

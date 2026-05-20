@@ -44,6 +44,7 @@ Status StatusServiceImpl::GetChatServer(ServerContext *context, const GetChatSer
     response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
     response->set_host(server.host);
     response->set_port(server.port);
+    std::cout <<  "Get ChatServer Address" << std::endl;
 
     random_generator generator;
     std::string token = boost::uuids::to_string(generator());

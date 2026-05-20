@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS `friend_apply` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `uid` int NOT NULL COMMENT '当前用户ID',
   `friend_id` int NOT NULL COMMENT '好友ID',
+  `status` tinyint NOT NULL DEFAULT 0 COMMENT '申请状态 0-待审批 1-已同意 2-已拒绝 3-已过期',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_apply_friend` (`uid`,`friend_id`) COMMENT '唯一索引：一个用户对一个好友只有一条申请记录',
   KEY `idx_uid` (`uid`),

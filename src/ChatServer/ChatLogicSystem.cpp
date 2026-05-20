@@ -57,6 +57,10 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return addFriendHandle(session, msgId, data);
         });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_FRIEND_AUTH_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return friendAuthHandle(session, msgId, data);
+        });
 }
 
 void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler) {
@@ -192,6 +196,19 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     root["token"] = reply.token();
 
     // 获取申请列表
+    ApplyUserList applyList;
+    MysqlMgr::getInstance()->getApplyUserList(uid, applyList);
+    Json::Value applyRoot(Json::arrayValue);
+    for (auto &apply : applyList) {
+        Json::Value applySubRoot;
+        applySubRoot["uid"] = apply->uid;
+        applySubRoot["name"] = apply->name;
+        applySubRoot["email"] = apply->email;
+        applySubRoot["status"] = apply->status;
+        applyRoot.append(applySubRoot);
+    }
+    root["apply_list"] = applyRoot;
+
     // 获取好友列表
     // 增加登录数量
     auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
@@ -269,7 +286,7 @@ void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, u
             applyRoot["fromUid"] = from;
             applyRoot["applyName"] = srcRoot["applyName"];
             applyRoot["applyEmail"] = srcRoot["applyEmail"];
-            toSession->asyncSend(applyRoot.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_ADD_FRIEND_REQ));
+            toSession->asyncSend(applyRoot.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_FRIEND_ADD));
         }
         return;
     }
@@ -281,4 +298,71 @@ void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, u
     request.set_name(srcRoot["applyName"].asString());
     request.set_email(srcRoot["applyEmail"].asString());
     ChatGrpcClient::getInstance()->NotifyAddFriend(toServiceName, request);
+}
+
+void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_ADD_FRIEND_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+
+    // 更新添加好友记录的状态并添加好友
+    const auto authUid = srcRoot["auth_uid"].asInt();
+    const auto applyUid = srcRoot["apply_uid"].asInt();
+    if (!MysqlMgr::getInstance()->updateFriendRelation(authUid, applyUid)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
+
+    // 回复好友信息，客户端添加到通讯录中
+    auto userInfo = std::make_shared<UserInfo>();
+    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(applyUid), applyUid, userInfo)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
+        return;
+    }
+
+    Json::Value friendVal;
+    friendVal["uid"] = userInfo->uid;
+    friendVal["name"] = userInfo->name;
+    friendVal["email"] = userInfo->email;
+    root["friend"] = friendVal;
+
+    // 如果对方在线，主动通知好友已经认证
+    std::string serviceName;
+    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(applyUid), serviceName)) {
+        return; // 不在线不用通知
+    }
+
+    if (serviceName == selfServerName_) {
+        auto toSession = UserMgr::getInstance()->getSession(applyUid);
+        if (nullptr == toSession) {
+            return;
+        }
+        if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(authUid), authUid, userInfo)) {
+            root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
+            return;
+        }
+        Json::Value notify;
+        notify["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+        notify["from_uid"] = authUid;
+        notify["to_uid"] = applyUid;
+        notify["name"] = userInfo->name;
+        notify["email"] = userInfo->email;
+        toSession->asyncSend(notify.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_FRIEND_AUTH));
+        return;
+    }
+
+    AuthFriendReq request;
+    request.set_from_uid(authUid);
+    request.set_to_uid(applyUid);
+    ChatGrpcClient::getInstance()->NotifyAuthFriend(serviceName, request);
 }

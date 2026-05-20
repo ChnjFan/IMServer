@@ -16,7 +16,16 @@
 #include "Singleton.h"
 #include "MsgNode.h"
 
+struct ApplyUserInfo {
+    int8_t status;
+    int8_t pad[3];
+    int uid;
+    std::string name;
+    std::string email;
+};
+
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
+typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
     ~ChatLogicSystem();
@@ -25,6 +34,9 @@ public:
     void setServerName(const std::string& name);
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
+
+    static bool getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo>& userInfo);
+
 private:
     friend class Singleton<ChatLogicSystem>;
 
@@ -35,12 +47,12 @@ private:
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
-    bool getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo>& userInfo);
     bool getUserInfoByName(const std::string &name, Json::Value& root);
 
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;
