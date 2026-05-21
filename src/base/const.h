@@ -62,6 +62,8 @@ enum class MessageID : uint16_t {
     ID_FRIEND_AUTH_REQ = 1012,   // 同意添加好友请求
     ID_FRIEND_AUTH_RSP = 1013,   // 同意添加好友响应
     ID_NOTIFY_FRIEND_AUTH = 1014,   // 通知用户好友认证
+    ID_CHAT_MSG_REQ = 1015,         // 聊天消息请求
+    ID_CHAT_MSG_RSP = 1016,         // 聊天消息响应
     INVALID_ID,
 };
 

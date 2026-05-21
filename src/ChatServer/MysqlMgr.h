@@ -25,6 +25,9 @@ public:
 
     bool updateFriendRelation(int authUid, int applyUid);
 
+    bool getFriendList(int uid, FriendInfoList &friendList);
+
+
 private:
     friend class Singleton<MysqlMgr>;
 

@@ -20,13 +20,17 @@ using grpc::ClientContext;
 
 using message::AddFriendReq;
 using message::AddFriendRsp;
+using message::AuthFriendReq;
+using message::AuthFriendRsp;
 using message::ChatService;
 
 class ChatGrpcClient : public Singleton<ChatGrpcClient> {
 public:
     typedef std::unique_ptr<ServiceConnPool<ChatService>> ChatServicePool;
 
-    AddFriendRsp NotifyAddFriend(std::string& serviceName, AddFriendReq request);
+    AddFriendRsp NotifyAddFriend(std::string& serviceName, const AddFriendReq &request);
+
+    AuthFriendRsp NotifyAuthFriend(std::string& serviceName, const AuthFriendReq &request);
 
 private:
     friend class Singleton<ChatGrpcClient>;

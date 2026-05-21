@@ -19,6 +19,8 @@ public:
 
     bool updateFriendRelation(int authUid, int applyUid);
 
+    bool getFriendList(int uid, FriendInfoList &friendList, const int start, const int size);
+
 private:
     std::unique_ptr<MysqlPool> pool_;
 };

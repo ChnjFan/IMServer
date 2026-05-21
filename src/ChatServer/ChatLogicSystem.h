@@ -17,15 +17,28 @@
 #include "MsgNode.h"
 
 struct ApplyUserInfo {
-    int8_t status;
-    int8_t pad[3];
+    uint8_t status;
+    uint8_t pad[3];
     int uid;
     std::string name;
     std::string email;
 };
 
+struct FriendInfo {
+    int uid;
+    uint8_t status;
+    uint8_t isStar;
+    uint8_t isHidden;
+    uint8_t pad;
+    std::string name;
+    std::string email;
+    std::string alias;
+};
+
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
 typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
+typedef std::vector<std::shared_ptr<FriendInfo>> FriendInfoList;
+
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
     ~ChatLogicSystem();

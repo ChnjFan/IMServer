@@ -210,11 +210,26 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     root["apply_list"] = applyRoot;
 
     // 获取好友列表
+    FriendInfoList friendList;
+    MysqlMgr::getInstance()->getFriendList(uid, friendList);
+    Json::Value friendRoot(Json::arrayValue);
+    for (auto &userInfo : friendList) {
+        Json::Value friendSubRoot;
+        friendSubRoot["uid"] = userInfo->uid;
+        friendSubRoot["is_star"] = userInfo->isStar;
+        friendSubRoot["is_hide"] = userInfo->isHidden;
+        friendSubRoot["name"] = userInfo->name;
+        friendSubRoot["email"] = userInfo->email;
+        friendSubRoot["status"] = userInfo->status;
+        friendRoot.append(friendSubRoot);
+    }
+    root["friend_list"] = friendRoot;
+
     // 增加登录数量
     auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
     auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName);
     int count = 0;
-    if (res.empty()) {
+    if (!res.empty()) {
         count = std::stoi(res);
     }
     ++count;
@@ -242,9 +257,9 @@ void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, 
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    Json::Value dataRoot;
     if (!srcRoot["name"].asString().empty()) {
         const auto name = srcRoot["name"].asString();
+        Json::Value dataRoot;
         getUserInfoByName(name, dataRoot);
         root["data"] = dataRoot;
     }

@@ -22,8 +22,8 @@ Status ChatServiceImpl::NotifyAddFriend(ServerContext *context, const message::A
         response->set_to_uid(request->to_uid());
     });
     // 校验用户是否在在线
-    auto touid = request->to_uid();
-    auto session = UserMgr::getInstance()->getSession(touid);
+    const auto toUid = request->to_uid();
+    const auto session = UserMgr::getInstance()->getSession(toUid);
     if (nullptr == session) {
         return Status::OK;
     }

@@ -167,3 +167,40 @@ bool MysqlDao::updateFriendRelation(const int authUid, const int applyUid) {
         return false;
     }
 }
+
+bool MysqlDao::getFriendList(int uid, FriendInfoList &friendList, const int start, const int size) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+            "SELECT relation.friend_id, relation.alias, relation.status, relation.is_star, relation.is_hide, user.name, user.email "
+                    "FROM friend_relation as relation join user on relation.friend_id = user.uid WHERE relation.uid = ? "
+                    "AND relation.id > ? ORDER by relation.id ASC LIMIT ? "));
+        stmt->setInt(1, uid);
+        stmt->setInt(2, start);
+        stmt->setInt(3, size);
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        while (res->next()) {
+            std::cout << "[getFriendList] Get user: " << uid << std::endl;
+            auto user = std::make_shared<FriendInfo>();
+            user->uid = res->getInt("friend_id");
+            user->isStar = res->getInt("is_star");
+            user->isHidden = res->getInt("is_hide");
+            user->status = res->getInt("status");
+            user->email = res->getString("email");
+            user->name = res->getString("name");
+            user->alias = res->getString("alias");
+            friendList.push_back(std::move(user));
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}

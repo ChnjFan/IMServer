@@ -354,7 +354,7 @@ std::string RedisMgr::hGet(const std::string &key, const std::string &hKey) {
     std::string value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::hGet: RedisCommandArgv() OK!" << std::endl;
+    std::cout << "RedisMgr::hGet: RedisCommandArgv() [" << key << ", " << hKey << " = " << value << "] OK!" << std::endl;
     return value;
 }
 
