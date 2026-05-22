@@ -701,11 +701,13 @@ class SendChatMsgReq final : public ::google::protobuf::Message
 
   // accessors -------------------------------------------------------
   enum : int {
-    kMessageFieldNumber = 3,
+    kMessageFieldNumber = 5,
     kFromUidFieldNumber = 1,
     kToUidFieldNumber = 2,
+    kMsgTypeFieldNumber = 3,
+    kMsgIdFieldNumber = 4,
   };
-  // string message = 3;
+  // string message = 5;
   void clear_message() ;
   const ::std::string& message() const;
   template <typename Arg_ = const ::std::string&, typename... Args_>
@@ -740,11 +742,31 @@ class SendChatMsgReq final : public ::google::protobuf::Message
   void _internal_set_to_uid(::int32_t value);
 
   public:
+  // int32 msg_type = 3;
+  void clear_msg_type() ;
+  ::int32_t msg_type() const;
+  void set_msg_type(::int32_t value);
+
+  private:
+  ::int32_t _internal_msg_type() const;
+  void _internal_set_msg_type(::int32_t value);
+
+  public:
+  // int32 msg_id = 4;
+  void clear_msg_id() ;
+  ::int32_t msg_id() const;
+  void set_msg_id(::int32_t value);
+
+  private:
+  ::int32_t _internal_msg_id() const;
+  void _internal_set_msg_id(::int32_t value);
+
+  public:
   // @@protoc_insertion_point(class_scope:message.SendChatMsgReq)
  private:
   class _Internal;
   friend class ::google::protobuf::internal::TcParser;
-  static const ::google::protobuf::internal::TcParseTable<2, 3,
+  static const ::google::protobuf::internal::TcParseTable<3, 5,
                                    0, 38,
                                    2>
       _table_;
@@ -769,6 +791,8 @@ class SendChatMsgReq final : public ::google::protobuf::Message
     ::google::protobuf::internal::ArenaStringPtr message_;
     ::int32_t from_uid_;
     ::int32_t to_uid_;
+    ::int32_t msg_type_;
+    ::int32_t msg_id_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
   union { Impl_ _impl_; };
@@ -4837,7 +4861,55 @@ inline void SendChatMsgReq::_internal_set_to_uid(::int32_t value) {
   _impl_.to_uid_ = value;
 }
 
-// string message = 3;
+// int32 msg_type = 3;
+inline void SendChatMsgReq::clear_msg_type() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.msg_type_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000008u;
+}
+inline ::int32_t SendChatMsgReq::msg_type() const {
+  // @@protoc_insertion_point(field_get:message.SendChatMsgReq.msg_type)
+  return _internal_msg_type();
+}
+inline void SendChatMsgReq::set_msg_type(::int32_t value) {
+  _internal_set_msg_type(value);
+  _impl_._has_bits_[0] |= 0x00000008u;
+  // @@protoc_insertion_point(field_set:message.SendChatMsgReq.msg_type)
+}
+inline ::int32_t SendChatMsgReq::_internal_msg_type() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.msg_type_;
+}
+inline void SendChatMsgReq::_internal_set_msg_type(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.msg_type_ = value;
+}
+
+// int32 msg_id = 4;
+inline void SendChatMsgReq::clear_msg_id() {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.msg_id_ = 0;
+  _impl_._has_bits_[0] &= ~0x00000010u;
+}
+inline ::int32_t SendChatMsgReq::msg_id() const {
+  // @@protoc_insertion_point(field_get:message.SendChatMsgReq.msg_id)
+  return _internal_msg_id();
+}
+inline void SendChatMsgReq::set_msg_id(::int32_t value) {
+  _internal_set_msg_id(value);
+  _impl_._has_bits_[0] |= 0x00000010u;
+  // @@protoc_insertion_point(field_set:message.SendChatMsgReq.msg_id)
+}
+inline ::int32_t SendChatMsgReq::_internal_msg_id() const {
+  ::google::protobuf::internal::TSanRead(&_impl_);
+  return _impl_.msg_id_;
+}
+inline void SendChatMsgReq::_internal_set_msg_id(::int32_t value) {
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  _impl_.msg_id_ = value;
+}
+
+// string message = 5;
 inline void SendChatMsgReq::clear_message() {
   ::google::protobuf::internal::TSanWrite(&_impl_);
   _impl_.message_.ClearToEmpty();

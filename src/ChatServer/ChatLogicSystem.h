@@ -66,6 +66,7 @@ private:
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;

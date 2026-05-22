@@ -61,6 +61,10 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return friendAuthHandle(session, msgId, data);
         });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_MSG_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return chatMsgHandle(session, msgId, data);
+        });
 }
 
 void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler) {
@@ -321,7 +325,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     Json::Value srcRoot;
     Defer defer([&root, session]() {
         const std::string jsonStr = root.toStyledString();
-        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_ADD_FRIEND_RSP));
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_FRIEND_AUTH_RSP));
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
@@ -380,4 +384,59 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     request.set_from_uid(authUid);
     request.set_to_uid(applyUid);
     ChatGrpcClient::getInstance()->NotifyAuthFriend(serviceName, request);
+}
+
+/**
+ * @brief 会话消息处理函数
+ * @param session
+ * @param msgId
+ * @param data
+ *
+ * @note
+ * 消息格式：
+ *     'from_uid': UserSession().uid,
+ *     'to_uid': toUid,
+ *     'msg_type': 1,
+ *     'content': text,
+ *     'msg_id': localId,
+ */
+void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    root["msg_id"] = srcRoot["msg_id"].asInt();
+
+    const auto from = srcRoot["from_uid"].asInt();
+    const auto to = srcRoot["to_uid"].asInt();
+    // 检查是否在线
+    std::string serviceName;
+    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(to), serviceName)) {
+        return;
+    }
+
+    if (serviceName == selfServerName_) {
+        const auto toSession = UserMgr::getInstance()->getSession(to);
+        if (nullptr == toSession) {
+            return;
+        }
+        // 转发消息给对应客户端
+        toSession->asyncSend(data, static_cast<std::uint16_t>(MessageID::ID_NOTIFY_CHAT_MSG));
+        return;
+    }
+
+    SendChatMsgReq request;
+    request.set_from_uid(from);
+    request.set_to_uid(to);
+    request.set_msg_id(root["msg_id"].asInt());
+    request.set_msg_type(root["msg_type"].asInt());
+    ChatGrpcClient::getInstance()->SendChatMsg(serviceName, request);
 }

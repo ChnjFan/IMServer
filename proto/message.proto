@@ -80,7 +80,9 @@ message ReplyFriendRsp {
 message SendChatMsgReq {
     int32 from_uid = 1;
     int32 to_uid = 2;
-    string message = 3;
+    int32 msg_type = 3;
+    int32 msg_id = 4;
+    string message = 5;
 }
 
 message SendChatMsgRsp {

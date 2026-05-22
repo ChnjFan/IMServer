@@ -51,7 +51,7 @@ AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string &serviceName, const Add
     });
 
     if (const auto status = stub->NotifyAddFriend(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
+        std::cout << "RPC NotifyAddFriend success" << std::endl;
         return reply;
     }
 
@@ -79,7 +79,35 @@ AuthFriendRsp ChatGrpcClient::NotifyAuthFriend(std::string &serviceName, const A
     });
 
     if (const auto status = stub->NotifyAuthFriend(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
+        std::cout << "RPC NotifyAuthFriend success" << std::endl;
+        return reply;
+    }
+
+    reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+    return reply;
+}
+
+SendChatMsgRsp ChatGrpcClient::SendChatMsg(std::string &serviceName, const SendChatMsgReq &request) {
+    ClientContext context;
+    SendChatMsgRsp reply;
+
+    if (pools_.find(serviceName) == pools_.end()) {
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+    auto stub = pools_[serviceName]->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+
+    Defer defer([this, &stub, &serviceName] () {
+        pools_[serviceName]->returnConnection(std::move(stub));
+    });
+
+    if (const auto status = stub->SendChatMsg(&context, request, &reply); status.ok()) {
+        std::cout << "RPC SendChatMsg success" << std::endl;
         return reply;
     }
 

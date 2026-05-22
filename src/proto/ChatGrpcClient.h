@@ -22,6 +22,8 @@ using message::AddFriendReq;
 using message::AddFriendRsp;
 using message::AuthFriendReq;
 using message::AuthFriendRsp;
+using message::SendChatMsgReq;
+using message::SendChatMsgRsp;
 using message::ChatService;
 
 class ChatGrpcClient : public Singleton<ChatGrpcClient> {
@@ -31,6 +33,8 @@ public:
     AddFriendRsp NotifyAddFriend(std::string& serviceName, const AddFriendReq &request);
 
     AuthFriendRsp NotifyAuthFriend(std::string& serviceName, const AuthFriendReq &request);
+
+    SendChatMsgRsp SendChatMsg(std::string& serviceName, const SendChatMsgReq& request);
 
 private:
     friend class Singleton<ChatGrpcClient>;
