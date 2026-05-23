@@ -21,6 +21,11 @@ public:
 
     bool getFriendList(int uid, FriendInfoList &friendList, const int start, const int size);
 
+    bool addConversation(int uid, int to, const std::string& convId, int convType);
+    bool getConversation(int uid, ConversationList& convList);
+
+    bool addHistoryMessage(const MessageInfo& message);
+
 private:
     std::unique_ptr<MysqlPool> pool_;
 };

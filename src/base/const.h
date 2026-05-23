@@ -28,12 +28,6 @@ constexpr int MAX_BUFFER_SIZE = 8196;
 
 #define CODE_PREFIX "code_"
 
-#define USER_IP_PREFIX "user_ip_"
-#define USER_TOKEN_PREFIX "user_token_"
-#define IP_COUNT_PREFIX "ip_count_"
-#define USER_BASE_INFO_PREFIX "user_base_info_"
-#define LOGIN_COUNT "login_chat_server_count"
-
 enum class ErrorCodes : int32_t {
     SUCCESS = 0,
     ERROR_JSON = 1001,
@@ -45,6 +39,7 @@ enum class ErrorCodes : int32_t {
     CHAT_LOGIN_TOKEN_ERROR = 1007,
     CHAT_LOGIN_UID_ERROR = 1008,
     MYSQL_ERROR = 1100,
+    REDIS_ERROR = 1101,
 };
 
 enum class MessageID : uint16_t {
@@ -65,7 +60,19 @@ enum class MessageID : uint16_t {
     ID_CHAT_MSG_REQ = 1015,         // 聊天消息请求
     ID_CHAT_MSG_RSP = 1016,         // 聊天消息响应
     ID_NOTIFY_CHAT_MSG = 1017,      //  推送聊天消息
+    ID_CHAT_CONVERSATION_REQ = 1018,    // 会话创建请求
+    ID_CHAT_CONVERSATION_RSP = 1019,    // 会话创建响应
     INVALID_ID,
+};
+
+enum class ChatMsgType : uint8_t {
+    TEXT = 1,       // 文本消息
+};
+
+enum class ChatMsgStatus : uint8_t {
+    SENDING = 0,       // 发送中
+    IS_SEND = 1,       // 已发送
+    IS_READ = 2,       // 已读
 };
 
 struct UserInfo {
@@ -85,5 +92,36 @@ public:
 private:
     std::function<void()> func_;
 };
+
+inline long long get_current_ms()
+{
+    using namespace std::chrono;
+    const auto now = system_clock::now();
+    const auto ms = duration_cast<milliseconds>(now.time_since_epoch());
+    return ms.count();
+}
+
+inline std::string ms_to_datetime(const long long timestamp_ms)
+{
+    // 1. 毫秒 → 秒
+    const time_t sec = timestamp_ms / 1000;
+
+    // 2. 转为本地时间
+    tm time_info{};
+    localtime_r(&sec, &time_info); // 线程安全！！
+
+    // 3. 格式化成标准字符串
+    char buf[32];
+    snprintf(buf, sizeof(buf),
+             "%04d-%02d-%02d %02d:%02d:%02d",
+             time_info.tm_year + 1900,
+             time_info.tm_mon + 1,
+             time_info.tm_mday,
+             time_info.tm_hour,
+             time_info.tm_min,
+             time_info.tm_sec);
+
+    return std::string(buf);
+}
 
 #endif //IMSERVER_CONST_H

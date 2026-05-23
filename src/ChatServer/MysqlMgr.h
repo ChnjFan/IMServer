@@ -27,6 +27,10 @@ public:
 
     bool getFriendList(int uid, FriendInfoList &friendList);
 
+    bool addConversation(int uid, int to, const std::string& convId, int convType);
+    bool getConversation(int uid, ConversationList& convList);
+
+    bool addHistoryMessage(MessageInfo& message);
 
 private:
     friend class Singleton<MysqlMgr>;

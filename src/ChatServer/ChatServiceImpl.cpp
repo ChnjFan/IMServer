@@ -10,6 +10,7 @@
 #include "const.h"
 #include "Session.h"
 #include "ChatLogicSystem.h"
+#include "RedisMgr.h"
 
 ChatServiceImpl::ChatServiceImpl() {
 }

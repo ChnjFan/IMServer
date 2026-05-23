@@ -65,6 +65,11 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return chatMsgHandle(session, msgId, data);
         });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_CONVERSATION_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return conversationCreateHandle(session, msgId, data);
+        });
+
 }
 
 void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler) {
@@ -164,6 +169,94 @@ bool ChatLogicSystem::getUserInfoByName(const std::string &name, Json::Value& ro
     return true;
 }
 
+bool ChatLogicSystem::getConversationList(int uid, ConversationList &convList) {
+    std::vector<std::string> convIds(10);
+    std::vector<std::string> keys = {
+        "conv_type", "to_uid", "unread_count", "last_msg", "last_time", "is_top", "is_mute"
+    };
+    if (RedisMgr::getInstance()->zRevrange(
+        CHAT_CONVER_PREFIX + std::to_string(uid), convIds, 0, 10)) {
+        for (auto &convId : convIds) {
+            auto info = RedisMgr::getInstance()->hGetAll(CHAT_CONVER_INFO_PREFIX + convId, keys);
+            if (info.empty()) {
+                continue;
+            }
+            auto convInfo = std::make_shared<ConversationInfo>();
+            convInfo->conv_id = convId;
+            convInfo->conv_type = atoi(info["conv_type"].c_str());
+            convInfo->to_uid = atoi(info["to_uid"].c_str());
+            convInfo->unread_count = atoi(info["unread_count"].c_str());
+            convInfo->last_msg_id = atoi(info["last_msg_id"].c_str());
+            convInfo->last_msg = info["last_msg"];
+            convInfo->last_time = info["last_time"];
+            convInfo->is_top = atoi(info["is_top"].c_str());
+            convInfo->is_mute = atoi(info["is_mute"].c_str());
+            convList.push_back(convInfo);
+        }
+        if (!convList.empty()) {
+            return true;
+        }
+    }
+
+    if (!MysqlMgr::getInstance()->getConversation(uid, convList)) {
+        std::cout << "Not found conversation by uid " << uid << std::endl;
+        return false;
+    }
+
+    // 更新 Redis
+    for (const auto &conv : convList) {
+        std::unordered_map<std::string, std::string> convInfo;
+        convInfo["conv_id"] = conv->conv_id;
+        convInfo["conv_type"] = std::to_string(conv->conv_type);
+        convInfo["to_uid"] = std::to_string(conv->to_uid);
+        convInfo["unread_count"] = std::to_string(conv->unread_count);
+        convInfo["last_msg_id"] = std::to_string(conv->last_msg_id);
+        if (!conv->last_msg.empty()) {
+            convInfo["last_msg"] = conv->last_msg;
+        }
+        convInfo["last_time"] = conv->last_time;
+        convInfo["is_top"] = std::to_string(conv->is_top);
+        convInfo["is_mute"] = std::to_string(conv->is_mute);
+
+        if (!RedisMgr::getInstance()->hSet(CHAT_CONVER_INFO_PREFIX + conv->conv_id, convInfo)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void ChatLogicSystem::addHistoryMessage(Json::Value &root, ChatMsgStatus status) {
+    MessageInfo message;
+    message.conv_id = root["conv_id"].asString();
+    message.status = static_cast<uint8_t>(status);
+    message.msg_id = root["msg_id"].asInt();
+    message.msg_type = root["msg_type"].asInt();
+    message.content = root["content"].asString();
+    message.sender_uid = root["from_uid"].asInt();
+    message.receiver_uid = root["to_uid"].asInt();
+
+    // 更新数据库，事务同时更新会话表和消息表
+    if (!MysqlMgr::getInstance()->addHistoryMessage(message)) {
+        return;
+    }
+    // 更新会话
+    const auto curTimeStamp = get_current_ms();
+    if (!RedisMgr::getInstance()->zSet(
+        CHAT_CONVER_PREFIX + std::to_string(message.sender_uid), curTimeStamp, message.conv_id)) {
+        return;
+    }
+
+    std::unordered_map<std::string, std::string> convInfo;
+    convInfo["to_uid"] = std::to_string(message.receiver_uid);
+    convInfo["last_time"] = ms_to_datetime(curTimeStamp);
+    convInfo["last_msg_id"] = std::to_string(message.msg_id);
+    convInfo["last_msg"] = message.content;
+    if (!RedisMgr::getInstance()->hSet(CHAT_CONVER_INFO_PREFIX + message.conv_id, convInfo)) {
+        std::cout << "Redis set conver info error" << std::endl;
+    }
+}
+
 void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
@@ -228,6 +321,25 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
         friendRoot.append(friendSubRoot);
     }
     root["friend_list"] = friendRoot;
+
+    // 获取会话列表
+    ConversationList convList;
+    getConversationList(uid, convList);
+    Json::Value convRoot(Json::arrayValue);
+    for (auto& conv : convList) {
+        Json::Value convSubRoot;
+        convSubRoot["conv_id"] = conv->conv_id;
+        convSubRoot["conv_type"] = conv->conv_type;
+        convSubRoot["to_uid"] = conv->to_uid;
+        convSubRoot["unread_count"] = conv->unread_count;
+        convSubRoot["last_msg_id"] = conv->last_msg_id;
+        convSubRoot["last_msg"] = conv->last_msg;
+        convSubRoot["last_time"] = conv->last_time;
+        convSubRoot["is_top"] = conv->is_top;
+        convSubRoot["is_mute"] = conv->is_mute;
+        convRoot.append(convSubRoot);
+    }
+    root["conv_list"] = convRoot;
 
     // 增加登录数量
     auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
@@ -396,6 +508,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
  * 消息格式：
  *     'from_uid': UserSession().uid,
  *     'to_uid': toUid,
+ *     'conv_id': c2c_,
  *     'msg_type': 1,
  *     'content': text,
  *     'msg_id': localId,
@@ -403,9 +516,11 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
 void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
-    Defer defer([&root, session]() {
+    auto status = ChatMsgStatus::SENDING;
+    Defer defer([&root, &srcRoot, &status, session, this]() {
         const std::string jsonStr = root.toStyledString();
         session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
+        addHistoryMessage(srcRoot, status);
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
@@ -413,7 +528,8 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    root["msg_id"] = srcRoot["msg_id"].asInt();
+    root["msg_id"] = srcRoot["msg_id"];
+    root["conv_id"] = srcRoot["conv_id"];
 
     const auto from = srcRoot["from_uid"].asInt();
     const auto to = srcRoot["to_uid"].asInt();
@@ -430,6 +546,7 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
         }
         // 转发消息给对应客户端
         toSession->asyncSend(data, static_cast<std::uint16_t>(MessageID::ID_NOTIFY_CHAT_MSG));
+        status = ChatMsgStatus::IS_SEND;
         return;
     }
 
@@ -439,4 +556,65 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
     request.set_msg_id(root["msg_id"].asInt());
     request.set_msg_type(root["msg_type"].asInt());
     ChatGrpcClient::getInstance()->SendChatMsg(serviceName, request);
+    status = ChatMsgStatus::IS_SEND;
 }
+
+/*
+*{
+"uid": 7,
+"conv_id": "c2c_0_7",
+"conv_type": 1,
+"to_uid": 0
+}
+*/
+void ChatLogicSystem::conversationCreateHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_CONVERSATION_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    root["conv_id"] = srcRoot["conv_id"];
+    root["conv_type"] = srcRoot["conv_type"];
+
+    // 获取当前时间戳
+    auto curTimeStamp = get_current_ms();
+
+    // 写数据库
+    const auto uid = srcRoot["uid"].asInt();
+    const auto conv_id = srcRoot["conv_id"].asString();
+    const auto conv_type = srcRoot["conv_type"].asInt();
+    const auto to_uid = srcRoot["to_uid"].asInt();
+    if (!MysqlMgr::getInstance()->addConversation(uid, to_uid, conv_id, conv_type)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
+
+    // 写缓存，创建的时候没有消息，所以最新消息时间先设为 0
+    if (!RedisMgr::getInstance()->zSet(CHAT_CONVER_PREFIX + std::to_string(uid), 0, conv_id)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::REDIS_ERROR);
+        return;
+    }
+    // 写会话详情
+    std::unordered_map<std::string, std::string> convInfo;
+    convInfo["conv_id"] = conv_id;
+    convInfo["conv_type"] = std::to_string(conv_type);
+    convInfo["to_uid"] = std::to_string(to_uid);
+    convInfo["unread_count"] = "0";
+    convInfo["last_time"] = ms_to_datetime(curTimeStamp);
+    convInfo["is_top"] = "0";
+    convInfo["is_mute"] = "0";
+    if (!RedisMgr::getInstance()->hSet(CHAT_CONVER_INFO_PREFIX + conv_id, convInfo)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::REDIS_ERROR);
+    }
+}
+
+

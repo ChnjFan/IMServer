@@ -35,9 +35,34 @@ struct FriendInfo {
     std::string alias;
 };
 
+struct ConversationInfo {
+    std::string conv_id;
+    uint8_t conv_type;
+    uint8_t is_top;
+    uint8_t is_mute;
+    uint8_t pad;
+    int to_uid;
+    int unread_count;
+    int last_msg_id;
+    std::string last_msg;
+    std::string last_time;
+};
+
+struct MessageInfo {
+    std::string conv_id;
+    int sender_uid;
+    int receiver_uid;
+    int msg_id;
+    uint8_t msg_type;
+    uint8_t status;
+    uint8_t pad[2];
+    std::string content;
+};
+
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
 typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
 typedef std::vector<std::shared_ptr<FriendInfo>> FriendInfoList;
+typedef std::vector<std::shared_ptr<ConversationInfo>> ConversationList;
 
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
@@ -61,12 +86,16 @@ private:
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
     bool getUserInfoByName(const std::string &name, Json::Value& root);
+    bool getConversationList(int uid, ConversationList& convList);
+
+    void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
 
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;

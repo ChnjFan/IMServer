@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS `friend_apply` (
 -- ----------------------------
 -- Records of user
 -- ----------------------------
-BEGIN;
-INSERT INTO `user` (`id`, `uid`, `name`, `email`, `pwd`) VALUES (0, 0, 'admin', 'admin@163.com', 'ba470028e8ebe13c6551e0eec983d084e8b67e62d2fdbe7940dd4debbcf5ceca');
-COMMIT;
+-- BEGIN;
+-- INSERT INTO `user` (`id`, `uid`, `name`, `email`, `pwd`) VALUES (0, 0, 'admin', 'admin@163.com', 'ba470028e8ebe13c6551e0eec983d084e8b67e62d2fdbe7940dd4debbcf5ceca');
+-- COMMIT;
 
 SET FOREIGN_KEY_CHECKS = 1;
