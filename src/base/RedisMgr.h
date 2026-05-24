@@ -34,9 +34,14 @@ public:
     void close();
 
 private:
+    void createPool();
+
     std::atomic<bool> stop_;
-    const char* host_;
+    std::atomic<bool> start_;   // 启动标记，如果没有成功创建 Redis 连接，之后请求重新尝试连接
+    std::string host_;
+    std::string passwd_;
     int port_;
+    int capacity_;
     std::queue<redisContext*> connections_;
     std::mutex mutex_;
     std::condition_variable cond_;

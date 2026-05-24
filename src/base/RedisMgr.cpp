@@ -11,26 +11,13 @@
 #include "const.h"
 
 RedisPool::RedisPool(size_t poolSize, const char *host, const int port, const char* password)
-    : stop_(false), host_(host), port_(port) {
+    : stop_(false), start_(false), host_(host), passwd_(password), port_(port), capacity_(poolSize) {
     std::cout << "Creating RedisPool ... ";
-    for (int i = 0; i < poolSize; i++) {
-        auto conn = redisConnect(host, port);
-        if (conn == nullptr || conn->err) {
-            redisFree(conn);
-            continue;
-        }
-        // 认证连接
-        const auto reply = static_cast<redisReply *>(redisCommand(conn, "AUTH %s", password));
-        if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
-            std::cout << "RedisPool::redisConnect() AUTH failed" << std::endl;
-            redisFree(conn);
-            freeReplyObject(reply);
-            continue;
-        }
-
-        freeReplyObject(reply);
-        connections_.push(conn);
+    createPool();
+    if (connections_.empty()) {
+        std::cout << "failed!" << std::endl;
     }
+    start_.store(true);
     std::cout << "OK, size = " << connections_.size() << std::endl;
 }
 
@@ -45,13 +32,20 @@ RedisPool::~RedisPool() {
 
 redisContext * RedisPool::getConnection() {
     std::unique_lock<std::mutex> lock(mutex_);
-    cond_.wait(lock, [this] {
+    cond_.wait_for(lock, std::chrono::milliseconds(3000), [this] {
         if (stop_.load()) {// 已经停止
             return true;
         }
         return !connections_.empty();
     });
     if (stop_.load()) {
+        return nullptr;
+    }
+    if (start_.load()) {
+        createPool();
+    }
+
+    if (connections_.empty()) {
         return nullptr;
     }
     const auto conn = connections_.front();
@@ -72,6 +66,31 @@ void RedisPool::returnConnection(redisContext *c) {
 void RedisPool::close() {
     stop_.store(true);
     cond_.notify_all();
+}
+
+void RedisPool::createPool() {
+    for (int i = 0; i < capacity_; i++) {
+        auto conn = redisConnect(host_.c_str(), port_);
+        if (conn == nullptr || conn->err) {
+            redisFree(conn);
+            continue;
+        }
+        // 认证连接
+        const auto reply = static_cast<redisReply *>(redisCommand(conn, "AUTH %s", passwd_.c_str()));
+        if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
+            std::cout << "RedisPool::redisConnect() AUTH failed" << std::endl;
+            redisFree(conn);
+            freeReplyObject(reply);
+            continue;
+        }
+
+        freeReplyObject(reply);
+        connections_.push(conn);
+    }
+
+    if (!connections_.empty()) {
+        start_.store(true);
+    }
 }
 
 RedisMgr::~RedisMgr() {

@@ -31,4 +31,16 @@ bool MysqlMgr::getFriendList(int uid, FriendInfoList &friendList) {
     return db_.getFriendList(uid, friendList, 0, 10);
 }
 
+bool MysqlMgr::addConversation(int uid, int to, const std::string &convId, int convType) {
+    return db_.addConversation(uid, to, convId, convType);
+}
+
+bool MysqlMgr::getConversation(int uid, ConversationList &convList) {
+    return db_.getConversation(uid, convList);
+}
+
+bool MysqlMgr::addHistoryMessage(MessageInfo &message) {
+    return db_.addHistoryMessage(message);
+}
+
 
