@@ -111,7 +111,7 @@ inline std::string ms_to_datetime(const long long timestamp_ms)
     localtime_r(&sec, &time_info); // 线程安全！！
 
     // 3. 格式化成标准字符串
-    char buf[32];
+    char buf[72];
     snprintf(buf, sizeof(buf),
              "%04d-%02d-%02d %02d:%02d:%02d",
              time_info.tm_year + 1900,

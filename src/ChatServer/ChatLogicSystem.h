@@ -9,6 +9,7 @@
 #include <atomic>
 #include <functional>
 #include <string>
+#include <queue>
 
 #include <json/json.h>
 
