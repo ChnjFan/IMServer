@@ -40,10 +40,16 @@ StatusServiceImpl::StatusServiceImpl() {
 
 Status StatusServiceImpl::GetChatServer(ServerContext *context, const GetChatServerReq *request,
                                         GetChatServerRsp *response) {
+    auto& config = ConfigMgr::getInstance();
     const auto& server = getChatServerInfo();
     response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
     response->set_host(server.host);
-    response->set_port(server.port);
+    if (config["Nginx"][server.name].empty()) {
+        response->set_port(server.port);
+    }
+    else { // 返回反向代理端口
+        response->set_port(config["Nginx"][server.name]);
+    }
     std::cout <<  "Get ChatServer Address" << std::endl;
 
     random_generator generator;
