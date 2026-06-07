@@ -11,7 +11,7 @@
  Target Server Version : 90700 (9.7.0)
  File Encoding         : 65001
 
- Date: 23/05/2026 21:11:01
+ Date: 07/06/2026 10:38:17
 */
 
 SET NAMES utf8mb4;
@@ -67,7 +67,7 @@ CREATE TABLE `message` (
   `created_at` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_conv_msg` (`conv_id`,`msg_id`) COMMENT '会话内消息ID索引'
-) ENGINE=InnoDB DEFAULT CHARSET=utf16 COMMENT='IM消息表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf16 COMMENT='IM消息表';
 
 -- ----------------------------
 -- Table structure for user
@@ -80,7 +80,14 @@ CREATE TABLE `user` (
   `email` varchar(255) NOT NULL,
   `pwd` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf16;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf16;
+
+-- ----------------------------
+-- Records of user
+-- ----------------------------
+BEGIN;
+INSERT INTO `user` (`id`, `uid`, `name`, `email`, `pwd`) VALUES (1, 0, 'admin', 'admin@163.com', '1a45eeb3f437d55711c2acd49605330b8cb4124f09a849f09a8e1fbdaeb0776b');
+COMMIT;
 
 -- ----------------------------
 -- Table structure for user_conversation
@@ -103,7 +110,7 @@ CREATE TABLE `user_conversation` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_user_conv` (`uid`,`conv_id`) COMMENT '用户会话索引',
   KEY `idx_user_time` (`uid`,`last_time`) COMMENT '用户最新消息时间索引'
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf16 COMMENT='IM用户会话表';
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf16 COMMENT='IM用户会话表';
 
 -- ----------------------------
 -- Table structure for user_id
@@ -113,6 +120,13 @@ CREATE TABLE `user_id` (
   `id` int NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf16;
+
+-- ----------------------------
+-- Records of user_id
+-- ----------------------------
+BEGIN;
+INSERT INTO `user_id` (`id`) VALUES (1);
+COMMIT;
 
 -- ----------------------------
 -- Procedure structure for add_friend_relation
@@ -199,6 +213,64 @@ BEGIN
         END IF;
     END IF;
     
+END
+;;
+delimiter ;
+
+-- ----------------------------
+-- Procedure structure for save_chat_message
+-- ----------------------------
+DROP PROCEDURE IF EXISTS `save_chat_message`;
+delimiter ;;
+CREATE PROCEDURE `save_chat_message`(IN `p_conv_id` VARCHAR(64), 
+    IN `sender_uid` INT, 
+		IN `recver_uid` INT, 
+    IN `msg_type` TINYINT, 
+		IN `msg_id` INT,
+		IN `stat` TINYINT,
+		IN `content` TEXT,
+    OUT `result` INT)
+BEGIN
+    -- 如果在执行过程中遇到任何错误，则回滚事务
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- 回滚事务
+        ROLLBACK;
+        -- 设置返回值为-1，表示错误
+        SET result = -1;
+				SHOW ERRORS;
+    END;
+    
+    -- 开始事务
+    START TRANSACTION;
+
+    -- 检查消息是否已存在
+    IF EXISTS (SELECT 1 FROM `message` WHERE `conv_id` = p_conv_id AND `msg_id` = msg_id) THEN
+        SET result = 1; -- 消息已存在
+        COMMIT;
+    ELSE
+				SET result = 0;
+        -- 消息不存在，插入新消息
+				INSERT INTO message(conv_id, sender_uid, msg_type, content, msg_id, status)
+				VALUES (p_conv_id, sender_uid, msg_type, content, msg_id, stat);
+			  -- 更新发送方会话表
+				UPDATE  user_conversation 
+				SET last_msg_id = msg_id, last_msg_content = content, last_time = NOW()
+				WHERE conv_id = p_conv_id AND uid = sender_uid;
+				
+				-- 接收方如果没有创建会话，主动创建并更新
+				IF EXISTS (SELECT 1 FROM user_conversation WHERE uid = recver_uid AND conv_id = p_conv_id) THEN
+						-- 有会话：更新
+						UPDATE user_conversation
+						SET last_msg_id = msg_id, last_msg_content = content, unread_count = unread_count+1, last_time = NOW()
+						WHERE conv_id = p_conv_id AND uid = recver_uid;
+				ELSE
+						-- 无会话：自动创建（关键！）
+						INSERT INTO user_conversation(uid, conv_id, conv_type, to_uid, unread_count, last_msg_id, last_msg_content,last_time)
+						VALUES (recver_uid, p_conv_id, 1, sender_uid, 1, msg_id, content, NOW());
+				END IF;
+    END IF;
+    COMMIT;
 END
 ;;
 delimiter ;
