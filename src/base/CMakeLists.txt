@@ -9,6 +9,10 @@ set(BASE_SOURCES
     RedisMgr.h
     Singleton.h
     const.h
+    ThreadPool.cpp
+    ThreadPool.h
+    DistLock.cpp
+    DistLock.h
 )
 
 add_library(base STATIC ${BASE_SOURCES})

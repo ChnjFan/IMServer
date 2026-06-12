@@ -16,7 +16,7 @@ public:
     ~UserMgr();
     std::shared_ptr<Session> getSession(int uid);
     void setUserSession(int uid, std::shared_ptr<Session> session);
-    void removeUserSession(int uid);
+    void removeUserSession(int uid, std::string& sessionId);
 
 private:
     friend class Singleton<UserMgr>;

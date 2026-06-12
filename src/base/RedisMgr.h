@@ -14,9 +14,12 @@
 #include "const.h"
 #include "Singleton.h"
 
-// 用户缓存
-#define USER_IP_PREFIX "user_ip_"
-#define USER_TOKEN_PREFIX "user_token_"
+// 用户在线状态
+#define USER_ONLINE_INFO_PREFIX "user_online_"
+#define USER_ONLINE_SERVER_NAME "server_name"
+#define USER_ONLINE_TOKEN "token"
+#define USER_SESSION_ID "session_id"
+// 用户信息
 #define IP_COUNT_PREFIX "ip_count_"
 #define USER_BASE_INFO_PREFIX "user_base_info_"
 #define LOGIN_COUNT "login_chat_server_count"
@@ -24,6 +27,11 @@
 // 聊天会话缓存
 #define CHAT_CONVER_PREFIX "chat_conver_"
 #define CHAT_CONVER_INFO_PREFIX "conver_info_"
+
+// 分布式锁
+#define DIST_LOCK_PREFIX "lock_"
+#define DIST_LOCK_TIMEOUT 10
+#define DIST_ACQUIRE_TIMEOUT 5
 
 class RedisPool {
 public:
@@ -69,9 +77,14 @@ public:
     bool zSet(const std::string& key, long long score, const std::string& value);
     bool zRevrange(const std::string& key, std::vector<std::string>& values, int start, int end);
     bool zRem(const std::string& key, const std::string& value);
-    bool del(const std::string& key);
-    bool existsKey(const std::string& key);
-    void close();
+
+    bool del(const std::string& key) const;
+    bool existsKey(const std::string& key) const;
+
+    std::string acquireLock(const std::string& name, int timeout, int acquireTimeout) const;
+    bool releaseLock(const std::string& name, const std::string& identifier) const;
+
+    void close() const;
 
 
 private:

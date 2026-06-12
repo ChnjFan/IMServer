@@ -675,58 +675,65 @@ static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
 };
 const char descriptor_table_protodef_message_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\rmessage.proto\022\007message\"\035\n\014GetVerifyReq"
-    "\022\r\n\005email\030\001 \001(\t\":\n\014GetVerifyRsp\022\r\n\005error"
-    "\030\001 \001(\005\022\r\n\005email\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"\037\n\020G"
-    "etChatServerReq\022\013\n\003uid\030\001 \001(\005\"L\n\020GetChatS"
-    "erverRsp\022\r\n\005error\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n"
-    "\004port\030\003 \001(\t\022\r\n\005token\030\004 \001(\t\"&\n\010LoginReq\022\013"
-    "\n\003uid\030\001 \001(\005\022\r\n\005token\030\002 \001(\t\"5\n\010LoginRsp\022\r"
-    "\n\005error\030\001 \001(\005\022\013\n\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001("
-    "\t\"[\n\014AddFriendReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006t"
-    "o_uid\030\002 \001(\005\022\014\n\004name\030\003 \001(\t\022\r\n\005email\030\004 \001(\t"
-    "\022\014\n\004desc\030\005 \001(\t\"\?\n\014AddFriendRsp\022\r\n\005error\030"
-    "\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\""
-    "A\n\016ReplyFriendReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006t"
-    "o_uid\030\002 \001(\005\022\r\n\005agree\030\003 \001(\010\"A\n\016ReplyFrien"
-    "dRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n"
-    "\006to_uid\030\003 \001(\005\"e\n\016SendChatMsgReq\022\020\n\010from_"
-    "uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\022\020\n\010msg_type\030\003 "
-    "\001(\005\022\016\n\006msg_id\030\004 \001(\005\022\017\n\007message\030\005 \001(\t\"A\n\016"
-    "SendChatMsgRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_ui"
-    "d\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\"1\n\rAuthFriendReq"
-    "\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\"@\n\rAu"
-    "thFriendRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002"
-    " \001(\005\022\016\n\006to_uid\030\003 \001(\005\"3\n\014TextChatData\022\016\n\006"
-    "msg_id\030\001 \001(\t\022\023\n\013msg_content\030\002 \001(\t\"j\n\016Tex"
-    "tChatMsgRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002"
-    " \001(\005\022\016\n\006to_uid\030\003 \001(\005\022\'\n\010text_msg\030\004 \003(\0132\025"
-    ".message.TextChatData2N\n\rVerifyService\022="
-    "\n\rGetVerifyCode\022\025.message.GetVerifyReq\032\025"
-    ".message.GetVerifyRsp2\205\001\n\rStatusService\022"
-    "E\n\rGetChatServer\022\031.message.GetChatServer"
-    "Req\032\031.message.GetChatServerRsp\022-\n\005Login\022"
-    "\021.message.LoginReq\032\021.message.LoginRsp2\334\002"
-    "\n\013ChatService\022\?\n\017NotifyAddFriend\022\025.messa"
-    "ge.AddFriendReq\032\025.message.AddFriendRsp\022B"
-    "\n\016ReplyAddFriend\022\027.message.ReplyFriendRe"
-    "q\032\027.message.ReplyFriendRsp\022\?\n\013SendChatMs"
-    "g\022\027.message.SendChatMsgReq\032\027.message.Sen"
-    "dChatMsgRsp\022B\n\020NotifyAuthFriend\022\026.messag"
-    "e.AuthFriendReq\032\026.message.AuthFriendRsp\022"
-    "C\n\021NotifyTextChatMsg\022\025.message.TextChatD"
-    "ata\032\027.message.TextChatMsgRspb\006proto3"
+    "\n\rmessage.proto\022\007message\032\033google/protobu"
+    "f/empty.proto\"\035\n\014GetVerifyReq\022\r\n\005email\030\001"
+    " \001(\t\":\n\014GetVerifyRsp\022\r\n\005error\030\001 \001(\005\022\r\n\005e"
+    "mail\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"\037\n\020GetChatServe"
+    "rReq\022\013\n\003uid\030\001 \001(\005\"L\n\020GetChatServerRsp\022\r\n"
+    "\005error\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n\004port\030\003 \001(\t"
+    "\022\r\n\005token\030\004 \001(\t\"&\n\010LoginReq\022\013\n\003uid\030\001 \001(\005"
+    "\022\r\n\005token\030\002 \001(\t\"5\n\010LoginRsp\022\r\n\005error\030\001 \001"
+    "(\005\022\013\n\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001(\t\"[\n\014AddFri"
+    "endReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005"
+    "\022\014\n\004name\030\003 \001(\t\022\r\n\005email\030\004 \001(\t\022\014\n\004desc\030\005 "
+    "\001(\t\"\?\n\014AddFriendRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010fr"
+    "om_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\"A\n\016ReplyFri"
+    "endReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005"
+    "\022\r\n\005agree\030\003 \001(\010\"A\n\016ReplyFriendRsp\022\r\n\005err"
+    "or\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001"
+    "(\005\"e\n\016SendChatMsgReq\022\020\n\010from_uid\030\001 \001(\005\022\016"
+    "\n\006to_uid\030\002 \001(\005\022\020\n\010msg_type\030\003 \001(\005\022\016\n\006msg_"
+    "id\030\004 \001(\005\022\017\n\007message\030\005 \001(\t\"A\n\016SendChatMsg"
+    "Rsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006"
+    "to_uid\030\003 \001(\005\"1\n\rAuthFriendReq\022\020\n\010from_ui"
+    "d\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\"@\n\rAuthFriendRsp"
+    "\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_"
+    "uid\030\003 \001(\005\"3\n\014TextChatData\022\016\n\006msg_id\030\001 \001("
+    "\t\022\023\n\013msg_content\030\002 \001(\t\"j\n\016TextChatMsgRsp"
+    "\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_"
+    "uid\030\003 \001(\005\022\'\n\010text_msg\030\004 \003(\0132\025.message.Te"
+    "xtChatData2N\n\rVerifyService\022=\n\rGetVerify"
+    "Code\022\025.message.GetVerifyReq\032\025.message.Ge"
+    "tVerifyRsp2\205\001\n\rStatusService\022E\n\rGetChatS"
+    "erver\022\031.message.GetChatServerReq\032\031.messa"
+    "ge.GetChatServerRsp\022-\n\005Login\022\021.message.L"
+    "oginReq\032\021.message.LoginRsp2\235\003\n\013ChatServi"
+    "ce\022\?\n\017NotifyAddFriend\022\025.message.AddFrien"
+    "dReq\032\025.message.AddFriendRsp\022B\n\016ReplyAddF"
+    "riend\022\027.message.ReplyFriendReq\032\027.message"
+    ".ReplyFriendRsp\022\?\n\013SendChatMsg\022\027.message"
+    ".SendChatMsgReq\032\027.message.SendChatMsgRsp"
+    "\022B\n\020NotifyAuthFriend\022\026.message.AuthFrien"
+    "dReq\032\026.message.AuthFriendRsp\022C\n\021NotifyTe"
+    "xtChatMsg\022\025.message.TextChatData\032\027.messa"
+    "ge.TextChatMsgRsp\022\?\n\rNotifyOffline\022\026.goo"
+    "gle.protobuf.Empty\032\026.google.protobuf.Emp"
+    "tyb\006proto3"
+};
+static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
+    descriptor_table_message_2eproto_deps[1] = {
+        &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
 };
 static ::absl::once_flag descriptor_table_message_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_message_2eproto = {
     false,
     false,
-    1636,
+    1730,
     descriptor_table_protodef_message_2eproto,
     "message.proto",
     &descriptor_table_message_2eproto_once,
-    nullptr,
-    0,
+    descriptor_table_message_2eproto_deps,
+    1,
     16,
     schemas,
     file_default_instances,

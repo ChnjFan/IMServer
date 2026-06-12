@@ -30,7 +30,7 @@ int main()
         // 启动 grpc 服务
         ChatServiceImpl service;
         grpc::ServerBuilder builder;
-        const std::string rpcAddress = config["ChatServer"]["Host"] + ":" + config["ChatServer"]["RPCPort"];
+        const std::string rpcAddress = "0.0.0.0:" + config["ChatServer"]["RPCPort"];
         builder.AddListeningPort(rpcAddress, grpc::InsecureServerCredentials());
         builder.RegisterService(&service);
         std::unique_ptr<grpc::Server> server(builder.BuildAndStart());

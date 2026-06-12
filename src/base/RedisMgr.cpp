@@ -6,9 +6,15 @@
 
 #include <iostream>
 #include <json/value.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "ConfigMgr.h"
 #include "const.h"
+
+using boost::uuids::uuid;
+using boost::uuids::random_generator;
 
 RedisPool::RedisPool(size_t poolSize, const char *host, const int port, const char* password)
     : stop_(false), start_(false), host_(host), passwd_(password), port_(port), capacity_(poolSize) {
@@ -515,7 +521,7 @@ bool RedisMgr::zRem(const std::string &key, const std::string &value) {
     return true;
 }
 
-bool RedisMgr::del(const std::string &key) {
+bool RedisMgr::del(const std::string &key) const {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
         return false;
@@ -538,7 +544,7 @@ bool RedisMgr::del(const std::string &key) {
     return true;
 }
 
-bool RedisMgr::existsKey(const std::string &key) {
+bool RedisMgr::existsKey(const std::string &key) const {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
         return false;
@@ -561,7 +567,63 @@ bool RedisMgr::existsKey(const std::string &key) {
     return true;
 }
 
-void RedisMgr::close() {
+std::string RedisMgr::acquireLock(const std::string& name, const int timeout, const int acquireTimeout) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return "";
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    random_generator generator;
+    std::string identifier = boost::uuids::to_string(generator());
+    std::string key = "lock:" + name;
+    const auto endTime = std::chrono::steady_clock::now() + std::chrono::seconds(acquireTimeout);
+
+    while (std::chrono::steady_clock::now() < endTime) {
+        const auto reply = static_cast<redisReply *>(redisCommand(conn, "SET %s %s NX EX %d",
+            key.c_str(), identifier.c_str(), timeout));
+        if (reply != nullptr) {
+            if (reply->type == REDIS_REPLY_STATUS && std::string(reply->str) == "OK") {
+                freeReplyObject(reply);
+                return identifier;
+            }
+            freeReplyObject(reply);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return "";
+}
+
+bool RedisMgr::releaseLock(const std::string &name, const std::string& identifier) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return "";
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+    std::string key = "lock:" + name;
+    // 通过 lua 判断锁标识是否匹配，匹配则删除锁
+    const char* luaScript = "if redis.call('get', KEYS[1] == ARGV[1] then \
+                                return redis.call('del', KEYS[1]) \
+                            else \
+                                return 0 \
+                            end";
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "EVAL %s 1 %s %s",
+        luaScript, key.c_str(), identifier.c_str()));
+    if (reply) {
+        if (reply->type == REDIS_REPLY_STATUS && reply->integer == 1) {
+            freeReplyObject(reply);
+            return true;
+        }
+        freeReplyObject(reply);
+    }
+    return false;
+}
+
+void RedisMgr::close() const {
     redisPool_->close();
 }
 

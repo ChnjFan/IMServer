@@ -16,6 +16,7 @@
 #include "const.h"
 #include "Singleton.h"
 #include "MsgNode.h"
+#include "ThreadPool.h"
 
 struct ApplyUserInfo {
     uint8_t status;
@@ -91,12 +92,20 @@ private:
 
     void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
 
+    /**
+     * 客户端踢人逻辑
+     */
+    void kickOnlineUser(int uid) const;
+
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;
@@ -106,6 +115,8 @@ private:
     std::queue<std::shared_ptr<LogicNode>> msgQueue_;
     std::mutex mutex_;
     std::condition_variable cond_;
+
+    ThreadPool workerPool_;
 
     std::unordered_map<uint16_t, msgHandler> handlers_;
 };

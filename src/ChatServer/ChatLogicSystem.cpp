@@ -14,6 +14,7 @@
 #include "ConfigMgr.h"
 #include "UserMgr.h"
 #include "ChatGrpcClient.h"
+#include "LogicWorker.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -39,9 +40,10 @@ void ChatLogicSystem::insertMsgNode(const std::shared_ptr<LogicNode> &msg) {
     }
 }
 
-ChatLogicSystem::ChatLogicSystem() : stop_(false) {
+ChatLogicSystem::ChatLogicSystem() : stop_(false), workerPool_() {
     initHandlers();
     worker_ = std::thread(&ChatLogicSystem::dealMsg, this);
+    workerPool_.start();
 }
 
 void ChatLogicSystem::initHandlers() {
@@ -68,6 +70,10 @@ void ChatLogicSystem::initHandlers() {
     registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_CONVERSATION_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return conversationCreateHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_UPLOAD_FILE_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return uploadFileHandle(session, msgId, data);
         });
 
 }
@@ -257,6 +263,22 @@ void ChatLogicSystem::addHistoryMessage(Json::Value &root, ChatMsgStatus status)
     }
 }
 
+void ChatLogicSystem::kickOnlineUser(const int uid) const {
+    const std::string serverName;
+    RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid),USER_ONLINE_SERVER_NAME, serverName);
+    if (serverName.empty()) {
+        return;
+    }
+    if (selfServerName_ == serverName) {// 用户在本服务器
+        if (const auto oldSession = UserMgr::getInstance()->getSession(uid)) {
+            oldSession->notifyOffline();
+        }
+    }
+    else {// 用户在其他服务器，通知对端离线
+        ChatGrpcClient::getInstance()->NotifyOffline(serverName);
+    }
+}
+
 void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
@@ -341,22 +363,12 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     }
     root["conv_list"] = convRoot;
 
-    // 增加登录数量
-    auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
-    auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName);
-    int count = 0;
-    if (!res.empty()) {
-        count = std::stoi(res);
-    }
-    ++count;
-    RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
-
+    // 服务端踢人逻辑，将其他在线客户端下线
+    kickOnlineUser(uid);
     // Session 与 uid 绑定
     session->setUserId(uid);
     UserMgr::getInstance()->setUserSession(uid, session);
-
-    // 设置用户登录地址服务名
-    RedisMgr::getInstance()->set(USER_IP_PREFIX + std::to_string(uid), serverName);
+    session->updateState(SessionState::ONLINE);
 }
 
 void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
@@ -404,9 +416,10 @@ void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, u
     }
 
     // 查找用户是否在线
-    std::string toServiceName;
-    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(to), toServiceName)) {
-        return; // 用户不在线直接返回，等到上线直接从数据库拉取
+    auto toServiceName = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(to), USER_ONLINE_SERVER_NAME);
+    if (toServiceName.empty()) {
+        return;// 用户不在线直接返回，等到上线直接从数据库拉取
     }
 
     // 同一服务器直接发送申请消息
@@ -468,9 +481,10 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     root["friend"] = friendVal;
 
     // 如果对方在线，主动通知好友已经认证
-    std::string serviceName;
-    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(applyUid), serviceName)) {
-        return; // 不在线不用通知
+    auto serviceName = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(applyUid), USER_ONLINE_SERVER_NAME);
+    if (serviceName.empty()) {
+        return;// 不在线不用通知
     }
 
     if (serviceName == selfServerName_) {
@@ -509,8 +523,8 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
  *     'from_uid': UserSession().uid,
  *     'to_uid': toUid,
  *     'conv_id': c2c_,
- *     'msg_type': 1,
- *     'content': text,
+ *     'msg_type': 1/2,
+ *     'content': text/{'filename': name, 'size': 8.2MB},
  *     'msg_id': localId,
  */
 void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
@@ -534,8 +548,9 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
     const auto from = srcRoot["from_uid"].asInt();
     const auto to = srcRoot["to_uid"].asInt();
     // 检查是否在线
-    std::string serviceName;
-    if (!RedisMgr::getInstance()->get(USER_IP_PREFIX + std::to_string(to), serviceName)) {
+    auto serviceName = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(to), USER_ONLINE_SERVER_NAME);
+    if (serviceName.empty()) {
         return;
     }
 
@@ -615,6 +630,19 @@ void ChatLogicSystem::conversationCreateHandle(const std::shared_ptr<Session> &s
     if (!RedisMgr::getInstance()->hSet(CHAT_CONVER_INFO_PREFIX + conv_id, convInfo)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::REDIS_ERROR);
     }
+}
+
+/**
+ * @brief 上传文件
+ *
+ * @note 再工作线程中处理，避免阻塞
+ */
+void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    // 发给工作线程处理，不要占用 IO 线程
+    const auto worker = std::make_shared<LogicWorker>(session, msgId, data);
+    worker->init();
+    workerPool_.addTask(worker);
 }
 
 

@@ -46,13 +46,12 @@ void ChatServer::insertSession(const std::shared_ptr<Session>& session) {
 }
 
 void ChatServer::clearSession(const std::string &sessionId) {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (sessions_.find(sessionId) != sessions_.end()) {
-        UserMgr::getInstance()->removeUserSession(sessions_[sessionId]->getUserId());
+        UserMgr::getInstance()->removeUserSession(sessions_[sessionId]->getUserId(),
+                                                  sessions_[sessionId]->getSessionId());
     }
-    {
-        std::lock_guard<std::mutex> lock(mutex_);
-        sessions_.erase(sessionId);
-    }
+    sessions_.erase(sessionId);
 }
 
 

@@ -11,6 +11,8 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
+#include <boost/archive/iterators/binary_from_base64.hpp>
+#include <boost/archive/iterators/transform_width.hpp>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -40,6 +42,7 @@ enum class ErrorCodes : int32_t {
     CHAT_LOGIN_UID_ERROR = 1008,
     MYSQL_ERROR = 1100,
     REDIS_ERROR = 1101,
+    FILE_ERROR = 1102,
 };
 
 enum class MessageID : uint16_t {
@@ -49,6 +52,7 @@ enum class MessageID : uint16_t {
     ID_USER_LOGIN = 1004,       // 登录用户
     ID_CHAT_LOGIN = 1005,       // 登录聊天服务器
     ID_CHAT_LOGIN_RSP = 1006,   // 登录聊天服务器响应
+
     ID_USER_SEARCH_REQ = 1007,  // 用户搜索请求
     ID_USER_SEARCH_RSP = 1008,  // 用户搜索响应
     ID_ADD_FRIEND_REQ = 1009,   // 添加用户请求
@@ -57,11 +61,22 @@ enum class MessageID : uint16_t {
     ID_FRIEND_AUTH_REQ = 1012,   // 同意添加好友请求
     ID_FRIEND_AUTH_RSP = 1013,   // 同意添加好友响应
     ID_NOTIFY_FRIEND_AUTH = 1014,   // 通知用户好友认证
+
     ID_CHAT_MSG_REQ = 1015,         // 聊天消息请求
     ID_CHAT_MSG_RSP = 1016,         // 聊天消息响应
     ID_NOTIFY_CHAT_MSG = 1017,      //  推送聊天消息
+
     ID_CHAT_CONVERSATION_REQ = 1018,    // 会话创建请求
     ID_CHAT_CONVERSATION_RSP = 1019,    // 会话创建响应
+    ID_CONV_HISTORY_MSG_REQ = 1020,    // 会话历史消息请求
+    ID_CONV_HISTORY_MSG_RSP = 1021,    // 会话历史消息请求
+
+    ID_CHAT_UPLOAD_FILE_REQ = 1022,     // 上传文件请求
+    ID_CHAT_UPLOAD_FILE_RSP = 1023,     // 上传文件响应
+    ID_CHAT_DOWNLOAD_FILE_REQ = 1024,   // 下载文件请求
+    ID_CHAT_DOWNLOAD_FILE_RSP = 1025,   // 下载文件响应
+
+    ID_NOTIFY_OFFLINE = 1026,       // 通知客户端离线
     INVALID_ID,
 };
 
@@ -122,6 +137,20 @@ inline std::string ms_to_datetime(const long long timestamp_ms)
              time_info.tm_sec);
 
     return std::string(buf);
+}
+
+inline std::string base64_decode(const std::string& base64_str)
+{
+    using namespace boost::archive::iterators;
+    // 去掉末尾填充符再解析
+    std::string s = base64_str;
+    while (!s.empty() && s.back() == '=')
+        s.pop_back();
+
+    // 转换链：base64字符 →6bit →8bit二进制
+    using DecodeIter = transform_width<binary_from_base64<std::string::iterator>,8,6>;
+
+    return {DecodeIter(s.begin()), DecodeIter(s.end())};
 }
 
 #endif //IMSERVER_CONST_H

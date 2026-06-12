@@ -16,6 +16,8 @@ set(CHAT_SERVER_SOURCES
         UserMgr.h
         ChatServiceImpl.cpp
         ChatServiceImpl.h
+        LogicWorker.h
+        LogicWorker.cpp
 )
 
 add_executable(ChatServer ${CHAT_SERVER_SOURCES})

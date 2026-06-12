@@ -1,4 +1,5 @@
 syntax = "proto3";
+import "google/protobuf/empty.proto";
 
 package message;
 
@@ -49,6 +50,7 @@ service ChatService {
     rpc SendChatMsg(SendChatMsgReq) returns (SendChatMsgRsp);
     rpc NotifyAuthFriend(AuthFriendReq) returns (AuthFriendRsp);
     rpc NotifyTextChatMsg(TextChatData) returns (TextChatMsgRsp);
+    rpc NotifyOffline(google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message AddFriendReq {

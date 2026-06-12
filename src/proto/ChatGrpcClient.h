@@ -36,6 +36,8 @@ public:
 
     SendChatMsgRsp SendChatMsg(std::string& serviceName, const SendChatMsgReq& request);
 
+    void NotifyOffline(const std::string& serviceName);
+
 private:
     friend class Singleton<ChatGrpcClient>;
 

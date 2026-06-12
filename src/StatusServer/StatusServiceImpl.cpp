@@ -81,8 +81,8 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
         return {};
     }
     auto minServer = chatServers_.begin()->second;
-    const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name);
-    if (countStr.empty()) {// 没有找到服务器可能没有开
+    if (const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name); countStr.empty()) {
+        // 没有找到服务器可能没有开
         minServer.connCount = INT_MAX;
     }
     else {
@@ -94,12 +94,11 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
             continue;
         }
 
-        const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name);
-        if (countStr.empty()) {// 没有找到服务器可能没有开
+        if (const auto count = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name); count.empty()) {
             server.connCount = INT_MAX;
         }
         else {
-            server.connCount = std::stoi(countStr);
+            server.connCount = std::stoi(count);
         }
 
         if (server.connCount < minServer.connCount) {
@@ -111,15 +110,16 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
 
 void StatusServiceImpl::insertToken(const int uid, const std::string& token) {
     std::cout << "Insert [uid: " << uid << ", token: " << token << "]" << std::endl;
-    RedisMgr::getInstance()->set(USER_TOKEN_PREFIX + std::to_string(uid), token);
+    RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid),USER_ONLINE_TOKEN, token);
 }
 
 bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
     if (token.empty()) {
         return false;
     }
-    std::string expect;
-    if (!RedisMgr::getInstance()->get(USER_TOKEN_PREFIX + std::to_string(uid), expect)) {
+    const auto expect = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(uid), USER_ONLINE_TOKEN);
+    if (expect.empty()) {
         std::cout << "Check [uid: " << uid << "not found" << std::endl;
         return false;
     }
