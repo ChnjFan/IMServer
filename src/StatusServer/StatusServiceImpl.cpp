@@ -10,26 +10,47 @@
 
 #include "const.h"
 #include "ConfigMgr.h"
+#include "RedisMgr.h"
 
 using boost::uuids::uuid;
 using boost::uuids::random_generator;
 
 StatusServiceImpl::StatusServiceImpl() {
     auto& config = ConfigMgr::getInstance();
-    ChatServerInfo server;
-    server.name = "ChatServer";
-    server.host = config["ChatServer"]["Host"];
-    server.port = config["ChatServer"]["Port"];
-    server.connCount = 0;
-    chatServers_.insert({"ChatServer", server});
+    if (config["ChatServers"]["Name"].empty()) {
+        std::cout << "ChatServers not config" << std::endl;
+        return;
+    }
+
+    std::string servers = config["ChatServers"]["Name"];
+    std::stringstream ss(config["ChatServers"]["Name"]);
+    std::string serverName;
+    while (std::getline(ss, serverName, ',')) {
+        if (serverName.empty()) {
+            continue;
+        }
+        ChatServerInfo server;
+        server.name = serverName;
+        server.host = config[serverName]["Host"];
+        server.port = config[serverName]["Port"];
+        server.connCount = 0;
+        chatServers_.insert({serverName, server});
+    }
 }
 
 Status StatusServiceImpl::GetChatServer(ServerContext *context, const GetChatServerReq *request,
                                         GetChatServerRsp *response) {
+    auto& config = ConfigMgr::getInstance();
     const auto& server = getChatServerInfo();
     response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
     response->set_host(server.host);
-    response->set_port(server.port);
+    if (config["Nginx"][server.name].empty()) {
+        response->set_port(server.port);
+    }
+    else { // 返回反向代理端口
+        response->set_port(config["Nginx"][server.name]);
+    }
+    std::cout <<  "Get ChatServer Address" << std::endl;
 
     random_generator generator;
     std::string token = boost::uuids::to_string(generator());
@@ -60,30 +81,48 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
         return {};
     }
     auto minServer = chatServers_.begin()->second;
+    if (const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name); countStr.empty()) {
+        // 没有找到服务器可能没有开
+        minServer.connCount = INT_MAX;
+    }
+    else {
+        minServer.connCount = std::stoi(countStr);
+    }
+
     for (auto& [name, server] : chatServers_) {
+        if (name == minServer.name) {
+            continue;
+        }
+
+        if (const auto count = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name); count.empty()) {
+            server.connCount = INT_MAX;
+        }
+        else {
+            server.connCount = std::stoi(count);
+        }
+
         if (server.connCount < minServer.connCount) {
-            minServer = server; // 找到最小负载的服务
+            minServer = server;
         }
     }
     return minServer;
 }
 
-void StatusServiceImpl::insertToken(int uid, const std::string& token) {
-    std::lock_guard<std::mutex> lock(tokenMutex_);
+void StatusServiceImpl::insertToken(const int uid, const std::string& token) {
     std::cout << "Insert [uid: " << uid << ", token: " << token << "]" << std::endl;
-    if (tokens_.find(uid) != tokens_.end()) {
-        std::cout << "erase old token" << std::endl;
-        tokens_.erase(uid);
-    }
-    tokens_.insert({uid, token});
+    RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid),USER_ONLINE_TOKEN, token);
 }
 
 bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
-    std::lock_guard<std::mutex> lock(tokenMutex_);
-    if (tokens_.find(uid) == tokens_.end()) {
+    if (token.empty()) {
+        return false;
+    }
+    const auto expect = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(uid), USER_ONLINE_TOKEN);
+    if (expect.empty()) {
         std::cout << "Check [uid: " << uid << "not found" << std::endl;
         return false;
     }
     std::cout << "Check [uid: " << uid << ", token: " << token << "]" << std::endl;
-    return tokens_[uid] == token;
+    return expect == token;
 }

@@ -12,6 +12,11 @@
 
 class ChatServer;
 
+enum class SessionState {
+    ONLINE = 1,
+    OFFLINE = 2,
+};
+
 class Session : public std::enable_shared_from_this<Session> {
 public:
     Session(net::io_context &io_context, const std::shared_ptr<ChatServer> &chatServer);
@@ -21,10 +26,18 @@ public:
     void close();
 
     tcp::socket & getSocket();
-    std::string getSessionId();
+
+    std::string &getSessionId();
+
+    void setUserId(int uid);
+    int getUserId() const;
 
     void asyncSend(const std::string &msg, std::uint16_t msgId);
     void asyncSend(const char* msg, std::uint16_t size, std::uint16_t msgId);
+
+    void updateState(SessionState state) const;
+
+    void notifyOffline();
 
 private:
     void asyncReadHead(std::uint16_t totalLen);
@@ -39,6 +52,7 @@ private:
     static constexpr int MAX_SEND_QUEUE = 1024;
 
     std::atomic<bool> stop_;
+    int uid_;
     std::string sessionId_;
     boost::asio::io_context& io_context_;
     tcp::socket socket_;

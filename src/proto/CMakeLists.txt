@@ -9,6 +9,9 @@ set(PROTO_SOURCES
     StatusGrpcClient.h
     VerifyGrpcClient.cpp
     VerifyGrpcClient.h
+        ChatGrpcClient.cpp
+        ChatGrpcClient.h
+        ServiceConnPool.h
 )
 
 add_library(proto STATIC ${PROTO_SOURCES})

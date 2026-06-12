@@ -16,6 +16,7 @@
 #include "message.grpc.pb.h"
 
 #include "Singleton.h"
+#include "ServiceConnPool.h"
 
 using grpc::Channel;
 using grpc::Status;
@@ -58,7 +59,7 @@ private:
 
     StatusGrpcClient();
 
-    std::unique_ptr<StatusConnPool> pool_;
+    std::unique_ptr<ServiceConnPool<StatusService>> pool_;
 };
 
 

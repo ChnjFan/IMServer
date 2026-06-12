@@ -116,5 +116,6 @@ StatusGrpcClient::StatusGrpcClient() {
 
     std::string host = config["StatusServer"]["Host"];
     std::string port = config["StatusServer"]["Port"];
-    pool_ = std::make_unique<StatusConnPool>(size, host, port);
+    pool_ = std::make_unique<ServiceConnPool<StatusService>>(size, host, port);
+    std::cout << "Connect RPC to " << host << ":" << port << std::endl;
 }

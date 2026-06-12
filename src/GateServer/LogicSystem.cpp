@@ -202,8 +202,7 @@ LogicSystem::LogicSystem() {
         }
 
         // 数据库校验用户名和邮箱是否匹配
-        auto user = srcRoot["user"].asString();
-        if (bool result = MysqlMgr::getInstance()->checkEmail(user, email); !result) {
+        if (bool result = MysqlMgr::getInstance()->checkEmail(email); !result) {
             std::cout << "User email not match" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
             const std::string jsonStr = root.toStyledString();
@@ -212,8 +211,7 @@ LogicSystem::LogicSystem() {
         }
 
         auto passwd = srcRoot["passwd"].asString();
-        auto confirm = srcRoot["confirm"].asString();
-        if (bool result = MysqlMgr::getInstance()->updatePasswd(user, passwd); !result) {
+        if (bool result = MysqlMgr::getInstance()->updatePasswd(email, passwd); !result) {
             std::cout << "User email not match" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
             const std::string jsonStr = root.toStyledString();
@@ -224,9 +222,7 @@ LogicSystem::LogicSystem() {
         // 给验证服务发送验证码请求
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
         root["email"] = email;
-        root["user"] = user;
         root["passwd"] = passwd;
-        root["confirm"] = confirm;
         root["verify_code"] = verifyCode;
 
         const std::string jsonStr = root.toStyledString();
@@ -286,6 +282,7 @@ LogicSystem::LogicSystem() {
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
         root["email"] = email;
         root["uid"] = userInfo.uid;
+        root["user"] = userInfo.name;
         root["token"] = reply.token();
         root["host"] = reply.host();
         root["port"] = reply.port();

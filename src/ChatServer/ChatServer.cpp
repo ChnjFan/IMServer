@@ -7,6 +7,7 @@
 #include "ChatServer.h"
 
 #include "AsioIOServicePool.h"
+#include "UserMgr.h"
 
 ChatServer::ChatServer(net::io_context &io_context, const unsigned short port)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), port))
@@ -47,7 +48,8 @@ void ChatServer::insertSession(const std::shared_ptr<Session>& session) {
 void ChatServer::clearSession(const std::string &sessionId) {
     std::lock_guard<std::mutex> lock(mutex_);
     if (sessions_.find(sessionId) != sessions_.end()) {
-        return;
+        UserMgr::getInstance()->removeUserSession(sessions_[sessionId]->getUserId(),
+                                                  sessions_[sessionId]->getSessionId());
     }
     sessions_.erase(sessionId);
 }

@@ -30,10 +30,12 @@ SendNode::SendNode(const char *msg, const uint16_t size, const uint16_t msgId)
     memcpy(buffer_, &msgIdHost, HEAD_MSG_ID_LEN);
     const uint16_t msgSizeHost = net::detail::socket_ops::host_to_network_short(size);
     memcpy(buffer_ + HEAD_MSG_ID_LEN, &msgSizeHost, HEAD_MSG_SIZE_LEN);
-    memcpy(buffer_ + HEAD_TOTAL_LEN, msg, size);
+    if (msg) {
+        memcpy(buffer_ + HEAD_TOTAL_LEN, msg, size);
+    }
     used_ = size + HEAD_TOTAL_LEN;
 }
 
-LogicNode::LogicNode(const std::shared_ptr<Session> &session, const RecvNode &node) : RecvNode(node) {
-    session_ = session;
+LogicNode::LogicNode(const std::shared_ptr<Session> &session, const std::shared_ptr<RecvNode> &node)
+    : session_(session), node_(node){
 }

@@ -49,7 +49,7 @@ int MysqlDao::registerUser(const std::string &user, const std::string &email, co
     }
 }
 
-bool MysqlDao::checkEmail(const std::string &user, const std::string &email) const {
+bool MysqlDao::checkEmail(const std::string &email) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -59,16 +59,17 @@ bool MysqlDao::checkEmail(const std::string &user, const std::string &email) con
     });
     try {
         const std::unique_ptr<sql::PreparedStatement> stmt(
-            conn->conn_->prepareStatement("SELECT email FROM user WHERE name = ?"));
-        stmt->setString(1, user);
-        std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+            conn->conn_->prepareStatement("SELECT name FROM user WHERE email = ?"));
+        stmt->setString(1, email);
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
         while (res->next()) {
-            std::cout << "Check email: " << res->getString("email") << std::endl;
-            if (email != res->getString("email")) {
+            std::cout << "Check name: " << res->getString("name") << std::endl;
+            if (res->getString("name")->empty()) {
                 return false;
             }
             return true;
         }
+        std::cout << "Not foun email: " << email << std::endl;
         return false;
     } catch (sql::SQLException &e) {
         std::cout << "check email SQLException: " << e.what() << std::endl;
@@ -76,7 +77,7 @@ bool MysqlDao::checkEmail(const std::string &user, const std::string &email) con
     }
 }
 
-bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) const {
+bool MysqlDao::updatePasswd(const std::string &email, const std::string &passwd) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -86,9 +87,9 @@ bool MysqlDao::updatePasswd(const std::string &user, const std::string &passwd) 
     });
     try {
         const std::unique_ptr<sql::PreparedStatement> stmt(
-            conn->conn_->prepareStatement("UPDATE user SET pwd = ? WHERE name = ?"));
+            conn->conn_->prepareStatement("UPDATE user SET pwd = ? WHERE email = ?"));
         stmt->setString(1, passwd);
-        stmt->setString(2, user);
+        stmt->setString(2, email);
         const auto res = (stmt->executeUpdate());
         std::cout << "Update rows: " << res << std::endl;
         return true;

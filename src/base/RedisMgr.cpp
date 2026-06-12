@@ -6,30 +6,24 @@
 
 #include <iostream>
 #include <json/value.h>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "ConfigMgr.h"
+#include "const.h"
+
+using boost::uuids::uuid;
+using boost::uuids::random_generator;
 
 RedisPool::RedisPool(size_t poolSize, const char *host, const int port, const char* password)
-    : stop_(false), host_(host), port_(port) {
+    : stop_(false), start_(false), host_(host), passwd_(password), port_(port), capacity_(poolSize) {
     std::cout << "Creating RedisPool ... ";
-    for (int i = 0; i < poolSize; i++) {
-        auto conn = redisConnect(host, port);
-        if (conn == nullptr || conn->err) {
-            redisFree(conn);
-            continue;
-        }
-        // 认证连接
-        const auto reply = static_cast<redisReply *>(redisCommand(conn, "AUTH %s", password));
-        if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
-            std::cout << "RedisPool::redisConnect() AUTH failed" << std::endl;
-            redisFree(conn);
-            freeReplyObject(reply);
-            continue;
-        }
-
-        freeReplyObject(reply);
-        connections_.push(conn);
+    createPool();
+    if (connections_.empty()) {
+        std::cout << "failed!" << std::endl;
     }
+    start_.store(true);
     std::cout << "OK, size = " << connections_.size() << std::endl;
 }
 
@@ -44,13 +38,20 @@ RedisPool::~RedisPool() {
 
 redisContext * RedisPool::getConnection() {
     std::unique_lock<std::mutex> lock(mutex_);
-    cond_.wait(lock, [this] {
+    cond_.wait_for(lock, std::chrono::milliseconds(3000), [this] {
         if (stop_.load()) {// 已经停止
             return true;
         }
         return !connections_.empty();
     });
     if (stop_.load()) {
+        return nullptr;
+    }
+    if (start_.load()) {
+        createPool();
+    }
+
+    if (connections_.empty()) {
         return nullptr;
     }
     const auto conn = connections_.front();
@@ -73,6 +74,31 @@ void RedisPool::close() {
     cond_.notify_all();
 }
 
+void RedisPool::createPool() {
+    for (int i = 0; i < capacity_; i++) {
+        auto conn = redisConnect(host_.c_str(), port_);
+        if (conn == nullptr || conn->err) {
+            redisFree(conn);
+            continue;
+        }
+        // 认证连接
+        const auto reply = static_cast<redisReply *>(redisCommand(conn, "AUTH %s", passwd_.c_str()));
+        if (reply == nullptr || reply->type == REDIS_REPLY_ERROR) {
+            std::cout << "RedisPool::redisConnect() AUTH failed" << std::endl;
+            redisFree(conn);
+            freeReplyObject(reply);
+            continue;
+        }
+
+        freeReplyObject(reply);
+        connections_.push(conn);
+    }
+
+    if (!connections_.empty()) {
+        start_.store(true);
+    }
+}
+
 RedisMgr::~RedisMgr() {
     close();
 }
@@ -82,6 +108,9 @@ bool RedisMgr::get(const std::string &key, std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
     
     auto reply = static_cast<redisReply *>(redisCommand(conn, "GET %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_STRING) {
@@ -105,6 +134,9 @@ bool RedisMgr::set(const std::string &key, const std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
     
     auto reply = static_cast<redisReply *>(redisCommand(conn, "SET %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
@@ -132,6 +164,9 @@ bool RedisMgr::lPush(const std::string &key, const std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "LPUSH %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
@@ -159,6 +194,9 @@ bool RedisMgr::lPop(const std::string &key, std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "LPOP %s", key.c_str()));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
@@ -180,6 +218,9 @@ bool RedisMgr::rPush(const std::string &key, const std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "RPUSH %s %s", key.c_str(), value.c_str()));
     if (nullptr == reply) {
@@ -207,6 +248,9 @@ bool RedisMgr::rPop(const std::string &key, std::string &value) {
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "RPOP %s", key.c_str()));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
@@ -228,6 +272,9 @@ bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn,
         "HSET %s %s %s", key.c_str(), hKey.c_str(), value.c_str()));
@@ -241,6 +288,44 @@ bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::
     freeReplyObject(reply);
     reply = nullptr;
     std::cout << "RedisMgr::hSet: RedisCommand() HSET [" << key << " : " << value << "] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::hSet(const std::string &key, const std::unordered_map<std::string, std::string> &values) {
+    const size_t size = values.size() * 2 + 2;  // 注意内存大小，values 的 key 和 value 都要加入数组中
+    auto argv = new const char *[size];
+    size_t *argv_size = new size_t[size];
+    int index = 0;
+    argv[index] = "HSET";
+    argv_size[index++] = 4;
+    argv[index] = key.c_str();
+    argv_size[index++] = key.length();
+    for (auto& [hkey, kValue] : values) {
+        argv[index] = hkey.c_str();
+        argv_size[index++] = hkey.length();
+        argv[index] = kValue.c_str();
+        argv_size[index++] = kValue.length();
+    }
+
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, argv, argv_size, this] {
+        redisPool_->returnConnection(conn);
+        delete[] argv;
+        delete[] argv_size;
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommandArgv(conn, size, argv, argv_size));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::hSet: RedisCommandArgv() failed! " << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    std::cout << "RedisMgr::hSet: RedisCommandArgv() OK!" << std::endl;
     return true;
 }
 
@@ -260,6 +345,9 @@ bool RedisMgr::hSet(const char *key, const char *hKey, const char *hValue, size_
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommandArgv(conn, 4, argv, argv_size));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
@@ -272,6 +360,31 @@ bool RedisMgr::hSet(const char *key, const char *hKey, const char *hValue, size_
     freeReplyObject(reply);
     reply = nullptr;
     std::cout << "RedisMgr::hSet: RedisCommandArgv() OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::hDel(const std::string &key, const std::string &hKey) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "HDEL %s %s", key.c_str(), hKey.c_str()));
+    if (nullptr == reply) {
+        std::cout << "RedisMgr::hDel: RedisCommand() [" << key << ", " << hKey <<"] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+    if (reply->type == REDIS_REPLY_INTEGER && reply->integer <= 0) {
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    std::cout << "RedisMgr::del: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -289,6 +402,9 @@ std::string RedisMgr::hGet(const std::string &key, const std::string &hKey) {
     if (conn == nullptr) {
         return "";
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommandArgv(conn, 3, argv, argv_size));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
@@ -301,15 +417,118 @@ std::string RedisMgr::hGet(const std::string &key, const std::string &hKey) {
     std::string value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::hGet: RedisCommandArgv() OK!" << std::endl;
+    std::cout << "RedisMgr::hGet: RedisCommandArgv() [" << key << ", " << hKey << " = " << value << "] OK!" << std::endl;
     return value;
 }
 
-bool RedisMgr::del(const std::string &key) {
+std::unordered_map<std::string, std::string> RedisMgr::hGetAll(const std::string &key,
+    const std::vector<std::string> &hkeys) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return {};
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "HGETALL %s", key.c_str()));
+    if (!reply || reply->type != REDIS_REPLY_ARRAY || reply->elements % 2 != 0) {
+        freeReplyObject(reply);
+        return {};
+    }
+
+    std::unordered_map<std::string, std::string> result;
+    for (int i = 0; i < reply->elements; i += 2) {
+        std::string field = reply->element[i]->str;
+        const std::string value = reply->element[i+1]->str;
+        result[field] = value;
+    }
+
+    freeReplyObject(reply);
+    return result;
+}
+
+bool RedisMgr::zSet(const std::string &key, long long score, const std::string &value) {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    auto reply = static_cast<redisReply *>(redisCommand(conn,
+        "ZADD %s %lld %s", key.c_str(), score, value.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::zSet: RedisCommand() ZADD ["<< key << " : " << value <<"] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    reply = nullptr;
+    std::cout << "RedisMgr::zSet: RedisCommand() HSET [" << key << " : " << value << "] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::zRevrange(const std::string &key, std::vector<std::string> &values, int start, int end) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    auto reply = static_cast<redisReply *>(redisCommand(conn,
+        "ZREVRANGE %s %d %d", key.c_str(), start, end));
+    if (nullptr == reply || reply->type != REDIS_REPLY_ARRAY) {
+        std::cout << "RedisMgr::zSet: RedisCommand() ZREVRANGE ["<< key << "] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    for (int i = 0; i < reply->elements; ++i) {
+        values.push_back(reply->element[i]->str);
+    }
+
+    freeReplyObject(reply);
+    reply = nullptr;
+    std::cout << "RedisMgr::zSet: RedisCommand() ZREVRANGE [" << key << "] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::zRem(const std::string &key, const std::string &value) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    auto reply = static_cast<redisReply *>(redisCommand(conn, "ZREM %s %s", key.c_str(), value.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::zRem: RedisCommand() [" << key << "] failed!" << std::endl;
+        freeReplyObject(reply);
+        reply = nullptr;
+        return false;
+    }
+
+    freeReplyObject(reply);
+    reply = nullptr;
+    std::cout << "RedisMgr::zRem: RedisCommand() [" << key << "] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::del(const std::string &key) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "DEL %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
@@ -325,11 +544,14 @@ bool RedisMgr::del(const std::string &key) {
     return true;
 }
 
-bool RedisMgr::existsKey(const std::string &key) {
+bool RedisMgr::existsKey(const std::string &key) const {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
         return false;
     }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
 
     auto reply = static_cast<redisReply *>(redisCommand(conn, "exists %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
@@ -345,7 +567,63 @@ bool RedisMgr::existsKey(const std::string &key) {
     return true;
 }
 
-void RedisMgr::close() {
+std::string RedisMgr::acquireLock(const std::string& name, const int timeout, const int acquireTimeout) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return "";
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    random_generator generator;
+    std::string identifier = boost::uuids::to_string(generator());
+    std::string key = "lock:" + name;
+    const auto endTime = std::chrono::steady_clock::now() + std::chrono::seconds(acquireTimeout);
+
+    while (std::chrono::steady_clock::now() < endTime) {
+        const auto reply = static_cast<redisReply *>(redisCommand(conn, "SET %s %s NX EX %d",
+            key.c_str(), identifier.c_str(), timeout));
+        if (reply != nullptr) {
+            if (reply->type == REDIS_REPLY_STATUS && std::string(reply->str) == "OK") {
+                freeReplyObject(reply);
+                return identifier;
+            }
+            freeReplyObject(reply);
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    return "";
+}
+
+bool RedisMgr::releaseLock(const std::string &name, const std::string& identifier) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return "";
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+    std::string key = "lock:" + name;
+    // 通过 lua 判断锁标识是否匹配，匹配则删除锁
+    const char* luaScript = "if redis.call('get', KEYS[1] == ARGV[1] then \
+                                return redis.call('del', KEYS[1]) \
+                            else \
+                                return 0 \
+                            end";
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "EVAL %s 1 %s %s",
+        luaScript, key.c_str(), identifier.c_str()));
+    if (reply) {
+        if (reply->type == REDIS_REPLY_STATUS && reply->integer == 1) {
+            freeReplyObject(reply);
+            return true;
+        }
+        freeReplyObject(reply);
+    }
+    return false;
+}
+
+void RedisMgr::close() const {
     redisPool_->close();
 }
 

@@ -1,6 +1,7 @@
 #ifndef IMSERVER_MYSQLDAO_H
 #define IMSERVER_MYSQLDAO_H
 
+#include "ChatLogicSystem.h"
 #include "MysqlPool.h"
 #include "const.h"
 
@@ -10,6 +11,20 @@ public:
     ~MysqlDao();
 
     std::shared_ptr<UserInfo> getUser(int uid) const;
+    std::shared_ptr<UserInfo> getUser(const std::string& name) const;
+
+    bool addFriendApply(const int& from, const int& to);
+
+    bool getApplyUserList(int uid, ApplyUserList & applyUserList, int start, int size);
+
+    bool updateFriendRelation(int authUid, int applyUid);
+
+    bool getFriendList(int uid, FriendInfoList &friendList, const int start, const int size);
+
+    bool addConversation(int uid, int to, const std::string& convId, int convType);
+    bool getConversation(int uid, ConversationList& convList);
+
+    bool addHistoryMessage(const MessageInfo& message);
 
 private:
     std::unique_ptr<MysqlPool> pool_;

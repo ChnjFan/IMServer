@@ -14,6 +14,25 @@
 #include "const.h"
 #include "Singleton.h"
 
+// 用户在线状态
+#define USER_ONLINE_INFO_PREFIX "user_online_"
+#define USER_ONLINE_SERVER_NAME "server_name"
+#define USER_ONLINE_TOKEN "token"
+#define USER_SESSION_ID "session_id"
+// 用户信息
+#define IP_COUNT_PREFIX "ip_count_"
+#define USER_BASE_INFO_PREFIX "user_base_info_"
+#define LOGIN_COUNT "login_chat_server_count"
+
+// 聊天会话缓存
+#define CHAT_CONVER_PREFIX "chat_conver_"
+#define CHAT_CONVER_INFO_PREFIX "conver_info_"
+
+// 分布式锁
+#define DIST_LOCK_PREFIX "lock_"
+#define DIST_LOCK_TIMEOUT 10
+#define DIST_ACQUIRE_TIMEOUT 5
+
 class RedisPool {
 public:
     RedisPool(size_t poolSize, const char* host, int port, const char* password);
@@ -23,9 +42,14 @@ public:
     void close();
 
 private:
+    void createPool();
+
     std::atomic<bool> stop_;
-    const char* host_;
+    std::atomic<bool> start_;   // 启动标记，如果没有成功创建 Redis 连接，之后请求重新尝试连接
+    std::string host_;
+    std::string passwd_;
     int port_;
+    int capacity_;
     std::queue<redisContext*> connections_;
     std::mutex mutex_;
     std::condition_variable cond_;
@@ -43,12 +67,25 @@ public:
     bool rPop(const std::string& key, std::string& value);
     // 集合
     bool hSet(const std::string& key, const std::string& hKey, const std::string& value);
+    bool hSet(const std::string& key, const std::unordered_map<std::string, std::string>& values);
     // 处理二进制数据
     bool hSet(const char* key, const char* hKey, const char* hValue, size_t hSize);
+    bool hDel(const std::string& key, const std::string & hKey);
     std::string hGet(const std::string& key, const std::string& hKey);
-    bool del(const std::string& key);
-    bool existsKey(const std::string& key);
-    void close();
+    std::unordered_map<std::string, std::string> hGetAll(const std::string& key, const std::vector<std::string>& hkeys);
+    // 有序集合
+    bool zSet(const std::string& key, long long score, const std::string& value);
+    bool zRevrange(const std::string& key, std::vector<std::string>& values, int start, int end);
+    bool zRem(const std::string& key, const std::string& value);
+
+    bool del(const std::string& key) const;
+    bool existsKey(const std::string& key) const;
+
+    std::string acquireLock(const std::string& name, int timeout, int acquireTimeout) const;
+    bool releaseLock(const std::string& name, const std::string& identifier) const;
+
+    void close() const;
+
 
 private:
     friend class Singleton<RedisMgr>;

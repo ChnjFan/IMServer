@@ -117,7 +117,16 @@ void HttpConnection::writeResponse() {
     response_.content_length(response_.body().size());
     http::async_write(socket_, response_,
         [self](const boost::system::error_code& ec, size_t bytes_transfer) {
-            self->socket_.shutdown(tcp::socket::shutdown_send);// 关闭发送端
+            if (ec) {
+                std::cout << "Socket is shutdown: " << ec.what() << std::endl;
+            }
+            else {
+                try {
+                    self->socket_.shutdown(tcp::socket::shutdown_send);// 关闭发送端
+                } catch (std::exception &e) {
+                    std::cout << "Socket shutdown error: " << e.what() << std::endl;
+                }
+            }
             self->deadline_.cancel();// 复用 socket 事件，关闭 socket 时也要取消定时器
     });
 }

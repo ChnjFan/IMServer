@@ -48,6 +48,7 @@ public:
     ConfigMgr(const ConfigMgr& other) = delete;
     ConfigMgr& operator=(const ConfigMgr& other) = delete;
     SectionInfo operator[](const std::string& key);
+    std::string getValue(const std::string& key, const std::string& section);
 
 private:
     ConfigMgr();

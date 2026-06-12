@@ -10,12 +10,16 @@
 
 #include "ChatLogicSystem.h"
 #include "ChatServer.h"
+#include "DistLock.h"
+#include "RedisMgr.h"
+#include "ConfigMgr.h"
+#include "UserMgr.h"
 
 using boost::uuids::uuid;
 using boost::uuids::random_generator;
 
 Session::Session(net::io_context &io_context, const std::shared_ptr<ChatServer> &chatServer)
-    : stop_(false), io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
+    : stop_(false), uid_(0), io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
     random_generator generator;
     sessionId_ = boost::uuids::to_string(generator());
     headNode_ = std::make_shared<MsgNode>(HEAD_TOTAL_LEN);
@@ -38,8 +42,16 @@ tcp::socket & Session::getSocket() {
     return socket_;
 }
 
-std::string Session::getSessionId() {
+std::string &Session::getSessionId() {
     return sessionId_;
+}
+
+void Session::setUserId(const int uid) {
+    uid_ = uid;
+}
+
+int Session::getUserId() const {
+    return uid_;
 }
 
 void Session::asyncSend(const std::string &msg, const std::uint16_t msgId) {
@@ -48,7 +60,7 @@ void Session::asyncSend(const std::string &msg, const std::uint16_t msgId) {
 
 void Session::asyncSend(const char *msg, std::uint16_t size, std::uint16_t msgId) {
     std::lock_guard<std::mutex> lock(sendMtx_);
-    const int sendSize = sendNodeQueue_.size();
+    const size_t sendSize = sendNodeQueue_.size();
     if (sendSize > MAX_SEND_QUEUE) {   // 发送抑制
         std::cout << "Session: " << sessionId_ << "Send queue is full " << MAX_SEND_QUEUE << std::endl;
         return;
@@ -61,6 +73,49 @@ void Session::asyncSend(const char *msg, std::uint16_t size, std::uint16_t msgId
     asyncSend();
 }
 
+void Session::updateState(const SessionState state) const {
+    const auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
+    int count = 0;
+    // 多个服务器可能同时修改在线状态和服务在线计数，需要加分布式锁
+    DistLockGuard lockUser(DIST_LOCK_PREFIX + std::to_string(uid_), DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+    DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+
+    if (state == SessionState::ONLINE) {
+        // 增加登录数量
+        if (const auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName); !res.empty()) {
+            count = std::stoi(res);
+        }
+        ++count;
+        RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
+        // 设置用户登录地址服务名，注意要提前设置好 uid，session 在客户端 TCP 建链后才收到 uid
+        RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_),
+            USER_ONLINE_SERVER_NAME, serverName);
+        RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_),
+            USER_SESSION_ID, sessionId_);
+    }
+    else if (state == SessionState::OFFLINE) {
+        // 先检查是否有其他终端登录
+        const auto sessionId = RedisMgr::getInstance()->hGet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_),
+            USER_SESSION_ID);
+        if (sessionId.empty() || sessionId != sessionId_) {
+            return; // 没有登录 session 或其他终端已经登录，直接返回
+        }
+        // 下线清除在线状态
+        RedisMgr::getInstance()->del(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_));
+        // 减少登录数量
+        if (const auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName); !res.empty()) {
+            count = std::stoi(res);
+        }
+        --count;
+        RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
+    }
+}
+
+void Session::notifyOffline() {
+    // 通知客户端离线，由客户端主动发起 TCP 断连
+    asyncSend(nullptr, 0, static_cast<std::uint16_t>(MessageID::ID_NOTIFY_OFFLINE));
+}
+
 void Session::asyncReadHead(const std::uint16_t totalLen) {
     auto self = shared_from_this();
     asyncReadFull(totalLen, [self, this](const boost::system::error_code& ec, const uint16_t bytes_transfer) {
@@ -69,6 +124,7 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
                 std::cout << "Chat server read failed, read " << bytes_transfer << ", error: " << ec.what() << std::endl;
                 close();
                 chatServer_->clearSession(sessionId_);
+                updateState(SessionState::OFFLINE);
                 return;
             }
 
@@ -82,7 +138,7 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
             msgId = net::detail::socket_ops::network_to_host_short(msgId);
             if (msgId >= static_cast<uint16_t>(MessageID::INVALID_ID)) {
                 std::cout << "Invalid msg id: " << msgId << std::endl;
-                chatServer_->clearSession(sessionId_);
+                notifyOffline();
                 return;
             }
             uint16_t msgLen = 0;
@@ -90,7 +146,7 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
             msgLen = net::detail::socket_ops::network_to_host_short(msgLen);
             if (msgLen > MAX_BUFFER_SIZE) {
                 std::cout << "Invalid msg len: " << msgLen << std::endl;
-                chatServer_->clearSession(sessionId_);
+                notifyOffline();
                 return;
             }
 
@@ -120,7 +176,7 @@ void Session::asyncReadBody(std::uint16_t size) {
         std::cout << "Recv msg body: " << recvNode_->buffer_ << std::endl;
 
         // 处理接收数据
-        const auto logicNode = std::make_shared<LogicNode>(self, *recvNode_);
+        const auto logicNode = std::make_shared<LogicNode>(self, recvNode_);
         ChatLogicSystem::getInstance()->insertMsgNode(logicNode);
 
         // 继续接收头部数据

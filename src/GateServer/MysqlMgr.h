@@ -13,7 +13,7 @@ public:
     ~MysqlMgr();
     int registerUser(const std::string& name, const std::string& email, const std::string& password);
 
-    bool checkEmail(const std::string& user, const std::string& email);
+    bool checkEmail(const std::string& email);
 
     bool updatePasswd(const std::string& user, const std::string& passwd);
 
