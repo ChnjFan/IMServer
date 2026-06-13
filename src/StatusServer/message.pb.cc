@@ -26,6 +26,56 @@ namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace message {
 
+inline constexpr UserOfflineRsp::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        error_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR UserOfflineRsp::UserOfflineRsp(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(UserOfflineRsp_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct UserOfflineRspDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UserOfflineRspDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UserOfflineRspDefaultTypeInternal() {}
+  union {
+    UserOfflineRsp _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UserOfflineRspDefaultTypeInternal _UserOfflineRsp_default_instance_;
+
+inline constexpr UserOfflineReq::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        uid_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR UserOfflineReq::UserOfflineReq(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(UserOfflineReq_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct UserOfflineReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR UserOfflineReqDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~UserOfflineReqDefaultTypeInternal() {}
+  union {
+    UserOfflineReq _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UserOfflineReqDefaultTypeInternal _UserOfflineReq_default_instance_;
+
 inline constexpr TextChatData::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -634,6 +684,16 @@ const ::uint32_t
         1,
         2,
         ~0u,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::UserOfflineReq, _impl_._has_bits_),
+        4, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::UserOfflineReq, _impl_.uid_),
+        0,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::UserOfflineRsp, _impl_._has_bits_),
+        4, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::UserOfflineRsp, _impl_.error_),
+        0,
 };
 
 static const ::_pbi::MigrationSchema
@@ -654,6 +714,8 @@ static const ::_pbi::MigrationSchema
         {115, sizeof(::message::AuthFriendRsp)},
         {124, sizeof(::message::TextChatData)},
         {131, sizeof(::message::TextChatMsgRsp)},
+        {142, sizeof(::message::UserOfflineReq)},
+        {147, sizeof(::message::UserOfflineRsp)},
 };
 static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::message::_GetVerifyReq_default_instance_._instance,
@@ -672,69 +734,68 @@ static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::message::_AuthFriendRsp_default_instance_._instance,
     &::message::_TextChatData_default_instance_._instance,
     &::message::_TextChatMsgRsp_default_instance_._instance,
+    &::message::_UserOfflineReq_default_instance_._instance,
+    &::message::_UserOfflineRsp_default_instance_._instance,
 };
 const char descriptor_table_protodef_message_2eproto[] ABSL_ATTRIBUTE_SECTION_VARIABLE(
     protodesc_cold) = {
-    "\n\rmessage.proto\022\007message\032\033google/protobu"
-    "f/empty.proto\"\035\n\014GetVerifyReq\022\r\n\005email\030\001"
-    " \001(\t\":\n\014GetVerifyRsp\022\r\n\005error\030\001 \001(\005\022\r\n\005e"
-    "mail\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"\037\n\020GetChatServe"
-    "rReq\022\013\n\003uid\030\001 \001(\005\"L\n\020GetChatServerRsp\022\r\n"
-    "\005error\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n\004port\030\003 \001(\t"
-    "\022\r\n\005token\030\004 \001(\t\"&\n\010LoginReq\022\013\n\003uid\030\001 \001(\005"
-    "\022\r\n\005token\030\002 \001(\t\"5\n\010LoginRsp\022\r\n\005error\030\001 \001"
-    "(\005\022\013\n\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001(\t\"[\n\014AddFri"
-    "endReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005"
-    "\022\014\n\004name\030\003 \001(\t\022\r\n\005email\030\004 \001(\t\022\014\n\004desc\030\005 "
-    "\001(\t\"\?\n\014AddFriendRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010fr"
-    "om_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\"A\n\016ReplyFri"
-    "endReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005"
-    "\022\r\n\005agree\030\003 \001(\010\"A\n\016ReplyFriendRsp\022\r\n\005err"
-    "or\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001"
-    "(\005\"e\n\016SendChatMsgReq\022\020\n\010from_uid\030\001 \001(\005\022\016"
-    "\n\006to_uid\030\002 \001(\005\022\020\n\010msg_type\030\003 \001(\005\022\016\n\006msg_"
-    "id\030\004 \001(\005\022\017\n\007message\030\005 \001(\t\"A\n\016SendChatMsg"
-    "Rsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006"
-    "to_uid\030\003 \001(\005\"1\n\rAuthFriendReq\022\020\n\010from_ui"
-    "d\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\"@\n\rAuthFriendRsp"
-    "\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_"
-    "uid\030\003 \001(\005\"3\n\014TextChatData\022\016\n\006msg_id\030\001 \001("
-    "\t\022\023\n\013msg_content\030\002 \001(\t\"j\n\016TextChatMsgRsp"
-    "\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_"
-    "uid\030\003 \001(\005\022\'\n\010text_msg\030\004 \003(\0132\025.message.Te"
-    "xtChatData2N\n\rVerifyService\022=\n\rGetVerify"
-    "Code\022\025.message.GetVerifyReq\032\025.message.Ge"
-    "tVerifyRsp2\205\001\n\rStatusService\022E\n\rGetChatS"
-    "erver\022\031.message.GetChatServerReq\032\031.messa"
-    "ge.GetChatServerRsp\022-\n\005Login\022\021.message.L"
-    "oginReq\032\021.message.LoginRsp2\235\003\n\013ChatServi"
-    "ce\022\?\n\017NotifyAddFriend\022\025.message.AddFrien"
-    "dReq\032\025.message.AddFriendRsp\022B\n\016ReplyAddF"
-    "riend\022\027.message.ReplyFriendReq\032\027.message"
-    ".ReplyFriendRsp\022\?\n\013SendChatMsg\022\027.message"
-    ".SendChatMsgReq\032\027.message.SendChatMsgRsp"
-    "\022B\n\020NotifyAuthFriend\022\026.message.AuthFrien"
-    "dReq\032\026.message.AuthFriendRsp\022C\n\021NotifyTe"
-    "xtChatMsg\022\025.message.TextChatData\032\027.messa"
-    "ge.TextChatMsgRsp\022\?\n\rNotifyOffline\022\026.goo"
-    "gle.protobuf.Empty\032\026.google.protobuf.Emp"
-    "tyb\006proto3"
-};
-static const ::_pbi::DescriptorTable* PROTOBUF_NONNULL const
-    descriptor_table_message_2eproto_deps[1] = {
-        &::descriptor_table_google_2fprotobuf_2fempty_2eproto,
+    "\n\rmessage.proto\022\007message\"\035\n\014GetVerifyReq"
+    "\022\r\n\005email\030\001 \001(\t\":\n\014GetVerifyRsp\022\r\n\005error"
+    "\030\001 \001(\005\022\r\n\005email\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"\037\n\020G"
+    "etChatServerReq\022\013\n\003uid\030\001 \001(\005\"L\n\020GetChatS"
+    "erverRsp\022\r\n\005error\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n"
+    "\004port\030\003 \001(\t\022\r\n\005token\030\004 \001(\t\"&\n\010LoginReq\022\013"
+    "\n\003uid\030\001 \001(\005\022\r\n\005token\030\002 \001(\t\"5\n\010LoginRsp\022\r"
+    "\n\005error\030\001 \001(\005\022\013\n\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001("
+    "\t\"[\n\014AddFriendReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006t"
+    "o_uid\030\002 \001(\005\022\014\n\004name\030\003 \001(\t\022\r\n\005email\030\004 \001(\t"
+    "\022\014\n\004desc\030\005 \001(\t\"\?\n\014AddFriendRsp\022\r\n\005error\030"
+    "\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\""
+    "A\n\016ReplyFriendReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006t"
+    "o_uid\030\002 \001(\005\022\r\n\005agree\030\003 \001(\010\"A\n\016ReplyFrien"
+    "dRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n"
+    "\006to_uid\030\003 \001(\005\"e\n\016SendChatMsgReq\022\020\n\010from_"
+    "uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\022\020\n\010msg_type\030\003 "
+    "\001(\005\022\016\n\006msg_id\030\004 \001(\005\022\017\n\007message\030\005 \001(\t\"A\n\016"
+    "SendChatMsgRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_ui"
+    "d\030\002 \001(\005\022\016\n\006to_uid\030\003 \001(\005\"1\n\rAuthFriendReq"
+    "\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_uid\030\002 \001(\005\"@\n\rAu"
+    "thFriendRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002"
+    " \001(\005\022\016\n\006to_uid\030\003 \001(\005\"3\n\014TextChatData\022\016\n\006"
+    "msg_id\030\001 \001(\t\022\023\n\013msg_content\030\002 \001(\t\"j\n\016Tex"
+    "tChatMsgRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002"
+    " \001(\005\022\016\n\006to_uid\030\003 \001(\005\022\'\n\010text_msg\030\004 \003(\0132\025"
+    ".message.TextChatData\"\035\n\016UserOfflineReq\022"
+    "\013\n\003uid\030\001 \001(\005\"\037\n\016UserOfflineRsp\022\r\n\005error\030"
+    "\001 \001(\0052N\n\rVerifyService\022=\n\rGetVerifyCode\022"
+    "\025.message.GetVerifyReq\032\025.message.GetVeri"
+    "fyRsp2\205\001\n\rStatusService\022E\n\rGetChatServer"
+    "\022\031.message.GetChatServerReq\032\031.message.Ge"
+    "tChatServerRsp\022-\n\005Login\022\021.message.LoginR"
+    "eq\032\021.message.LoginRsp2\237\003\n\013ChatService\022\?\n"
+    "\017NotifyAddFriend\022\025.message.AddFriendReq\032"
+    "\025.message.AddFriendRsp\022B\n\016ReplyAddFriend"
+    "\022\027.message.ReplyFriendReq\032\027.message.Repl"
+    "yFriendRsp\022\?\n\013SendChatMsg\022\027.message.Send"
+    "ChatMsgReq\032\027.message.SendChatMsgRsp\022B\n\020N"
+    "otifyAuthFriend\022\026.message.AuthFriendReq\032"
+    "\026.message.AuthFriendRsp\022C\n\021NotifyTextCha"
+    "tMsg\022\025.message.TextChatData\032\027.message.Te"
+    "xtChatMsgRsp\022A\n\rNotifyOffline\022\027.message."
+    "UserOfflineReq\032\027.message.UserOfflineRspb"
+    "\006proto3"
 };
 static ::absl::once_flag descriptor_table_message_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_message_2eproto = {
     false,
     false,
-    1730,
+    1767,
     descriptor_table_protodef_message_2eproto,
     "message.proto",
     &descriptor_table_message_2eproto_once,
-    descriptor_table_message_2eproto_deps,
-    1,
-    16,
+    nullptr,
+    0,
+    18,
     schemas,
     file_default_instances,
     TableStruct_message_2eproto::offsets,
@@ -5920,6 +5981,476 @@ void TextChatMsgRsp::InternalSwap(TextChatMsgRsp* PROTOBUF_RESTRICT PROTOBUF_NON
 }
 
 ::google::protobuf::Metadata TextChatMsgRsp::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class UserOfflineReq::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<UserOfflineReq>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(UserOfflineReq, _impl_._has_bits_);
+};
+
+UserOfflineReq::UserOfflineReq(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, UserOfflineReq_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.UserOfflineReq)
+}
+UserOfflineReq::UserOfflineReq(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const UserOfflineReq& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, UserOfflineReq_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+PROTOBUF_NDEBUG_INLINE UserOfflineReq::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0} {}
+
+inline void UserOfflineReq::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.uid_ = {};
+}
+UserOfflineReq::~UserOfflineReq() {
+  // @@protoc_insertion_point(destructor:message.UserOfflineReq)
+  SharedDtor(*this);
+}
+inline void UserOfflineReq::SharedDtor(MessageLite& self) {
+  UserOfflineReq& this_ = static_cast<UserOfflineReq&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL UserOfflineReq::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) UserOfflineReq(arena);
+}
+constexpr auto UserOfflineReq::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UserOfflineReq),
+                                            alignof(UserOfflineReq));
+}
+constexpr auto UserOfflineReq::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_UserOfflineReq_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &UserOfflineReq::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<UserOfflineReq>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &UserOfflineReq::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<UserOfflineReq>(), &UserOfflineReq::ByteSizeLong,
+              &UserOfflineReq::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(UserOfflineReq, _impl_._cached_size_),
+          false,
+      },
+      &UserOfflineReq::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull UserOfflineReq_class_data_ =
+        UserOfflineReq::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+UserOfflineReq::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&UserOfflineReq_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(UserOfflineReq_class_data_.tc_table);
+  return UserOfflineReq_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 0, 0, 2>
+UserOfflineReq::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(UserOfflineReq, _impl_._has_bits_),
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    UserOfflineReq_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::UserOfflineReq>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 uid = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(UserOfflineReq, _impl_.uid_), 0>(),
+     {8, 0, 0, PROTOBUF_FIELD_OFFSET(UserOfflineReq, _impl_.uid_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 uid = 1;
+    {PROTOBUF_FIELD_OFFSET(UserOfflineReq, _impl_.uid_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+PROTOBUF_NOINLINE void UserOfflineReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.UserOfflineReq)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.uid_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL UserOfflineReq::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const UserOfflineReq& this_ = static_cast<const UserOfflineReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL UserOfflineReq::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const UserOfflineReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.UserOfflineReq)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 uid = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (this_._internal_uid() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_uid(), target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.UserOfflineReq)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t UserOfflineReq::ByteSizeLong(const MessageLite& base) {
+  const UserOfflineReq& this_ = static_cast<const UserOfflineReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t UserOfflineReq::ByteSizeLong() const {
+  const UserOfflineReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.UserOfflineReq)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+   {
+    // int32 uid = 1;
+    cached_has_bits = this_._impl_._has_bits_[0];
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (this_._internal_uid() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_uid());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void UserOfflineReq::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<UserOfflineReq*>(&to_msg);
+  auto& from = static_cast<const UserOfflineReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.UserOfflineReq)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000001u) != 0) {
+    if (from._internal_uid() != 0) {
+      _this->_impl_.uid_ = from._impl_.uid_;
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UserOfflineReq::CopyFrom(const UserOfflineReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.UserOfflineReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void UserOfflineReq::InternalSwap(UserOfflineReq* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.uid_, other->_impl_.uid_);
+}
+
+::google::protobuf::Metadata UserOfflineReq::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class UserOfflineRsp::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<UserOfflineRsp>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(UserOfflineRsp, _impl_._has_bits_);
+};
+
+UserOfflineRsp::UserOfflineRsp(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, UserOfflineRsp_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.UserOfflineRsp)
+}
+UserOfflineRsp::UserOfflineRsp(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const UserOfflineRsp& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, UserOfflineRsp_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+PROTOBUF_NDEBUG_INLINE UserOfflineRsp::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0} {}
+
+inline void UserOfflineRsp::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.error_ = {};
+}
+UserOfflineRsp::~UserOfflineRsp() {
+  // @@protoc_insertion_point(destructor:message.UserOfflineRsp)
+  SharedDtor(*this);
+}
+inline void UserOfflineRsp::SharedDtor(MessageLite& self) {
+  UserOfflineRsp& this_ = static_cast<UserOfflineRsp&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL UserOfflineRsp::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) UserOfflineRsp(arena);
+}
+constexpr auto UserOfflineRsp::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(UserOfflineRsp),
+                                            alignof(UserOfflineRsp));
+}
+constexpr auto UserOfflineRsp::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_UserOfflineRsp_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &UserOfflineRsp::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<UserOfflineRsp>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &UserOfflineRsp::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<UserOfflineRsp>(), &UserOfflineRsp::ByteSizeLong,
+              &UserOfflineRsp::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(UserOfflineRsp, _impl_._cached_size_),
+          false,
+      },
+      &UserOfflineRsp::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull UserOfflineRsp_class_data_ =
+        UserOfflineRsp::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+UserOfflineRsp::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&UserOfflineRsp_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(UserOfflineRsp_class_data_.tc_table);
+  return UserOfflineRsp_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 0, 0, 2>
+UserOfflineRsp::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(UserOfflineRsp, _impl_._has_bits_),
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    UserOfflineRsp_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::UserOfflineRsp>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 error = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(UserOfflineRsp, _impl_.error_), 0>(),
+     {8, 0, 0, PROTOBUF_FIELD_OFFSET(UserOfflineRsp, _impl_.error_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 error = 1;
+    {PROTOBUF_FIELD_OFFSET(UserOfflineRsp, _impl_.error_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+PROTOBUF_NOINLINE void UserOfflineRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.UserOfflineRsp)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.error_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL UserOfflineRsp::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const UserOfflineRsp& this_ = static_cast<const UserOfflineRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL UserOfflineRsp::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const UserOfflineRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.UserOfflineRsp)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 error = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (this_._internal_error() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_error(), target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.UserOfflineRsp)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t UserOfflineRsp::ByteSizeLong(const MessageLite& base) {
+  const UserOfflineRsp& this_ = static_cast<const UserOfflineRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t UserOfflineRsp::ByteSizeLong() const {
+  const UserOfflineRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.UserOfflineRsp)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+   {
+    // int32 error = 1;
+    cached_has_bits = this_._impl_._has_bits_[0];
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (this_._internal_error() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_error());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void UserOfflineRsp::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<UserOfflineRsp*>(&to_msg);
+  auto& from = static_cast<const UserOfflineRsp&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.UserOfflineRsp)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000001u) != 0) {
+    if (from._internal_error() != 0) {
+      _this->_impl_.error_ = from._impl_.error_;
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void UserOfflineRsp::CopyFrom(const UserOfflineRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.UserOfflineRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void UserOfflineRsp::InternalSwap(UserOfflineRsp* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.error_, other->_impl_.error_);
+}
+
+::google::protobuf::Metadata UserOfflineRsp::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // @@protoc_insertion_point(namespace_scope)
