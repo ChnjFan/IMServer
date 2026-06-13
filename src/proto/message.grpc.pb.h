@@ -642,12 +642,12 @@ class ChatService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::TextChatMsgRsp>> PrepareAsyncNotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::TextChatMsgRsp>>(PrepareAsyncNotifyTextChatMsgRaw(context, request, cq));
     }
-    virtual ::grpc::Status NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::google::protobuf::Empty* response) = 0;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> AsyncNotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(AsyncNotifyOfflineRaw(context, request, cq));
+    virtual ::grpc::Status NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::message::UserOfflineRsp* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>> AsyncNotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>>(AsyncNotifyOfflineRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>> PrepareAsyncNotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>>(PrepareAsyncNotifyOfflineRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>> PrepareAsyncNotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>>(PrepareAsyncNotifyOfflineRaw(context, request, cq));
     }
     class async_interface {
      public:
@@ -662,8 +662,8 @@ class ChatService final {
       virtual void NotifyAuthFriend(::grpc::ClientContext* context, const ::message::AuthFriendReq* request, ::message::AuthFriendRsp* response, ::grpc::ClientUnaryReactor* reactor) = 0;
       virtual void NotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response, std::function<void(::grpc::Status)>) = 0;
       virtual void NotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response, ::grpc::ClientUnaryReactor* reactor) = 0;
-      virtual void NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) = 0;
-      virtual void NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      virtual void NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, std::function<void(::grpc::Status)>) = 0;
+      virtual void NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, ::grpc::ClientUnaryReactor* reactor) = 0;
     };
     typedef class async_interface experimental_async_interface;
     virtual class async_interface* async() { return nullptr; }
@@ -679,8 +679,8 @@ class ChatService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::message::AuthFriendRsp>* PrepareAsyncNotifyAuthFriendRaw(::grpc::ClientContext* context, const ::message::AuthFriendReq& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::message::TextChatMsgRsp>* AsyncNotifyTextChatMsgRaw(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::message::TextChatMsgRsp>* PrepareAsyncNotifyTextChatMsgRaw(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
-    virtual ::grpc::ClientAsyncResponseReaderInterface< ::google::protobuf::Empty>* PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>* AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::message::UserOfflineRsp>* PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) = 0;
   };
   class Stub final : public StubInterface {
    public:
@@ -720,12 +720,12 @@ class ChatService final {
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::TextChatMsgRsp>> PrepareAsyncNotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::TextChatMsgRsp>>(PrepareAsyncNotifyTextChatMsgRaw(context, request, cq));
     }
-    ::grpc::Status NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::google::protobuf::Empty* response) override;
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> AsyncNotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(AsyncNotifyOfflineRaw(context, request, cq));
+    ::grpc::Status NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::message::UserOfflineRsp* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>> AsyncNotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>>(AsyncNotifyOfflineRaw(context, request, cq));
     }
-    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>> PrepareAsyncNotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>>(PrepareAsyncNotifyOfflineRaw(context, request, cq));
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>> PrepareAsyncNotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>>(PrepareAsyncNotifyOfflineRaw(context, request, cq));
     }
     class async final :
       public StubInterface::async_interface {
@@ -740,8 +740,8 @@ class ChatService final {
       void NotifyAuthFriend(::grpc::ClientContext* context, const ::message::AuthFriendReq* request, ::message::AuthFriendRsp* response, ::grpc::ClientUnaryReactor* reactor) override;
       void NotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response, std::function<void(::grpc::Status)>) override;
       void NotifyTextChatMsg(::grpc::ClientContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response, ::grpc::ClientUnaryReactor* reactor) override;
-      void NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)>) override;
-      void NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) override;
+      void NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, std::function<void(::grpc::Status)>) override;
+      void NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, ::grpc::ClientUnaryReactor* reactor) override;
      private:
       friend class Stub;
       explicit async(Stub* stub): stub_(stub) { }
@@ -763,8 +763,8 @@ class ChatService final {
     ::grpc::ClientAsyncResponseReader< ::message::AuthFriendRsp>* PrepareAsyncNotifyAuthFriendRaw(::grpc::ClientContext* context, const ::message::AuthFriendReq& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::message::TextChatMsgRsp>* AsyncNotifyTextChatMsgRaw(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::message::TextChatMsgRsp>* PrepareAsyncNotifyTextChatMsgRaw(::grpc::ClientContext* context, const ::message::TextChatData& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
-    ::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>* AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>* PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) override;
     const ::grpc::internal::RpcMethod rpcmethod_NotifyAddFriend_;
     const ::grpc::internal::RpcMethod rpcmethod_ReplyAddFriend_;
     const ::grpc::internal::RpcMethod rpcmethod_SendChatMsg_;
@@ -783,7 +783,7 @@ class ChatService final {
     virtual ::grpc::Status SendChatMsg(::grpc::ServerContext* context, const ::message::SendChatMsgReq* request, ::message::SendChatMsgRsp* response);
     virtual ::grpc::Status NotifyAuthFriend(::grpc::ServerContext* context, const ::message::AuthFriendReq* request, ::message::AuthFriendRsp* response);
     virtual ::grpc::Status NotifyTextChatMsg(::grpc::ServerContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response);
-    virtual ::grpc::Status NotifyOffline(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response);
+    virtual ::grpc::Status NotifyOffline(::grpc::ServerContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response);
   };
   template <class BaseClass>
   class WithAsyncMethod_NotifyAddFriend : public BaseClass {
@@ -897,11 +897,11 @@ class ChatService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
-    void RequestNotifyOffline(::grpc::ServerContext* context, ::google::protobuf::Empty* request, ::grpc::ServerAsyncResponseWriter< ::google::protobuf::Empty>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+    void RequestNotifyOffline(::grpc::ServerContext* context, ::message::UserOfflineReq* request, ::grpc::ServerAsyncResponseWriter< ::message::UserOfflineRsp>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
       ::grpc::Service::RequestAsyncUnary(5, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
@@ -1048,25 +1048,25 @@ class ChatService final {
    public:
     WithCallbackMethod_NotifyOffline() {
       ::grpc::Service::MarkMethodCallback(5,
-          new ::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::google::protobuf::Empty>(
+          new ::grpc::internal::CallbackUnaryHandler< ::message::UserOfflineReq, ::message::UserOfflineRsp>(
             [this](
-                   ::grpc::CallbackServerContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response) { return this->NotifyOffline(context, request, response); }));}
+                   ::grpc::CallbackServerContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response) { return this->NotifyOffline(context, request, response); }));}
     void SetMessageAllocatorFor_NotifyOffline(
-        ::grpc::MessageAllocator< ::google::protobuf::Empty, ::google::protobuf::Empty>* allocator) {
+        ::grpc::MessageAllocator< ::message::UserOfflineReq, ::message::UserOfflineRsp>* allocator) {
       ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(5);
-      static_cast<::grpc::internal::CallbackUnaryHandler< ::google::protobuf::Empty, ::google::protobuf::Empty>*>(handler)
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::message::UserOfflineReq, ::message::UserOfflineRsp>*>(handler)
               ->SetMessageAllocator(allocator);
     }
     ~WithCallbackMethod_NotifyOffline() override {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     virtual ::grpc::ServerUnaryReactor* NotifyOffline(
-      ::grpc::CallbackServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/)  { return nullptr; }
+      ::grpc::CallbackServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/)  { return nullptr; }
   };
   typedef WithCallbackMethod_NotifyAddFriend<WithCallbackMethod_ReplyAddFriend<WithCallbackMethod_SendChatMsg<WithCallbackMethod_NotifyAuthFriend<WithCallbackMethod_NotifyTextChatMsg<WithCallbackMethod_NotifyOffline<Service > > > > > > CallbackService;
   typedef CallbackService ExperimentalCallbackService;
@@ -1167,7 +1167,7 @@ class ChatService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1284,7 +1284,7 @@ class ChatService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1417,7 +1417,7 @@ class ChatService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable synchronous version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
@@ -1567,10 +1567,10 @@ class ChatService final {
     WithStreamedUnaryMethod_NotifyOffline() {
       ::grpc::Service::MarkMethodStreamed(5,
         new ::grpc::internal::StreamedUnaryHandler<
-          ::google::protobuf::Empty, ::google::protobuf::Empty>(
+          ::message::UserOfflineReq, ::message::UserOfflineRsp>(
             [this](::grpc::ServerContext* context,
                    ::grpc::ServerUnaryStreamer<
-                     ::google::protobuf::Empty, ::google::protobuf::Empty>* streamer) {
+                     ::message::UserOfflineReq, ::message::UserOfflineRsp>* streamer) {
                        return this->StreamedNotifyOffline(context,
                          streamer);
                   }));
@@ -1579,12 +1579,12 @@ class ChatService final {
       BaseClassMustBeDerivedFromService(this);
     }
     // disable regular version of this method
-    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::google::protobuf::Empty* /*request*/, ::google::protobuf::Empty* /*response*/) override {
+    ::grpc::Status NotifyOffline(::grpc::ServerContext* /*context*/, const ::message::UserOfflineReq* /*request*/, ::message::UserOfflineRsp* /*response*/) override {
       abort();
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     // replace default version of method with streamed unary
-    virtual ::grpc::Status StreamedNotifyOffline(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::google::protobuf::Empty,::google::protobuf::Empty>* server_unary_streamer) = 0;
+    virtual ::grpc::Status StreamedNotifyOffline(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::message::UserOfflineReq,::message::UserOfflineRsp>* server_unary_streamer) = 0;
   };
   typedef WithStreamedUnaryMethod_NotifyAddFriend<WithStreamedUnaryMethod_ReplyAddFriend<WithStreamedUnaryMethod_SendChatMsg<WithStreamedUnaryMethod_NotifyAuthFriend<WithStreamedUnaryMethod_NotifyTextChatMsg<WithStreamedUnaryMethod_NotifyOffline<Service > > > > > > StreamedUnaryService;
   typedef Service SplitStreamedService;

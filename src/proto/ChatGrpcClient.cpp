@@ -115,23 +115,26 @@ SendChatMsgRsp ChatGrpcClient::SendChatMsg(std::string &serviceName, const SendC
     return reply;
 }
 
-void ChatGrpcClient::NotifyOffline(const std::string &serviceName) {
+ErrorCodes ChatGrpcClient::NotifyOffline(const std::string &serviceName, int uid) {
     ClientContext context;
-    const google::protobuf::Empty request;
-    google::protobuf::Empty response;
+    UserOfflineReq request;
+    UserOfflineRsp response;
 
     if (pools_.find(serviceName) == pools_.end()) {
-        return;
+        return ErrorCodes::RPC_FAILED;
     }
     auto stub = pools_[serviceName]->getConnection();
     if (nullptr == stub) {
         std::cout << "Error get rpc connection" << std::endl;
-        return;
+        return ErrorCodes::RPC_FAILED;
     }
 
     Defer defer([this, &stub, &serviceName] () {
         pools_[serviceName]->returnConnection(std::move(stub));
     });
 
+    request.set_uid(uid);
     stub->NotifyOffline(&context, request, &response);
+    return static_cast<ErrorCodes>(response.error());
 }
+

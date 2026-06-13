@@ -1,5 +1,4 @@
 syntax = "proto3";
-import "google/protobuf/empty.proto";
 
 package message;
 
@@ -50,7 +49,7 @@ service ChatService {
     rpc SendChatMsg(SendChatMsgReq) returns (SendChatMsgRsp);
     rpc NotifyAuthFriend(AuthFriendReq) returns (AuthFriendRsp);
     rpc NotifyTextChatMsg(TextChatData) returns (TextChatMsgRsp);
-    rpc NotifyOffline(google.protobuf.Empty) returns (google.protobuf.Empty);
+    rpc NotifyOffline(UserOfflineReq) returns (UserOfflineRsp);
 }
 
 message AddFriendReq {
@@ -117,3 +116,10 @@ message TextChatMsgRsp {
     repeated TextChatData text_msg = 4;
 }
 
+message UserOfflineReq {
+    int32 uid = 1;
+}
+
+message UserOfflineRsp {
+    int32 error = 1;
+}

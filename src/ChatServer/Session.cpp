@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <boost/uuid.hpp>
+#include <json/json.h>
 
 #include "Session.h"
 
@@ -113,7 +114,9 @@ void Session::updateState(const SessionState state) const {
 
 void Session::notifyOffline() {
     // 通知客户端离线，由客户端主动发起 TCP 断连
-    asyncSend(nullptr, 0, static_cast<std::uint16_t>(MessageID::ID_NOTIFY_OFFLINE));
+    Json::Value msg;
+    msg["error"] = 0;
+    asyncSend(msg.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_OFFLINE));
 }
 
 void Session::asyncReadHead(const std::uint16_t totalLen) {

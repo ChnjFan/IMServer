@@ -24,6 +24,7 @@ public:
     DistLockGuard(const std::string& name, int timeout, int acquireTimeout);
     ~DistLockGuard();
 private:
+    std::string name_;
     DistLock lock_;
 };
 

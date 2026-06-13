@@ -31,6 +31,7 @@ public:
     Status SendChatMsg(ServerContext* context, const ::message::SendChatMsgReq* request, ::message::SendChatMsgRsp* response) override;
     Status NotifyAuthFriend(ServerContext* context, const ::message::AuthFriendReq* request, ::message::AuthFriendRsp* response) override;
     Status NotifyTextChatMsg(ServerContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response) override;
+    Status NotifyOffline(grpc::ServerContext *context, const message::UserOfflineReq *request, message::UserOfflineRsp *response) override;
 };
 
 

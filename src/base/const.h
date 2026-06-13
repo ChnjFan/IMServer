@@ -43,6 +43,7 @@ enum class ErrorCodes : int32_t {
     MYSQL_ERROR = 1100,
     REDIS_ERROR = 1101,
     FILE_ERROR = 1102,
+    CLIENT_REQUEST_ERROR = 1103,
 };
 
 enum class MessageID : uint16_t {
@@ -77,6 +78,8 @@ enum class MessageID : uint16_t {
     ID_CHAT_DOWNLOAD_FILE_RSP = 1025,   // 下载文件响应
 
     ID_NOTIFY_OFFLINE = 1026,       // 通知客户端离线
+
+    ID_CLIENT_COMMON_ERROR = 2001, // 客户端请求异常
     INVALID_ID,
 };
 

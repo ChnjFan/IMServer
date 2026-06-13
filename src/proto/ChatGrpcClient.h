@@ -13,6 +13,7 @@
 
 #include "Singleton.h"
 #include "ServiceConnPool.h"
+#include "const.h"
 
 using grpc::Channel;
 using grpc::Status;
@@ -25,6 +26,8 @@ using message::AuthFriendRsp;
 using message::SendChatMsgReq;
 using message::SendChatMsgRsp;
 using message::ChatService;
+using message::UserOfflineReq;
+using message::UserOfflineRsp;
 
 class ChatGrpcClient : public Singleton<ChatGrpcClient> {
 public:
@@ -36,7 +39,7 @@ public:
 
     SendChatMsgRsp SendChatMsg(std::string& serviceName, const SendChatMsgReq& request);
 
-    void NotifyOffline(const std::string& serviceName);
+     ErrorCodes NotifyOffline(const std::string& serviceName, int uid);
 
 private:
     friend class Singleton<ChatGrpcClient>;

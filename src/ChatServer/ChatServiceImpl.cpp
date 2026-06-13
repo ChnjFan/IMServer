@@ -102,3 +102,13 @@ Status ChatServiceImpl::NotifyTextChatMsg(ServerContext *context, const message:
     message::TextChatMsgRsp *response) {
     return Status::OK;
 }
+
+Status ChatServiceImpl::NotifyOffline(grpc::ServerContext *context, const message::UserOfflineReq *request,
+    message::UserOfflineRsp *response) {
+    const auto session = UserMgr::getInstance()->getSession(request->uid());
+    if (!session) { // 用户已经下线
+        return Status::OK;
+    }
+    session->notifyOffline();
+    return Status::OK;
+}

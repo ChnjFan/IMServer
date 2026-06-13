@@ -325,23 +325,23 @@ void ChatService::Stub::async::NotifyTextChatMsg(::grpc::ClientContext* context,
   return result;
 }
 
-::grpc::Status ChatService::Stub::NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::google::protobuf::Empty* response) {
-  return ::grpc::internal::BlockingUnaryCall< ::google::protobuf::Empty, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_NotifyOffline_, context, request, response);
+::grpc::Status ChatService::Stub::NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::message::UserOfflineRsp* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::message::UserOfflineReq, ::message::UserOfflineRsp, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_NotifyOffline_, context, request, response);
 }
 
-void ChatService::Stub::async::NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, std::function<void(::grpc::Status)> f) {
-  ::grpc::internal::CallbackUnaryCall< ::google::protobuf::Empty, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NotifyOffline_, context, request, response, std::move(f));
+void ChatService::Stub::async::NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::message::UserOfflineReq, ::message::UserOfflineRsp, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NotifyOffline_, context, request, response, std::move(f));
 }
 
-void ChatService::Stub::async::NotifyOffline(::grpc::ClientContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response, ::grpc::ClientUnaryReactor* reactor) {
+void ChatService::Stub::async::NotifyOffline(::grpc::ClientContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response, ::grpc::ClientUnaryReactor* reactor) {
   ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_NotifyOffline_, context, request, response, reactor);
 }
 
-::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* ChatService::Stub::PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
-  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::google::protobuf::Empty, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_NotifyOffline_, context, request);
+::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>* ChatService::Stub::PrepareAsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::message::UserOfflineRsp, ::message::UserOfflineReq, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_NotifyOffline_, context, request);
 }
 
-::grpc::ClientAsyncResponseReader< ::google::protobuf::Empty>* ChatService::Stub::AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::google::protobuf::Empty& request, ::grpc::CompletionQueue* cq) {
+::grpc::ClientAsyncResponseReader< ::message::UserOfflineRsp>* ChatService::Stub::AsyncNotifyOfflineRaw(::grpc::ClientContext* context, const ::message::UserOfflineReq& request, ::grpc::CompletionQueue* cq) {
   auto* result =
     this->PrepareAsyncNotifyOfflineRaw(context, request, cq);
   result->StartCall();
@@ -402,11 +402,11 @@ ChatService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       ChatService_method_names[5],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
-      new ::grpc::internal::RpcMethodHandler< ChatService::Service, ::google::protobuf::Empty, ::google::protobuf::Empty, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+      new ::grpc::internal::RpcMethodHandler< ChatService::Service, ::message::UserOfflineReq, ::message::UserOfflineRsp, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](ChatService::Service* service,
              ::grpc::ServerContext* ctx,
-             const ::google::protobuf::Empty* req,
-             ::google::protobuf::Empty* resp) {
+             const ::message::UserOfflineReq* req,
+             ::message::UserOfflineRsp* resp) {
                return service->NotifyOffline(ctx, req, resp);
              }, this)));
 }
@@ -449,7 +449,7 @@ ChatService::Service::~Service() {
   return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
 }
 
-::grpc::Status ChatService::Service::NotifyOffline(::grpc::ServerContext* context, const ::google::protobuf::Empty* request, ::google::protobuf::Empty* response) {
+::grpc::Status ChatService::Service::NotifyOffline(::grpc::ServerContext* context, const ::message::UserOfflineReq* request, ::message::UserOfflineRsp* response) {
   (void) context;
   (void) request;
   (void) response;

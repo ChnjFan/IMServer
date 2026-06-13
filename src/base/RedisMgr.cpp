@@ -578,14 +578,14 @@ std::string RedisMgr::acquireLock(const std::string& name, const int timeout, co
 
     random_generator generator;
     std::string identifier = boost::uuids::to_string(generator());
-    std::string key = "lock:" + name;
     const auto endTime = std::chrono::steady_clock::now() + std::chrono::seconds(acquireTimeout);
 
     while (std::chrono::steady_clock::now() < endTime) {
         const auto reply = static_cast<redisReply *>(redisCommand(conn, "SET %s %s NX EX %d",
-            key.c_str(), identifier.c_str(), timeout));
+            name.c_str(), identifier.c_str(), timeout));
         if (reply != nullptr) {
             if (reply->type == REDIS_REPLY_STATUS && std::string(reply->str) == "OK") {
+                std::cout << "AcquireLock: RedisCommand() [" << name << "] success" << std::endl;
                 freeReplyObject(reply);
                 return identifier;
             }
@@ -593,30 +593,34 @@ std::string RedisMgr::acquireLock(const std::string& name, const int timeout, co
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+    std::cout << "AcquireLock: RedisCommand() [" << name << "] error" << std::endl;
     return "";
 }
 
 bool RedisMgr::releaseLock(const std::string &name, const std::string& identifier) const {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
-        return "";
+        return false;
     }
     Defer defer([&conn, this] {
         redisPool_->returnConnection(conn);
     });
-    std::string key = "lock:" + name;
     // 通过 lua 判断锁标识是否匹配，匹配则删除锁
-    const char* luaScript = "if redis.call('get', KEYS[1] == ARGV[1] then \
-                                return redis.call('del', KEYS[1]) \
-                            else \
-                                return 0 \
-                            end";
+    const auto luaScript = R"(if redis.call('get', KEYS[1]) == ARGV[1] then
+                                return redis.call('del', KEYS[1])
+                            else
+                                return 0
+                            end)";
     const auto reply = static_cast<redisReply *>(redisCommand(conn, "EVAL %s 1 %s %s",
-        luaScript, key.c_str(), identifier.c_str()));
+        luaScript, name.c_str(), identifier.c_str()));
     if (reply) {
-        if (reply->type == REDIS_REPLY_STATUS && reply->integer == 1) {
+        if (reply->type == REDIS_REPLY_INTEGER && reply->integer == 1) {
+            std::cout << "ReleaseLock: RedisCommand() [" << name << "] success" << std::endl;
             freeReplyObject(reply);
             return true;
+        }
+        else if (reply->str) {
+            std::cout << "ReleaseLock: RedisCommand() [" << name << ": " << identifier << "] error: " << reply->str << std::endl;
         }
         freeReplyObject(reply);
     }

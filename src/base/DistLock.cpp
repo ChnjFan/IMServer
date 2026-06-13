@@ -22,15 +22,15 @@ bool DistLock::unlock() const {
 }
 
 DistLockGuard::DistLockGuard(const std::string &name, const int timeout, const int acquireTimeout)
-    : lock_(name, timeout, acquireTimeout) {
+    : name_(name), lock_(name, timeout, acquireTimeout) {
     if (!lock_.lock()) {
-        throw std::logic_error("lock failed");
+        throw std::logic_error("Distribute lock" + name +" failed");
     }
 }
 
 DistLockGuard::~DistLockGuard() {
     if (!lock_.unlock()) {
-        std::cerr << "Distribute unlock failed" << std::endl;
+        std::cerr << "Distribute unlock " + name_ +" failed" << std::endl;
     }
 }
 

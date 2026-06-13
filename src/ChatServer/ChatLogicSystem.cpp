@@ -114,10 +114,19 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     std::cout << "Handle msg id is " << node->node_->msgId_ << std::endl;
     if (handlers_.find(node->node_->msgId_) == handlers_.end()) {
         std::cout << "Msg id [" << node->node_->msgId_ << "] handler not found" << std::endl;
-        // todo 回复异常响应
+        Json::Value msg;
+        msg["error"] = static_cast<int32_t>(ErrorCodes::CLIENT_REQUEST_ERROR);
+        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_ERROR));
         return;
     }
-    handlers_[node->node_->msgId_](node->session_, node->node_->msgId_, std::string(node->node_->buffer_));
+    try {
+        handlers_[node->node_->msgId_](node->session_, node->node_->msgId_, std::string(node->node_->buffer_));
+    } catch (...) {
+        std::cout << "Handle msg [" << node->node_->msgId_ << "] exception!" << std::endl;
+        Json::Value msg;
+        msg["error"] = static_cast<int32_t>(ErrorCodes::CLIENT_REQUEST_ERROR);
+        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_ERROR));
+    }
 }
 
 bool ChatLogicSystem::getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo> &userInfo) {
@@ -264,8 +273,8 @@ void ChatLogicSystem::addHistoryMessage(Json::Value &root, ChatMsgStatus status)
 }
 
 void ChatLogicSystem::kickOnlineUser(const int uid) const {
-    const std::string serverName;
-    RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid),USER_ONLINE_SERVER_NAME, serverName);
+    const std::string serverName = RedisMgr::getInstance()->hGet(
+        USER_ONLINE_INFO_PREFIX + std::to_string(uid),USER_ONLINE_SERVER_NAME);
     if (serverName.empty()) {
         return;
     }
@@ -275,7 +284,7 @@ void ChatLogicSystem::kickOnlineUser(const int uid) const {
         }
     }
     else {// 用户在其他服务器，通知对端离线
-        ChatGrpcClient::getInstance()->NotifyOffline(serverName);
+        ChatGrpcClient::getInstance()->NotifyOffline(serverName, uid);
     }
 }
 
