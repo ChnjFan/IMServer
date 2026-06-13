@@ -98,7 +98,6 @@ void MysqlPool::checkConnection() {
             std::unique_ptr<sql::Statement> stmt(conn->conn_->createStatement());
             stmt->executeQuery("SELECT 1");
             conn->lastOptTime_ = timeStamp;
-            std::cout << "Execute aliver query, timestamp: " << timeStamp << std::endl;
         } catch (sql::SQLException &e) {
             std::cout << "Error connection alive, SQLException: " << e.what() << std::endl;
             const auto driver = sql::mysql::get_driver_instance();
