@@ -10,6 +10,7 @@
 #include "ChatServiceImpl.h"
 #include "RedisMgr.h"
 #include "const.h"
+#include "DistLock.h"
 
 int main()
 {
@@ -54,10 +55,16 @@ int main()
         // ChatServer启动成功初始化 Redis 的连接计数
         const std::string serverName = config["ChatServer"]["Name"];
         ChatLogicSystem::getInstance()->setServerName(serverName);
-        RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, "0");
+        {
+            DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+            RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, "0");
+        }
         io_context.run();
 
-        RedisMgr::getInstance()->hDel(LOGIN_COUNT, serverName);
+        {
+            DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+            RedisMgr::getInstance()->hDel(LOGIN_COUNT, serverName);
+        }
         RedisMgr::getInstance()->close();
         if (grpcServiceThread.joinable()) {
             grpcServiceThread.join();

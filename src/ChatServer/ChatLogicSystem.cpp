@@ -198,14 +198,14 @@ bool ChatLogicSystem::getConversationList(int uid, ConversationList &convList) {
             }
             auto convInfo = std::make_shared<ConversationInfo>();
             convInfo->conv_id = convId;
-            convInfo->conv_type = atoi(info["conv_type"].c_str());
-            convInfo->to_uid = atoi(info["to_uid"].c_str());
-            convInfo->unread_count = atoi(info["unread_count"].c_str());
-            convInfo->last_msg_id = atoi(info["last_msg_id"].c_str());
+            convInfo->conv_type = std::stoi(info["conv_type"]);
+            convInfo->to_uid = std::stoi(info["to_uid"]);
+            convInfo->unread_count = std::stoi(info["unread_count"]);
+            convInfo->last_msg_id = std::stoi(info["last_msg_id"]);
             convInfo->last_msg = info["last_msg"];
             convInfo->last_time = info["last_time"];
-            convInfo->is_top = atoi(info["is_top"].c_str());
-            convInfo->is_mute = atoi(info["is_mute"].c_str());
+            convInfo->is_top = std::stoi(info["is_top"]);
+            convInfo->is_mute = std::stoi(info["is_mute"]);
             convList.push_back(convInfo);
         }
         if (!convList.empty()) {

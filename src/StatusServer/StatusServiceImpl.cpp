@@ -11,6 +11,7 @@
 #include "const.h"
 #include "ConfigMgr.h"
 #include "RedisMgr.h"
+#include "DistLock.h"
 
 using boost::uuids::uuid;
 using boost::uuids::random_generator;
@@ -80,13 +81,17 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
         std::cout << "Not found ChatServer" << std::endl;
         return {};
     }
+    // 同时对在线服务计数读写需要加分布式锁
     auto minServer = chatServers_.begin()->second;
-    if (const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name); countStr.empty()) {
-        // 没有找到服务器可能没有开
-        minServer.connCount = INT_MAX;
-    }
-    else {
-        minServer.connCount = std::stoi(countStr);
+    {
+        DistLockGuard lockServer(DIST_LOCK_PREFIX + minServer.name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+        if (const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name); countStr.empty()) {
+            // 没有找到服务器可能没有开
+            minServer.connCount = INT_MAX;
+        }
+        else {
+            minServer.connCount = std::stoi(countStr);
+        }
     }
 
     for (auto& [name, server] : chatServers_) {
@@ -94,6 +99,7 @@ ChatServerInfo StatusServiceImpl::getChatServerInfo() {
             continue;
         }
 
+        DistLockGuard lockServer(DIST_LOCK_PREFIX + name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
         if (const auto count = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name); count.empty()) {
             server.connCount = INT_MAX;
         }

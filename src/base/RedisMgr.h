@@ -30,6 +30,7 @@
 
 // 分布式锁
 #define DIST_LOCK_PREFIX "lock_"
+#define DIST_LOCK_SERVER_COUNT "lock_server_count"
 #define DIST_LOCK_TIMEOUT 10
 #define DIST_ACQUIRE_TIMEOUT 5
 
