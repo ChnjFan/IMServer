@@ -20,7 +20,8 @@ using boost::uuids::uuid;
 using boost::uuids::random_generator;
 
 Session::Session(net::io_context &io_context, const std::shared_ptr<ChatServer> &chatServer)
-    : stop_(false), uid_(0), io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
+    : stop_(false), uid_(0), lstActiveTime_(std::chrono::steady_clock::now()),
+      io_context_(io_context), socket_(io_context), chatServer_(chatServer), buffer_{} {
     random_generator generator;
     sessionId_ = boost::uuids::to_string(generator());
     headNode_ = std::make_shared<MsgNode>(HEAD_TOTAL_LEN);
@@ -35,6 +36,7 @@ void Session::start() {
 }
 
 void Session::close() {
+    std::lock_guard<std::mutex> lock(sessionMtx_);
     socket_.close();
     stop_.store(true);
 }
@@ -76,18 +78,11 @@ void Session::asyncSend(const char *msg, std::uint16_t size, std::uint16_t msgId
 
 void Session::updateState(const SessionState state) const {
     const auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
-    int count = 0;
     // 多个服务器可能同时修改在线状态和服务在线计数，需要加分布式锁
     DistLockGuard lockUser(DIST_LOCK_PREFIX + std::to_string(uid_), DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
     DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
 
     if (state == SessionState::ONLINE) {
-        // 增加登录数量
-        if (const auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName); !res.empty()) {
-            count = std::stoi(res);
-        }
-        ++count;
-        RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
         // 设置用户登录地址服务名，注意要提前设置好 uid，session 在客户端 TCP 建链后才收到 uid
         RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_),
             USER_ONLINE_SERVER_NAME, serverName);
@@ -103,12 +98,6 @@ void Session::updateState(const SessionState state) const {
         }
         // 下线清除在线状态
         RedisMgr::getInstance()->del(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_));
-        // 减少登录数量
-        if (const auto res = RedisMgr::getInstance()->hGet(LOGIN_COUNT, serverName); !res.empty()) {
-            count = std::stoi(res);
-        }
-        --count;
-        RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
     }
 }
 
@@ -117,6 +106,14 @@ void Session::notifyOffline() {
     Json::Value msg;
     msg["error"] = 0;
     asyncSend(msg.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_OFFLINE));
+}
+
+void Session::updateLstActiveTime() {
+    lstActiveTime_ = std::chrono::steady_clock::now();
+}
+
+bool Session::isSessionExpire(const std::chrono::steady_clock::time_point &expireTime) const {
+    return lstActiveTime_ + std::chrono::milliseconds(CHAT_SERVER_TIMER_DEFAULT_EXPIRE) < expireTime;
 }
 
 void Session::asyncReadHead(const std::uint16_t totalLen) {
