@@ -8,15 +8,22 @@
 
 #include "AsioIOServicePool.h"
 #include "UserMgr.h"
+#include "ConfigMgr.h"
+#include "DistLock.h"
+#include "RedisMgr.h"
 
 ChatServer::ChatServer(net::io_context &io_context, const unsigned short port)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), port))
-    , ioContext_(io_context) {
-
+    , ioContext_(io_context)
+    , timer_(ioContext_) {
 }
 
 void ChatServer::start() {
     auto self = shared_from_this();
+
+    // 服务器定时任务
+    timerJob();
+
     auto& io_context = AsioIOServicePool::getInstance()->getIOService();
     // 创建一个 Session 会话等待 TCP 连接
     auto session = std::make_shared<Session>(io_context, self);
@@ -52,6 +59,51 @@ void ChatServer::clearSession(const std::string &sessionId) {
                                                   sessions_[sessionId]->getSessionId());
     }
     sessions_.erase(sessionId);
+}
+
+void ChatServer::timerJob() {
+    auto self = shared_from_this();
+    timer_.expires_after(std::chrono::seconds(CHAT_SERVER_TIMER_DEFAULT_EXPIRE));
+    timer_.async_wait([self, this](const boost::system::error_code& error) {
+        if (error) {
+            std::cout << "[ChatServer] Server timer Error: " << error.message() << std::endl;
+            return;
+        }
+
+        checkSessionHeartbeat();
+        updateServerCount();
+
+        timerJob();
+    });
+}
+
+void ChatServer::checkSessionHeartbeat() {
+    const auto now = std::chrono::steady_clock::now();
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        for (auto & [sessionId, session] : sessions_) {
+            if (session->isSessionExpire(now)) {
+                expireSessions_.push_back(session);
+            }
+        }
+    }
+    // 处理过期连接
+    for (const auto& session : expireSessions_) {
+        std::cout << "[ChatServer] Session ID: " << session->getSessionId()
+                << " UID: " << session->getUserId() << " Expired" << std::endl;
+        session->updateState(SessionState::OFFLINE);
+        session->close();
+        clearSession(session->getSessionId());
+    }
+    expireSessions_.clear();
+}
+
+void ChatServer::updateServerCount() const {
+    const int count = static_cast<int>(sessions_.size());
+    const auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
+    DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+    // 更新登录数量
+    RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
 }
 
 

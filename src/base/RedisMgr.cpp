@@ -585,7 +585,6 @@ std::string RedisMgr::acquireLock(const std::string& name, const int timeout, co
             name.c_str(), identifier.c_str(), timeout));
         if (reply != nullptr) {
             if (reply->type == REDIS_REPLY_STATUS && std::string(reply->str) == "OK") {
-                std::cout << "AcquireLock: RedisCommand() [" << name << "] success" << std::endl;
                 freeReplyObject(reply);
                 return identifier;
             }
@@ -615,7 +614,6 @@ bool RedisMgr::releaseLock(const std::string &name, const std::string& identifie
         luaScript, name.c_str(), identifier.c_str()));
     if (reply) {
         if (reply->type == REDIS_REPLY_INTEGER && reply->integer == 1) {
-            std::cout << "ReleaseLock: RedisCommand() [" << name << "] success" << std::endl;
             freeReplyObject(reply);
             return true;
         }

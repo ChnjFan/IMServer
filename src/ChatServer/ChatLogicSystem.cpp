@@ -75,7 +75,10 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return uploadFileHandle(session, msgId, data);
         });
-
+    registerHandler(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return heartbeatHanlde(session, msgId, data);
+        });
 }
 
 void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler) {
@@ -112,6 +115,8 @@ void ChatLogicSystem::dealMsg() {
 
 void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     std::cout << "Handle msg id is " << node->node_->msgId_ << std::endl;
+    node->session_->updateLstActiveTime();
+
     if (handlers_.find(node->node_->msgId_) == handlers_.end()) {
         std::cout << "Msg id [" << node->node_->msgId_ << "] handler not found" << std::endl;
         Json::Value msg;
@@ -652,6 +657,24 @@ void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, 
     const auto worker = std::make_shared<LogicWorker>(session, msgId, data);
     worker->init();
     workerPool_.addTask(worker);
+}
+
+void ChatLogicSystem::heartbeatHanlde(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        return;
+    }
+
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    root["uid"] = srcRoot["uid"].asInt();
 }
 
 

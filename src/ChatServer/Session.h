@@ -39,6 +39,10 @@ public:
 
     void notifyOffline();
 
+    void updateLstActiveTime();
+    std::chrono::steady_clock::time_point & getLstActiveTime();
+    bool isSessionExpire(const std::chrono::steady_clock::time_point& expireTime) const;
+
 private:
     void asyncReadHead(std::uint16_t totalLen);
     void asyncReadBody(std::uint16_t size);
@@ -54,6 +58,9 @@ private:
     std::atomic<bool> stop_;
     int uid_;
     std::string sessionId_;
+    std::chrono::steady_clock::time_point lstActiveTime_;
+    std::mutex sessionMtx_;
+
     boost::asio::io_context& io_context_;
     tcp::socket socket_;
     std::shared_ptr<ChatServer> chatServer_;

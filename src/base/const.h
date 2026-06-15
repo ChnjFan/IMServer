@@ -79,6 +79,9 @@ enum class MessageID : uint16_t {
 
     ID_NOTIFY_OFFLINE = 1026,       // 通知客户端离线
 
+    ID_HEART_BEAT_REQ = 1027,       // PING
+    ID_HEART_BEAT_RSP = 1024,       // PONG
+
     ID_CLIENT_COMMON_ERROR = 2001, // 客户端请求异常
     INVALID_ID,
 };
