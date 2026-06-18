@@ -65,7 +65,7 @@ LogicSystem::LogicSystem() {
         Json::Value srcRoot;
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -73,7 +73,7 @@ LogicSystem::LogicSystem() {
 
         if (!srcRoot.isMember("email") || !srcRoot["email"].isString()) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -103,7 +103,7 @@ LogicSystem::LogicSystem() {
         Json::Value srcRoot;
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -132,11 +132,11 @@ LogicSystem::LogicSystem() {
 
         // MySql 中查找并注册用户
         auto user = srcRoot["user"].asString();
-        auto passwd = srcRoot["passwd"].asString();
+        auto passwd = srcRoot["password"].asString();
         auto confirm = srcRoot["confirm"].asString();
         if (passwd != confirm) {
             std::cout << "passwd and confirm is not match" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -174,7 +174,7 @@ LogicSystem::LogicSystem() {
         Json::Value srcRoot;
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -210,7 +210,7 @@ LogicSystem::LogicSystem() {
             return;
         }
 
-        auto passwd = srcRoot["passwd"].asString();
+        auto passwd = srcRoot["password"].asString();
         if (bool result = MysqlMgr::getInstance()->updatePasswd(email, passwd); !result) {
             std::cout << "User email not match" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
@@ -240,7 +240,7 @@ LogicSystem::LogicSystem() {
         Json::Value srcRoot;
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
-            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+            root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
             const std::string jsonStr = root.toStyledString();
             boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
@@ -248,7 +248,7 @@ LogicSystem::LogicSystem() {
 
         // 先校验验证码是否正确
         auto email = srcRoot["email"].asString();
-        auto passwd = srcRoot["passwd"].asString();
+        auto passwd = srcRoot["password"].asString();
 
         // 数据库校验邮箱和密码是否匹配，获取用户信息
         UserInfo userInfo;
@@ -281,7 +281,7 @@ LogicSystem::LogicSystem() {
         // 给验证服务发送验证码请求
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
         root["email"] = email;
-        root["uid"] = userInfo.uid;
+        root["uid"] = std::to_string(userInfo.uid);
         root["user"] = userInfo.name;
         root["token"] = reply.token();
         root["host"] = reply.host();

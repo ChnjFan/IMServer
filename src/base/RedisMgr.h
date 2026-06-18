@@ -44,6 +44,8 @@ public:
 
 private:
     void createPool();
+    void recreatePool();
+    void checkConnection();
 
     std::atomic<bool> stop_;
     std::atomic<bool> start_;   // 启动标记，如果没有成功创建 Redis 连接，之后请求重新尝试连接
@@ -54,6 +56,7 @@ private:
     std::queue<redisContext*> connections_;
     std::mutex mutex_;
     std::condition_variable cond_;
+    std::thread thread_;
 };
 
 class RedisMgr : public Singleton<RedisMgr> {

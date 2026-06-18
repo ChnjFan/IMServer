@@ -60,7 +60,7 @@ void LogicWorker::fileUploadHandler() {
     });
     if (Json::Reader reader; !reader.parse(data_, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
 

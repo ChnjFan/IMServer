@@ -113,7 +113,8 @@ void Session::updateLstActiveTime() {
 }
 
 bool Session::isSessionExpire(const std::chrono::steady_clock::time_point &expireTime) const {
-    return lstActiveTime_ + std::chrono::milliseconds(CHAT_SERVER_TIMER_DEFAULT_EXPIRE) < expireTime;
+    const auto diff = expireTime - lstActiveTime_;
+    return diff > std::chrono::seconds(CHAT_SERVER_TIMER_DEFAULT_EXPIRE);
 }
 
 void Session::asyncReadHead(const std::uint16_t totalLen) {

@@ -30,8 +30,9 @@ MysqlPool::MysqlPool(const std::string &url, const std::string &user,
 
         thread_ = std::thread([&]() {
             while (!stop_.load()) {
+                std::unique_lock<std::mutex> lock(checkMtx_);
+                checkCond_.wait_for(lock, std::chrono::seconds(60));
                 checkConnection();
-                std::this_thread::sleep_for(std::chrono::seconds(60));
             }
         });
         thread_.detach();
@@ -95,7 +96,7 @@ void MysqlPool::checkConnection() {
         }
 
         try {
-            std::unique_ptr<sql::Statement> stmt(conn->conn_->createStatement());
+            const std::unique_ptr<sql::Statement> stmt(conn->conn_->createStatement());
             stmt->executeQuery("SELECT 1");
             conn->lastOptTime_ = timeStamp;
         } catch (sql::SQLException &e) {

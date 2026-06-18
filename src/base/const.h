@@ -32,18 +32,18 @@ constexpr int MAX_BUFFER_SIZE = 8196;
 
 enum class ErrorCodes : int32_t {
     SUCCESS = 0,
-    ERROR_JSON = 1001,
+    ERROR_REQUEST_JSON = 1001,
     RPC_FAILED = 1002,
-    VERIFY_CODE_EXPIRED = 1003,
-    VERIFY_CODE_NOT_REACHED = 1004,
-    USER_EXISTS = 1005,
-    USER_EMAIL_NOT_EXISTS = 1006,
-    CHAT_LOGIN_TOKEN_ERROR = 1007,
-    CHAT_LOGIN_UID_ERROR = 1008,
-    MYSQL_ERROR = 1100,
-    REDIS_ERROR = 1101,
-    FILE_ERROR = 1102,
-    CLIENT_REQUEST_ERROR = 1103,
+    MYSQL_ERROR = 1003,
+    REDIS_ERROR = 1004,
+    FILE_ERROR = 1005,
+    REQUEST_NOT_FOUND = 1006,
+    VERIFY_CODE_EXPIRED = 2001,
+    VERIFY_CODE_NOT_REACHED = 2002,
+    USER_EXISTS = 3001,
+    USER_EMAIL_NOT_EXISTS = 3002,
+    CHAT_LOGIN_TOKEN_ERROR = 4001,
+    CHAT_LOGIN_UID_ERROR = 4002,
 };
 
 enum class MessageID : uint16_t {
@@ -54,35 +54,32 @@ enum class MessageID : uint16_t {
     ID_CHAT_LOGIN = 1005,       // 登录聊天服务器
     ID_CHAT_LOGIN_RSP = 1006,   // 登录聊天服务器响应
 
-    ID_USER_SEARCH_REQ = 1007,  // 用户搜索请求
-    ID_USER_SEARCH_RSP = 1008,  // 用户搜索响应
-    ID_ADD_FRIEND_REQ = 1009,   // 添加用户请求
-    ID_ADD_FRIEND_RSP = 1010,   // 添加用户响应
-    ID_NOTIFY_FRIEND_ADD = 1011,   // 通知用户好友申请
-    ID_FRIEND_AUTH_REQ = 1012,   // 同意添加好友请求
-    ID_FRIEND_AUTH_RSP = 1013,   // 同意添加好友响应
-    ID_NOTIFY_FRIEND_AUTH = 1014,   // 通知用户好友认证
+    ID_USER_SEARCH_REQ = 2001,  // 用户搜索请求
+    ID_USER_SEARCH_RSP = 2002,  // 用户搜索响应
+    ID_ADD_FRIEND_REQ = 2003,   // 添加用户请求
+    ID_ADD_FRIEND_RSP = 2014,   // 添加用户响应
+    ID_NOTIFY_FRIEND_ADD = 2005,   // 通知用户好友申请
+    ID_FRIEND_AUTH_REQ = 2006,   // 同意添加好友请求
+    ID_FRIEND_AUTH_RSP = 2007,   // 同意添加好友响应
+    ID_NOTIFY_FRIEND_AUTH = 2008,   // 通知用户好友认证
 
-    ID_CHAT_MSG_REQ = 1015,         // 聊天消息请求
-    ID_CHAT_MSG_RSP = 1016,         // 聊天消息响应
-    ID_NOTIFY_CHAT_MSG = 1017,      //  推送聊天消息
+    ID_CHAT_MSG_REQ = 3001,         // 聊天消息请求
+    ID_CHAT_MSG_RSP = 3002,         // 聊天消息响应
+    ID_NOTIFY_CHAT_MSG = 3003,      //  推送聊天消息
+    ID_CHAT_UPLOAD_FILE_REQ = 3004,     // 上传文件请求
+    ID_CHAT_UPLOAD_FILE_RSP = 3005,     // 上传文件响应
+    ID_CHAT_DOWNLOAD_FILE_REQ = 3006,   // 下载文件请求
+    ID_CHAT_DOWNLOAD_FILE_RSP = 3007,   // 下载文件响应
 
-    ID_CHAT_CONVERSATION_REQ = 1018,    // 会话创建请求
-    ID_CHAT_CONVERSATION_RSP = 1019,    // 会话创建响应
-    ID_CONV_HISTORY_MSG_REQ = 1020,    // 会话历史消息请求
-    ID_CONV_HISTORY_MSG_RSP = 1021,    // 会话历史消息请求
+    ID_CHAT_CONVERSATION_REQ = 4001,    // 会话创建请求
+    ID_CHAT_CONVERSATION_RSP = 4002,    // 会话创建响应
+    ID_CONV_HISTORY_MSG_REQ = 4003,    // 会话历史消息请求
+    ID_CONV_HISTORY_MSG_RSP = 4004,    // 会话历史消息请求
 
-    ID_CHAT_UPLOAD_FILE_REQ = 1022,     // 上传文件请求
-    ID_CHAT_UPLOAD_FILE_RSP = 1023,     // 上传文件响应
-    ID_CHAT_DOWNLOAD_FILE_REQ = 1024,   // 下载文件请求
-    ID_CHAT_DOWNLOAD_FILE_RSP = 1025,   // 下载文件响应
-
-    ID_NOTIFY_OFFLINE = 1026,       // 通知客户端离线
-
-    ID_HEART_BEAT_REQ = 1027,       // PING
-    ID_HEART_BEAT_RSP = 1024,       // PONG
-
-    ID_CLIENT_COMMON_ERROR = 2001, // 客户端请求异常
+    ID_NOTIFY_OFFLINE = 5001,       // 通知客户端离线
+    ID_HEART_BEAT_REQ = 5002,       // PING
+    ID_HEART_BEAT_RSP = 5003,       // PONG
+    ID_CLIENT_COMMON_RSP = 5004,    // 客户端通用应答
     INVALID_ID,
 };
 

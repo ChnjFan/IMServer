@@ -46,7 +46,9 @@ private:
 
     std::queue<std::unique_ptr<SqlConnection>> connections_;
     std::mutex mutex_;
+    std::mutex checkMtx_;
     std::condition_variable cond_;
+    std::condition_variable checkCond_;
     std::atomic<bool> stop_{false};
     std::thread thread_;
 };

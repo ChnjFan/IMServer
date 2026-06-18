@@ -120,8 +120,8 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     if (handlers_.find(node->node_->msgId_) == handlers_.end()) {
         std::cout << "Msg id [" << node->node_->msgId_ << "] handler not found" << std::endl;
         Json::Value msg;
-        msg["error"] = static_cast<int32_t>(ErrorCodes::CLIENT_REQUEST_ERROR);
-        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_ERROR));
+        msg["error"] = static_cast<int32_t>(ErrorCodes::REQUEST_NOT_FOUND);
+        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_RSP));
         return;
     }
     try {
@@ -129,8 +129,8 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
     } catch (...) {
         std::cout << "Handle msg [" << node->node_->msgId_ << "] exception!" << std::endl;
         Json::Value msg;
-        msg["error"] = static_cast<int32_t>(ErrorCodes::CLIENT_REQUEST_ERROR);
-        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_ERROR));
+        msg["error"] = static_cast<int32_t>(ErrorCodes::REQUEST_NOT_FOUND);
+        node->session_->asyncSend(msg.toStyledString(), static_cast<uint16_t>(MessageID::ID_CLIENT_COMMON_RSP));
     }
 }
 
@@ -302,13 +302,14 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    const auto uid = srcRoot["uid"].asInt();
+    const auto uid = srcRoot["uid"].asString();
+    int userid = std::stoi(uid);
     std::cout << "user login uid is " << uid << std::endl;
-    const auto reply = StatusGrpcClient::getInstance()->Login(uid, srcRoot["token"].asString());
+    const auto reply = StatusGrpcClient::getInstance()->Login(userid, srcRoot["token"].asString());
     if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
         || reply.token() != srcRoot["token"].asString()) {
         std::cout << "Login token error, expect: " << reply.token() << std::endl;
@@ -318,7 +319,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
 
     // 查询用户是否存在
     auto user = std::make_shared<UserInfo>();
-    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(uid), uid, user)) {
+    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + uid, userid, user)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
         return;
     }
@@ -328,60 +329,11 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     root["email"] = user->email;
     root["token"] = reply.token();
 
-    // 获取申请列表
-    ApplyUserList applyList;
-    MysqlMgr::getInstance()->getApplyUserList(uid, applyList);
-    Json::Value applyRoot(Json::arrayValue);
-    for (auto &apply : applyList) {
-        Json::Value applySubRoot;
-        applySubRoot["uid"] = apply->uid;
-        applySubRoot["name"] = apply->name;
-        applySubRoot["email"] = apply->email;
-        applySubRoot["status"] = apply->status;
-        applyRoot.append(applySubRoot);
-    }
-    root["apply_list"] = applyRoot;
-
-    // 获取好友列表
-    FriendInfoList friendList;
-    MysqlMgr::getInstance()->getFriendList(uid, friendList);
-    Json::Value friendRoot(Json::arrayValue);
-    for (auto &userInfo : friendList) {
-        Json::Value friendSubRoot;
-        friendSubRoot["uid"] = userInfo->uid;
-        friendSubRoot["is_star"] = userInfo->isStar;
-        friendSubRoot["is_hide"] = userInfo->isHidden;
-        friendSubRoot["name"] = userInfo->name;
-        friendSubRoot["email"] = userInfo->email;
-        friendSubRoot["status"] = userInfo->status;
-        friendRoot.append(friendSubRoot);
-    }
-    root["friend_list"] = friendRoot;
-
-    // 获取会话列表
-    ConversationList convList;
-    getConversationList(uid, convList);
-    Json::Value convRoot(Json::arrayValue);
-    for (auto& conv : convList) {
-        Json::Value convSubRoot;
-        convSubRoot["conv_id"] = conv->conv_id;
-        convSubRoot["conv_type"] = conv->conv_type;
-        convSubRoot["to_uid"] = conv->to_uid;
-        convSubRoot["unread_count"] = conv->unread_count;
-        convSubRoot["last_msg_id"] = conv->last_msg_id;
-        convSubRoot["last_msg"] = conv->last_msg;
-        convSubRoot["last_time"] = conv->last_time;
-        convSubRoot["is_top"] = conv->is_top;
-        convSubRoot["is_mute"] = conv->is_mute;
-        convRoot.append(convSubRoot);
-    }
-    root["conv_list"] = convRoot;
-
     // 服务端踢人逻辑，将其他在线客户端下线
-    kickOnlineUser(uid);
+    kickOnlineUser(userid);
     // Session 与 uid 绑定
-    session->setUserId(uid);
-    UserMgr::getInstance()->setUserSession(uid, session);
+    session->setUserId(userid);
+    UserMgr::getInstance()->setUserSession(userid, session);
     session->updateState(SessionState::ONLINE);
 }
 
@@ -395,7 +347,7 @@ void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, 
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
@@ -417,7 +369,7 @@ void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, u
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
@@ -468,7 +420,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
@@ -552,7 +504,7 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
@@ -606,7 +558,7 @@ void ChatLogicSystem::conversationCreateHandle(const std::shared_ptr<Session> &s
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
 
@@ -662,19 +614,12 @@ void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, 
 void ChatLogicSystem::heartbeatHanlde(const std::shared_ptr<Session> &session, uint16_t msgId,
     const std::string &data) {
     Json::Value root;
-    Json::Value srcRoot;
     Defer defer([&root, session]() {
         const std::string jsonStr = root.toStyledString();
         session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP));
     });
-    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
-        std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_JSON);
-        return;
-    }
 
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    root["uid"] = srcRoot["uid"].asInt();
 }
 
 

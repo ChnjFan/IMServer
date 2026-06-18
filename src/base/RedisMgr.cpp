@@ -19,12 +19,17 @@ using boost::uuids::random_generator;
 RedisPool::RedisPool(size_t poolSize, const char *host, const int port, const char* password)
     : stop_(false), start_(false), host_(host), passwd_(password), port_(port), capacity_(poolSize) {
     std::cout << "Creating RedisPool ... ";
-    createPool();
-    if (connections_.empty()) {
+    try {
+        createPool();
+        if (connections_.empty()) {
+            std::cout << "failed!" << std::endl;
+        }
+        start_.store(true);
+        std::cout << "OK, size = " << connections_.size() << std::endl;
+    } catch (...) {
+        start_.store(false);
         std::cout << "failed!" << std::endl;
     }
-    start_.store(true);
-    std::cout << "OK, size = " << connections_.size() << std::endl;
 }
 
 RedisPool::~RedisPool() {
@@ -96,6 +101,51 @@ void RedisPool::createPool() {
 
     if (!connections_.empty()) {
         start_.store(true);
+    }
+}
+
+void RedisPool::recreatePool() {
+    std::cout << "Recreate RedisPool ... ";
+    try {
+        createPool();
+        start_.store(true);
+        std::cout << "OK, size = " << connections_.size() << std::endl;
+    } catch (...) {
+        start_.store(false);
+        std::cout << "failed!" << std::endl;
+    }
+}
+
+void RedisPool::checkConnection() {
+    std::lock_guard<std::mutex> guard(mutex_);
+    if (!start_.load()) {
+        recreatePool();
+        return;
+    }
+
+    const size_t poolSize = connections_.size();
+    for (int i = 0; i < poolSize; i++) {
+        auto conn = connections_.front();
+        connections_.pop();
+
+        try {
+            const auto reply = static_cast<redisReply *>(redisCommand(conn, "PING"));
+            if (conn->err == 0 && reply != nullptr && reply->type != REDIS_REPLY_ERROR) {
+                freeReplyObject(reply);
+                connections_.push(conn);
+                continue;
+            }
+
+            freeReplyObject(reply);
+            redisFree(conn);
+            conn = redisConnect(host_.c_str(), port_);
+            if (conn) {
+                connections_.push(conn);
+            }
+        } catch (std::exception &e) {
+            std::cout << "RedisPool::checkConnection() PING failed" << std::endl;
+            redisFree(conn);
+        }
     }
 }
 
