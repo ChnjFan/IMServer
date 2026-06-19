@@ -27,6 +27,10 @@ bool MysqlMgr::updateFriendRelation(int authUid, int applyUid) {
     return db_.updateFriendRelation(authUid, applyUid);
 }
 
+bool MysqlMgr::updateUserInfo(const UserInfo &userInfo) {
+    return db_.updateUserInfo(userInfo);
+}
+
 bool MysqlMgr::getFriendList(int uid, FriendInfoList &friendList) {
     return db_.getFriendList(uid, friendList, 0, 10);
 }

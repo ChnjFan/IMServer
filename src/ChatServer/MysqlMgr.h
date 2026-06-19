@@ -24,6 +24,7 @@ public:
     bool getApplyUserList(int uid, ApplyUserList &applyUserList);
 
     bool updateFriendRelation(int authUid, int applyUid);
+    bool updateUserInfo(const UserInfo& userInfo);
 
     bool getFriendList(int uid, FriendInfoList &friendList);
 

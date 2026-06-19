@@ -40,6 +40,7 @@ std::shared_ptr<UserInfo> MysqlDao::getUser(const int uid) const {
             user->uid = res->getInt("uid");
             user->email = res->getString("email");
             user->name = res->getString("name");
+            user->avatarUrl = res->getString("avatar");
             return user;
         }
         return nullptr;
@@ -164,6 +165,59 @@ bool MysqlDao::updateFriendRelation(const int authUid, const int applyUid) {
         return false;
     } catch (sql::SQLException &e) {
         std::cout << "add friend relation SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool MysqlDao::updateUserInfo(const UserInfo &user_info) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    std::vector<std::string> setParts;
+    std::vector<std::pair<int, std::string>> strParams;
+
+    if (!user_info.name.empty()) {
+        setParts.emplace_back("name = ?");
+        strParams.emplace_back(strParams.size() + 1, user_info.name);
+    }
+
+    if (!user_info.email.empty()) {
+        setParts.emplace_back("email = ?");
+        strParams.emplace_back(strParams.size() + 1, user_info.email);
+    }
+
+    if (!user_info.avatarUrl.empty()) {
+        setParts.emplace_back("avatar = ?");
+        strParams.emplace_back(strParams.size() + 1, user_info.avatarUrl);
+    }
+
+    if (setParts.empty()) {
+        return false;
+    }
+
+    std::string sql = "UPDATE user SET ";
+    for (size_t i = 0; i < setParts.size(); i++) {
+        if (i > 0) sql += ",";
+        sql += setParts[i];
+    }
+    sql += ", update_time = NOW() WHERE uid = ?";
+
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
+        for (auto& [index, value] : strParams) {
+            stmt->setString(index, value);
+        }
+        stmt->setInt(strParams.size() + 1, user_info.uid);
+        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            return false;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "update user info SQLException: " << e.what() << std::endl;
         return false;
     }
 }

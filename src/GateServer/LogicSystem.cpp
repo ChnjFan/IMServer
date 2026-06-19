@@ -280,9 +280,7 @@ LogicSystem::LogicSystem() {
 
         // 给验证服务发送验证码请求
         root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-        root["email"] = email;
         root["uid"] = std::to_string(userInfo.uid);
-        root["user"] = userInfo.name;
         root["token"] = reply.token();
         root["host"] = reply.host();
         root["port"] = reply.port();

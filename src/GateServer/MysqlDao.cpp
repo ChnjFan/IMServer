@@ -28,10 +28,11 @@ int MysqlDao::registerUser(const std::string &user, const std::string &email, co
         pool_->returnConnect(std::move(conn));
     });
     try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement("CALL reg_user(?,?,?,@result)"));
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement("CALL reg_user(?,?,?,?,@result)"));
         stmt->setString(1, user);
         stmt->setString(2, email);
         stmt->setString(3, password);
+        stmt->setString(4, "");
 
         stmt->execute();
 
@@ -125,6 +126,7 @@ bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, 
 
         userInfo.uid = res->getInt("uid");
         userInfo.name = res->getString("name");
+        userInfo.avatarUrl = res->getString("avatar");
         userInfo.password = originPassword;
         userInfo.email = email;
         return true;

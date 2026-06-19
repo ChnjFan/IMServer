@@ -75,7 +75,7 @@ public:
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 
-    static bool getUserBaseInfo(const std::string &key, int uid, std::shared_ptr<UserInfo>& userInfo);
+    static bool getUserBaseInfo(const std::string &key, int uid, const std::shared_ptr<UserInfo>& userInfo);
 
 private:
     friend class Singleton<ChatLogicSystem>;
@@ -92,6 +92,7 @@ private:
 
     void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
 
+
     /**
      * 客户端踢人逻辑
      */
@@ -101,6 +102,9 @@ private:
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    static void getUserInfoFromJson(Json::Value& root, UserInfo& userInfo);
+    void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);

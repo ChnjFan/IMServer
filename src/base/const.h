@@ -38,10 +38,13 @@ enum class ErrorCodes : int32_t {
     REDIS_ERROR = 1004,
     FILE_ERROR = 1005,
     REQUEST_NOT_FOUND = 1006,
+
     VERIFY_CODE_EXPIRED = 2001,
     VERIFY_CODE_NOT_REACHED = 2002,
+
     USER_EXISTS = 3001,
     USER_EMAIL_NOT_EXISTS = 3002,
+
     CHAT_LOGIN_TOKEN_ERROR = 4001,
     CHAT_LOGIN_UID_ERROR = 4002,
 };
@@ -62,6 +65,9 @@ enum class MessageID : uint16_t {
     ID_FRIEND_AUTH_REQ = 2006,   // 同意添加好友请求
     ID_FRIEND_AUTH_RSP = 2007,   // 同意添加好友响应
     ID_NOTIFY_FRIEND_AUTH = 2008,   // 通知用户好友认证
+
+    ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
+    ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应
 
     ID_CHAT_MSG_REQ = 3001,         // 聊天消息请求
     ID_CHAT_MSG_RSP = 3002,         // 聊天消息响应
@@ -97,6 +103,7 @@ struct UserInfo {
     int uid = 0;
     std::string name;
     std::string email;
+    std::string avatarUrl;
     std::string password;
 };
 

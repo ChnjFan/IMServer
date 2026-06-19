@@ -18,6 +18,7 @@ public:
     bool getApplyUserList(int uid, ApplyUserList & applyUserList, int start, int size);
 
     bool updateFriendRelation(int authUid, int applyUid);
+    bool updateUserInfo(const UserInfo & user_info);
 
     bool getFriendList(int uid, FriendInfoList &friendList, const int start, const int size);
 
@@ -25,6 +26,7 @@ public:
     bool getConversation(int uid, ConversationList& convList);
 
     bool addHistoryMessage(const MessageInfo& message);
+
 
 private:
     std::unique_ptr<MysqlPool> pool_;
