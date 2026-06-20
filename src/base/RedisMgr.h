@@ -20,8 +20,9 @@
 #define USER_ONLINE_TOKEN "token"
 #define USER_SESSION_ID "session_id"
 // 用户信息
-#define IP_COUNT_PREFIX "ip_count_"
+#define UID_INDEX_MAP_PREFIX "uid_index_"
 #define USER_BASE_INFO_PREFIX "user_base_info_"
+#define USER_PROFILE_INFO_PREFIX "user_profile_info_"
 #define LOGIN_COUNT "login_chat_server_count"
 
 // 聊天会话缓存

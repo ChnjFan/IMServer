@@ -15,6 +15,7 @@
 #include "UserMgr.h"
 #include "ChatGrpcClient.h"
 #include "LogicWorker.h"
+#include "UserInfo.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -55,6 +56,10 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return searchUserHandle(session, msgId, data);
         });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_GET_USER_FULL_INFO_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return searchUserFullInfoHandle(session, msgId, data);
+        });
     registerHandler(static_cast<uint16_t>(MessageID::ID_ADD_FRIEND_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return addFriendHandle(session, msgId, data);
@@ -81,7 +86,7 @@ void ChatLogicSystem::initHandlers() {
         });
     registerHandler(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
-            return heartbeatHanlde(session, msgId, data);
+            return heartbeatHandle(session, msgId, data);
         });
 }
 
@@ -136,66 +141,6 @@ void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
         msg["error"] = static_cast<int32_t>(ErrorCodes::REQUEST_NOT_FOUND);
         node->session_->asyncSend(msg.toStyledString(), node->node_->msgId_ + 1);
     }
-}
-
-bool ChatLogicSystem::getUserBaseInfo(const std::string &key, const int uid, const std::shared_ptr<UserInfo> &userInfo) {
-    if (std::string info; RedisMgr::getInstance()->get(key, info)) {
-        Json::Value root;
-        if (Json::Reader reader; !reader.parse(info, root)) {
-            std::cout << "Failed to parse JSON data" << std::endl;
-            return false;
-        }
-        userInfo->uid = root["uid"].asInt();
-        userInfo->name = root["name"].asString();
-        userInfo->password = root["passwd"].asString();
-        userInfo->email = root["email"].asString();
-        userInfo->avatarUrl = root["avatar_url"].asString();
-    }
-    else {
-        std::shared_ptr<UserInfo> user = nullptr;
-        user = MysqlMgr::getInstance()->getUser(uid);
-        if (nullptr == user) {
-            std::cout << "Not found user by uid " << uid << std::endl;
-            return false;
-        }
-        userInfo->uid = user->uid;
-        userInfo->name = user->name;
-        userInfo->password = user->password;
-        userInfo->email = user->email;
-        userInfo->avatarUrl = user->avatarUrl;
-        // 更新缓存
-        Json::Value root;
-        root["uid"] = user->uid;
-        root["name"] = user->name;
-        root["passwd"] = user->password;
-        root["email"] = user->email;
-        root["avatar_url"] = user->avatarUrl;
-        RedisMgr::getInstance()->set(key, root.toStyledString());
-    }
-    return true;
-}
-
-bool ChatLogicSystem::getUserInfoByName(const std::string &name, Json::Value& root) {
-    if (std::string info; RedisMgr::getInstance()->get(USER_BASE_INFO_PREFIX + name, info)) {
-        if (Json::Reader reader; !reader.parse(info, root)) {
-            std::cout << "Failed to parse JSON data" << std::endl;
-            return false;
-        }
-    }
-    else {
-        std::shared_ptr<UserInfo> user = nullptr;
-        user = MysqlMgr::getInstance()->getUser(name);
-        if (nullptr == user) {
-            std::cout << "Not found user by name " << name << std::endl;
-            return false;
-        }
-        root["uid"] = user->uid;
-        root["name"] = user->name;
-        root["email"] = user->email;
-        const std::string jsonStr = root.toStyledString();
-        RedisMgr::getInstance()->set(USER_BASE_INFO_PREFIX + user->name, jsonStr);
-    }
-    return true;
 }
 
 bool ChatLogicSystem::getConversationList(int uid, ConversationList &convList) {
@@ -327,15 +272,16 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     }
 
     // 查询用户是否存在
-    auto user = std::make_shared<UserInfo>();
-    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + uid, userid, user)) {
+    UserInfo userInfo;
+    if (!searchUserInfoByUid(userid, userInfo)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::CHAT_LOGIN_UID_ERROR);
         return;
     }
 
     root["uid"] = uid;
-    root["name"] = user->name;
-    root["email"] = user->email;
+    root["name"] = userInfo.name;
+    root["email"] = userInfo.email;
+    root["avatar_url"] = userInfo.avatarUrl;
     root["token"] = reply.token();
 
     // 服务端踢人逻辑，将其他在线客户端下线
@@ -346,13 +292,181 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session>& session, const
     session->updateState(SessionState::ONLINE);
 }
 
+void ChatLogicSystem::getSearchInfoFromJson(Json::Value &root, UserInfo &userInfo) {
+    if (root.isMember("uid")) {
+        userInfo.uid = std::stoi(root["uid"].asString());
+    }
+    if (root.isMember("email")) {
+        userInfo.email = root["email"].asString();
+    }
+    if (root.isMember("name")) {
+        userInfo.name = root["name"].asString();
+    }
+}
+
+std::string ChatLogicSystem::getSearchKey(UserInfo &userInfo) {
+    if (!userInfo.email.empty()) {
+        return userInfo.email;
+    }
+    if (!userInfo.name.empty()) {
+        return userInfo.name;
+    }
+    return "";
+}
+
+bool ChatLogicSystem::searchUserInfoByUid(const int uid, UserInfo &userInfo) {
+    if (uid < 0) {
+        return false;
+    }
+
+    userInfo.uid = uid;
+    // Redis 缓存直接通过 uid 查询
+    if (std::string info; RedisMgr::getInstance()->
+            get(USER_BASE_INFO_PREFIX + std::to_string(userInfo.uid), info)) {
+        Json::Value root;
+        if (Json::Reader reader; !reader.parse(info, root)) {
+            std::cout << "Failed to parse JSON data" << std::endl;
+            return false;
+        }
+        userInfo.fromJson(root);
+        return true;
+    }
+
+    if (!MysqlMgr::getInstance()->getUserInfo(userInfo)) {
+        std::cout << "Not found user by uid " << userInfo.uid << std::endl;
+        return false;
+    }
+    // 更新缓存
+    Json::Value root;
+    userInfo.toJson(root);
+    RedisMgr::getInstance()->set(USER_BASE_INFO_PREFIX + std::to_string(userInfo.uid), root.toStyledString());
+    return true;
+}
+
+bool ChatLogicSystem::searchUserInfo(UserInfo& userInfo) {
+    if (userInfo.uid >= 0) {    // 直接使用 uid 查询
+        return searchUserInfoByUid(userInfo.uid, userInfo);
+    }
+    // 使用其他方式查询，要先查询用户 UID
+    const std::string key = UID_INDEX_MAP_PREFIX + getSearchKey(userInfo);
+    if (std::string uid; RedisMgr::getInstance()->get(key, uid)) {
+        userInfo.uid = std::stoi(uid);
+        return searchUserInfoByUid(userInfo.uid, userInfo);
+    }
+    // 缓存没有映射关系，只能去数据库查询
+    if (!MysqlMgr::getInstance()->getUserInfo(userInfo) || userInfo.uid < 0) {
+        std::cout << "Not found user [uid: " << userInfo.uid
+            << " email: " << userInfo.email
+            << " name: " << userInfo.name << "]" << std::endl;
+        return false;
+    }
+    // 更新缓存
+    Json::Value root;
+    userInfo.toJson(root);
+    RedisMgr::getInstance()->set(USER_BASE_INFO_PREFIX + std::to_string(userInfo.uid), root.toStyledString());
+    RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + userInfo.email, std::to_string(userInfo.uid));
+    RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + userInfo.name, std::to_string(userInfo.uid));
+    return true;
+}
+
 void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
-    const std::string &data) {
+                                       const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
     Defer defer([&root, session]() {
         const std::string jsonStr = root.toStyledString();
         session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_USER_SEARCH_RSP));
+    });
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+
+    UserInfo searchInfo;
+    getSearchInfoFromJson(srcRoot, searchInfo);
+    if (!searchUserInfo(searchInfo)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+
+    // ReSharper disable once CppDFAConstantConditions
+    if (searchInfo.uid < 0) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::USER_NOT_EXISTS);
+        return;
+    }
+
+     searchInfo.toJson(root);
+}
+
+bool ChatLogicSystem::searchUserFullInfoInRedis(UserFullInfo &userFullInfo) {
+    std::string info;
+    if (!RedisMgr::getInstance()->get(USER_BASE_INFO_PREFIX + std::to_string(userFullInfo.baseInfo.uid), info)) {
+        return false;
+    }
+    Json::Value root;
+    Json::Reader reader;
+    if (!reader.parse(info, root)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        return false;
+    }
+    userFullInfo.baseInfo.fromJson(root);
+    if (!RedisMgr::getInstance()->get(USER_PROFILE_INFO_PREFIX + std::to_string(userFullInfo.baseInfo.uid), info)) {
+        return false;
+    }
+    if (!reader.parse(info, root)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        return false;
+    }
+    userFullInfo.profileInfo.fromJson(root);
+    return true;
+}
+
+bool ChatLogicSystem::searchUserFullInfoByUid(const int uid, UserFullInfo &userFullInfo) {
+    if (uid < 0) {
+        return false;
+    }
+    userFullInfo.baseInfo.uid = uid;
+    // Redis 缓存直接通过 uid 查询
+    if (searchUserFullInfoInRedis(userFullInfo)) {
+        return true;
+    }
+
+    if (!MysqlMgr::getInstance()->getUserFullInfo(userFullInfo)) {
+        std::cout << "Not found user by uid " << userFullInfo.baseInfo.uid << std::endl;
+        return false;
+    }
+    // 更新缓存
+    Json::Value baseInfoRoot;
+    userFullInfo.baseInfo.toJson(baseInfoRoot);
+    RedisMgr::getInstance()->set(USER_BASE_INFO_PREFIX + std::to_string(userFullInfo.baseInfo.uid),
+        baseInfoRoot.toStyledString());
+    Json::Value profileInfoRoot;
+    userFullInfo.profileInfo.toJson(profileInfoRoot);
+    RedisMgr::getInstance()->set(USER_PROFILE_INFO_PREFIX + std::to_string(userFullInfo.baseInfo.uid),
+        profileInfoRoot.toStyledString());
+
+    return true;
+}
+
+void ChatLogicSystem::setFriendRelation(int from, int uid, Json::Value &root) {
+    if (from == uid) {
+        root["friend_status"] = static_cast<uint8_t>(FriendStatus::FRIEND_PRESENT);
+        return;
+    }
+
+    // todo 在好友关系列表查询
+    root["friend_status"] = static_cast<uint8_t>(FriendStatus::NOT_FRIEND);
+}
+
+void ChatLogicSystem::searchUserFullInfoHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+                                               const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_GET_USER_FULL_INFO_RSP));
     });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
         std::cout << "Failed to parse JSON data" << std::endl;
@@ -360,16 +474,27 @@ void ChatLogicSystem::searchUserHandle(const std::shared_ptr<Session> &session, 
         return;
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    if (!srcRoot["name"].asString().empty()) {
-        const auto name = srcRoot["name"].asString();
-        Json::Value dataRoot;
-        getUserInfoByName(name, dataRoot);
-        root["data"] = dataRoot;
+
+    UserFullInfo searchInfo;
+    getSearchInfoFromJson(srcRoot, searchInfo.baseInfo);
+    if (!searchUserFullInfoByUid(searchInfo.baseInfo.uid, searchInfo)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
     }
+    searchInfo.toJson(root);
+
+    // 设置好友关系
+    int from = -1;
+    if (srcRoot.isMember("from")) {
+        from = std::stoi(srcRoot["from"].asString());
+    }
+    setFriendRelation(from, searchInfo.baseInfo.uid, root);
+
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 }
 
 void ChatLogicSystem::addFriendHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
-    const std::string &data) {
+                                      const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
     Defer defer([&root, session]() {
@@ -443,16 +568,16 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     }
 
     // 回复好友信息，客户端添加到通讯录中
-    auto userInfo = std::make_shared<UserInfo>();
-    if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(applyUid), applyUid, userInfo)) {
+    UserInfo userInfo;
+    if (!searchUserInfoByUid(applyUid, userInfo)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
         return;
     }
 
     Json::Value friendVal;
-    friendVal["uid"] = userInfo->uid;
-    friendVal["name"] = userInfo->name;
-    friendVal["email"] = userInfo->email;
+    friendVal["uid"] = userInfo.uid;
+    friendVal["name"] = userInfo.name;
+    friendVal["email"] = userInfo.email;
     root["friend"] = friendVal;
 
     // 如果对方在线，主动通知好友已经认证
@@ -467,7 +592,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
         if (nullptr == toSession) {
             return;
         }
-        if (!getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(authUid), authUid, userInfo)) {
+        if (!searchUserInfoByUid(authUid, userInfo)) {
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
             return;
         }
@@ -475,8 +600,8 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
         notify["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
         notify["from_uid"] = authUid;
         notify["to_uid"] = applyUid;
-        notify["name"] = userInfo->name;
-        notify["email"] = userInfo->email;
+        notify["name"] = userInfo.name;
+        notify["email"] = userInfo.email;
         toSession->asyncSend(notify.toStyledString(), static_cast<std::uint16_t>(MessageID::ID_NOTIFY_FRIEND_AUTH));
         return;
     }
@@ -522,6 +647,7 @@ void ChatLogicSystem::updateUserInfoHandle(const std::shared_ptr<Session> &sessi
     UserInfo userInfo;
     getUserInfoFromJson(srcRoot, userInfo);
 
+    //todo 返回旧用户信息要删除缓存
     if (!MysqlMgr::getInstance()->updateUserInfo(userInfo)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
         return;
@@ -667,7 +793,7 @@ void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, 
     workerPool_.addTask(worker);
 }
 
-void ChatLogicSystem::heartbeatHanlde(const std::shared_ptr<Session> &session, uint16_t msgId,
+void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
     const std::string &data) {
     Json::Value root;
     Defer defer([&root, session]() {

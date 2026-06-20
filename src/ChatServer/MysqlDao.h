@@ -10,15 +10,14 @@ public:
     MysqlDao();
     ~MysqlDao();
 
-    std::shared_ptr<UserInfo> getUser(int uid) const;
-    std::shared_ptr<UserInfo> getUser(const std::string& name) const;
-
     bool addFriendApply(const int& from, const int& to);
 
     bool getApplyUserList(int uid, ApplyUserList & applyUserList, int start, int size);
 
     bool updateFriendRelation(int authUid, int applyUid);
     bool updateUserInfo(const UserInfo & user_info);
+    bool getUserInfo(UserInfo &user_info);
+    bool getUserProfileInfo(int uid, UserProfileInfo &user_profile_info);
 
     bool getFriendList(int uid, FriendInfoList &friendList, const int start, const int size);
 
@@ -29,6 +28,8 @@ public:
 
 
 private:
+    static std::string getSearchPart(const UserInfo& user_info);
+
     std::unique_ptr<MysqlPool> pool_;
 };
 

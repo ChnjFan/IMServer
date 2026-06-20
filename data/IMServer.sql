@@ -228,6 +228,8 @@ BEGIN
             
             -- 在user表中插入新记录
             INSERT INTO `user` (`uid`, `name`, `email`, `pwd`, `salt`) VALUES (@new_id, new_name, new_email, new_pwd, pwd_salt);
+            -- 在 user_profile 表中插入对应记录
+            INSERT INTO `user_profile` (`uid`, `privacy_friend`,`privacy_chat`, `blacklist_switch`) VALUES (@new_id, 0, 1, 1);
             -- 设置result为新插入的uid
             SET result = @new_id; -- 插入成功，返回新的uid
             COMMIT;

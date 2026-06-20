@@ -2,6 +2,7 @@
 #define IMSERVER_MYSQLDAO_H
 
 #include "MysqlPool.h"
+#include "UserInfo.h"
 
 class MysqlDao {
 public:

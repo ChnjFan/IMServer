@@ -17,6 +17,7 @@
 #include "Singleton.h"
 #include "MsgNode.h"
 #include "ThreadPool.h"
+#include "UserInfo.h"
 
 struct ApplyUserInfo {
     uint8_t status;
@@ -75,7 +76,7 @@ public:
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 
-    static bool getUserBaseInfo(const std::string &key, int uid, const std::shared_ptr<UserInfo>& userInfo);
+    static bool searchUserInfoByUid(int uid, UserInfo& userInfo);
 
 private:
     friend class Singleton<ChatLogicSystem>;
@@ -87,7 +88,6 @@ private:
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
-    bool getUserInfoByName(const std::string &name, Json::Value& root);
     bool getConversationList(int uid, ConversationList& convList);
 
     void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
@@ -99,10 +99,23 @@ private:
     void kickOnlineUser(int uid) const;
 
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 搜索好友用户
+    static void getSearchInfoFromJson(Json::Value& root, UserInfo& userInfo);
+    static std::string getSearchKey(UserInfo& userInfo);
+    static bool searchUserInfo(UserInfo& userInfo);
     void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 查询用户详细信息
+    static bool searchUserFullInfoInRedis(UserFullInfo& userFullInfo);
+    static bool searchUserFullInfoByUid(int uid, UserFullInfo& userFullInfo);
+    static void setFriendRelation(int from, int uid, Json::Value& root);
+    void searchUserFullInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
     void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
+    // 修改用户信息
     static void getUserInfoFromJson(Json::Value& root, UserInfo& userInfo);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
@@ -111,7 +124,7 @@ private:
 
     void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    void heartbeatHanlde(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;

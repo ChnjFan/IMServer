@@ -7,14 +7,6 @@
 MysqlMgr::~MysqlMgr() {
 }
 
-std::shared_ptr<UserInfo> MysqlMgr::getUser(int uid) {
-    return db_.getUser(uid);
-}
-
-std::shared_ptr<UserInfo> MysqlMgr::getUser(const std::string &name) {
-    return db_.getUser(name);
-}
-
 bool MysqlMgr::addFriendApply(const int &from, const int &to) {
     return db_.addFriendApply(from, to);
 }
@@ -29,6 +21,18 @@ bool MysqlMgr::updateFriendRelation(int authUid, int applyUid) {
 
 bool MysqlMgr::updateUserInfo(const UserInfo &userInfo) {
     return db_.updateUserInfo(userInfo);
+}
+
+bool MysqlMgr::getUserInfo(UserInfo &user_info) {
+    return db_.getUserInfo(user_info);
+}
+
+bool MysqlMgr::getUserFullInfo(UserFullInfo &userFullInfo) {
+    if (!getUserInfo(userFullInfo.baseInfo)) {
+        std::cout << "Not found user by uid " << userFullInfo.baseInfo.uid << std::endl;
+        return false;
+    }
+    return db_.getUserProfileInfo(userFullInfo.baseInfo.uid, userFullInfo.profileInfo);
 }
 
 bool MysqlMgr::getFriendList(int uid, FriendInfoList &friendList) {

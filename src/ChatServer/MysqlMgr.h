@@ -16,15 +16,15 @@ class MysqlMgr : public Singleton<MysqlMgr> {
 public:
     ~MysqlMgr();
 
-    std::shared_ptr<UserInfo> getUser(int uid);
-    std::shared_ptr<UserInfo> getUser(const std::string &name);
-
     bool addFriendApply(const int& from, const int& to);
 
     bool getApplyUserList(int uid, ApplyUserList &applyUserList);
 
     bool updateFriendRelation(int authUid, int applyUid);
+
     bool updateUserInfo(const UserInfo& userInfo);
+    bool getUserInfo(UserInfo& user_info);
+    bool getUserFullInfo(UserFullInfo& userFullInfo);
 
     bool getFriendList(int uid, FriendInfoList &friendList);
 
@@ -32,6 +32,7 @@ public:
     bool getConversation(int uid, ConversationList& convList);
 
     bool addHistoryMessage(MessageInfo& message);
+
 
 private:
     friend class Singleton<MysqlMgr>;

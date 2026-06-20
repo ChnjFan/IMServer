@@ -19,67 +19,6 @@ MysqlDao::~MysqlDao() {
     pool_->close();
 }
 
-std::shared_ptr<UserInfo> MysqlDao::getUser(const int uid) const {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return nullptr;
-    }
-    Defer defer([this, &conn]() {
-        pool_->returnConnect(std::move(conn));
-    });
-    try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement("SELECT * FROM user WHERE uid = ?"));
-        stmt->setInt(1, uid);
-        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        while (res->next()) {
-            std::cout << "Get user: " << res->getInt("uid") << std::endl;
-            if (uid != res->getInt("uid")) {
-                return nullptr;
-            }
-            const auto user = std::make_shared<UserInfo>();
-            user->uid = res->getInt("uid");
-            user->email = res->getString("email");
-            user->name = res->getString("name");
-            user->avatarUrl = res->getString("avatar");
-            return user;
-        }
-        return nullptr;
-    } catch (sql::SQLException& e) {
-        std::cout << "get user SQLException: " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
-std::shared_ptr<UserInfo> MysqlDao::getUser(const std::string &name) const {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return nullptr;
-    }
-    Defer defer([this, &conn]() {
-        pool_->returnConnect(std::move(conn));
-    });
-    try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement("SELECT * FROM user WHERE name = ?"));
-        stmt->setString(1, name);
-        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        while (res->next()) {
-            std::cout << "Get user: " << res->getInt("uid") << std::endl;
-            if (name != res->getString("name")) {
-                return nullptr;
-            }
-            const auto user = std::make_shared<UserInfo>();
-            user->uid = res->getInt("uid");
-            user->email = res->getString("email");
-            user->name = res->getString("name");
-            return user;
-        }
-        return nullptr;
-    } catch (sql::SQLException& e) {
-        std::cout << "get user SQLException: " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
 bool MysqlDao::addFriendApply(const int &from, const int &to) {
     auto conn = pool_->getConnect();
     if (!conn) {
@@ -222,6 +161,81 @@ bool MysqlDao::updateUserInfo(const UserInfo &user_info) {
     }
 }
 
+bool MysqlDao::getUserInfo(UserInfo &user_info) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    try {
+        const std::string part = getSearchPart(user_info);
+        if (part.empty()) {
+            return false;
+        }
+        const std::string sql = "SELECT * FROM user WHERE " + part;
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
+        if (user_info.uid >= 0) {
+            stmt->setInt(1, user_info.uid);
+        }
+        else if (!user_info.email.empty()) {
+            stmt->setString(1, user_info.email);
+        }
+        else if (!user_info.name.empty()) {
+            stmt->setString(1, user_info.name);
+        }
+
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        while (res->next()) {
+            user_info.uid = res->getInt("uid");
+            user_info.gender = res->getInt("gender");
+            user_info.name = res->getString("name");
+            user_info.email = res->getString("email");
+            user_info.avatarUrl = res->getString("avatar");
+            break;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user info SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool MysqlDao::getUserProfileInfo(const int uid, UserProfileInfo &user_profile_info) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+            "SELECT * FROM user_profile WHERE uid = ?"));
+        stmt->setInt(1, uid);
+
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        while (res->next()) {
+            user_profile_info.signature = res->getString("signature");
+            user_profile_info.birthday = res->getString("birthday");
+            user_profile_info.region = res->getString("region");
+            user_profile_info.selfIntro = res->getString("self_intro");
+            user_profile_info.privacyFriend = res->getInt("privacy_friend");
+            user_profile_info.privacyChat = res->getInt("privacy_chat");
+            user_profile_info.privacyBacklist = res->getInt("blacklist_switch");
+            user_profile_info.ex = res->getString("extra_json");
+            user_profile_info.createTime = res->getString("create_time");
+            user_profile_info.updateTime = res->getString("update_time");
+            break;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user: " << uid << " full info SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool MysqlDao::getFriendList(int uid, FriendInfoList &friendList, const int start, const int size) {
     auto conn = pool_->getConnect();
     if (!conn) {
@@ -352,4 +366,17 @@ bool MysqlDao::addHistoryMessage(const MessageInfo &message) {
         std::cout << "register user SQLException: " << e.what() << std::endl;
         return false;
     }
+}
+
+std::string MysqlDao::getSearchPart(const UserInfo &user_info) {
+    if (user_info.uid >= 0) {
+        return "uid = ?";
+    }
+    if (!user_info.email.empty()) {
+        return "email = ?";
+    }
+    if (!user_info.name.empty()) {
+        return "name = ?";
+    }
+    return "";
 }

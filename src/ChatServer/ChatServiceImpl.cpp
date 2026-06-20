@@ -82,8 +82,8 @@ Status ChatServiceImpl::NotifyAuthFriend(ServerContext *context, const message::
 
     // 获取用户信息
     const auto fromUid = request->from_uid();
-    auto userInfo = std::make_shared<UserInfo>();
-    if (!ChatLogicSystem::getUserBaseInfo(USER_BASE_INFO_PREFIX + std::to_string(fromUid), fromUid, userInfo)) {
+    UserInfo userInfo;
+    if (!ChatLogicSystem::searchUserInfoByUid(fromUid, userInfo)) {
         return Status::OK;
     }
 
@@ -91,8 +91,8 @@ Status ChatServiceImpl::NotifyAuthFriend(ServerContext *context, const message::
     data["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
     data["from_uid"] = fromUid;
     data["to_uid"] = toUid;
-    data["name"] = userInfo->name;
-    data["email"] = userInfo->email;
+    data["name"] = userInfo.name;
+    data["email"] = userInfo.email;
     session->asyncSend(data.toStyledString(), static_cast<uint16_t>(MessageID::ID_NOTIFY_FRIEND_AUTH));
 
     return Status::OK;

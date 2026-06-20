@@ -13,6 +13,7 @@
 #include <boost/asio.hpp>
 #include <boost/archive/iterators/binary_from_base64.hpp>
 #include <boost/archive/iterators/transform_width.hpp>
+#include <json/json.h>
 
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -44,6 +45,7 @@ enum class ErrorCodes : int32_t {
 
     USER_EXISTS = 3001,
     USER_EMAIL_NOT_EXISTS = 3002,
+    USER_NOT_EXISTS = 3003,
 
     CHAT_LOGIN_TOKEN_ERROR = 4001,
     CHAT_LOGIN_UID_ERROR = 4002,
@@ -68,6 +70,8 @@ enum class MessageID : uint16_t {
 
     ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
     ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应
+    ID_GET_USER_FULL_INFO_REQ = 2103,   // 获取用户详细信息请求
+    ID_GET_USER_FULL_INFO_RSP = 2104,   // 获取用户详细信息响应
 
     ID_CHAT_MSG_REQ = 3001,         // 聊天消息请求
     ID_CHAT_MSG_RSP = 3002,         // 聊天消息响应
@@ -97,14 +101,6 @@ enum class ChatMsgStatus : uint8_t {
     SENDING = 0,       // 发送中
     IS_SEND = 1,       // 已发送
     IS_READ = 2,       // 已读
-};
-
-struct UserInfo {
-    int uid = 0;
-    std::string name;
-    std::string email;
-    std::string avatarUrl;
-    std::string password;
 };
 
 class Defer {
