@@ -13,7 +13,7 @@
 #include <jdbc/cppconn/prepared_statement.h>
 #include <jdbc/cppconn/resultset.h>
 #include <jdbc/cppconn/statement.h>
-#include <jdbc/cppconn/exception.h>
+#include <jdbc/cppconn/connection.h>
 
 #include "const.h"
 

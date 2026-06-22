@@ -15,100 +15,56 @@
 ChatServiceImpl::ChatServiceImpl() {
 }
 
-Status ChatServiceImpl::NotifyAddFriend(ServerContext *context, const message::AddFriendReq *request,
-                                        message::AddFriendRsp *response) {
-    Defer defer([request, response]() {
-        response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
-        response->set_from_uid(request->from_uid());
-        response->set_to_uid(request->to_uid());
-    });
-    // 校验用户是否在在线
-    const auto toUid = request->to_uid();
-    const auto session = UserMgr::getInstance()->getSession(toUid);
-    if (nullptr == session) {
+Status ChatServiceImpl::NotifyAddFriend(ServerContext *context, const ChatServiceReq *request,
+    ChatServiceRsp *response) {
+    const auto to = request->to_uid();
+    const auto session = UserMgr::getInstance()->getSession(to);
+    if (!session) {
+        response->set_error(static_cast<int32_t>(ErrorCodes::USER_IS_OFFLINE));
         return Status::OK;
     }
-
-    Json::Value data;
-    data["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    data["fromUid"] = request->from_uid();
-    data["applyName"] = request->name();
-    data["applyEmail"] = request->email();
-    session->asyncSend(data.toStyledString(), static_cast<uint16_t>(MessageID::ID_NOTIFY_FRIEND_ADD));
-
+    session->asyncSend(request->json(), static_cast<uint16_t>(MessageID::ID_NOTIFY_FRIEND_APPLY));
     return Status::OK;
 }
 
-Status ChatServiceImpl::ReplyAddFriend(ServerContext *context, const message::ReplyFriendReq *request,
-    message::ReplyFriendRsp *response) {
+Status ChatServiceImpl::ReplyAddFriend(ServerContext *context, const ChatServiceReq *request,
+    ChatServiceRsp *response) {
     return Status::OK;
 }
 
-Status ChatServiceImpl::SendChatMsg(ServerContext *context, const message::SendChatMsgReq *request,
-    message::SendChatMsgRsp *response) {
-    // 校验用户是否在在线
-    const auto toUid = request->to_uid();
-    const auto session = UserMgr::getInstance()->getSession(toUid);
-    if (nullptr == session) {
+Status ChatServiceImpl::NotifyAuthFriend(ServerContext *context, const ChatServiceReq *request,
+    ChatServiceRsp *response) {
+    const auto to = request->to_uid();
+    const auto session = UserMgr::getInstance()->getSession(to);
+    if (!session) {
+        response->set_error(static_cast<int32_t>(ErrorCodes::USER_IS_OFFLINE));
         return Status::OK;
     }
 
-    // 获取用户信息
-    Json::Value data;
-    data["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    data["from_uid"] = request->from_uid();
-    data["to_uid"] = toUid;
-    data["content"] = request->message();
-    data["msg_id"] = request->msg_id();
-    data["msg_type"] = request->msg_type();
-    session->asyncSend(data.toStyledString(), static_cast<uint16_t>(MessageID::ID_NOTIFY_CHAT_MSG));
-
+    session->asyncSend(request->json(), static_cast<uint16_t>(MessageID::ID_NOTIFY_FRIEND_AUTH));
     return Status::OK;
 }
 
-Status ChatServiceImpl::NotifyAuthFriend(ServerContext *context, const message::AuthFriendReq *request,
-    message::AuthFriendRsp *response) {
-    Defer defer([request, response]() {
-        response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
-        response->set_from_uid(request->from_uid());
-        response->set_to_uid(request->to_uid());
-    });
-    // 校验用户是否在在线
-    const auto toUid = request->to_uid();
-    const auto session = UserMgr::getInstance()->getSession(toUid);
-    if (nullptr == session) {
+Status ChatServiceImpl::SendChatMsg(ServerContext *context, const ChatServiceReq *request, ChatServiceRsp *response) {
+    const auto to = request->to_uid();
+    const auto session = UserMgr::getInstance()->getSession(to);
+    if (!session) {
+        response->set_error(static_cast<int32_t>(ErrorCodes::USER_IS_OFFLINE));
         return Status::OK;
     }
 
-    // 获取用户信息
-    const auto fromUid = request->from_uid();
-    UserInfo userInfo;
-    if (!ChatLogicSystem::searchUserInfoByUid(fromUid, userInfo)) {
-        return Status::OK;
-    }
-
-    Json::Value data;
-    data["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    data["from_uid"] = fromUid;
-    data["to_uid"] = toUid;
-    data["name"] = userInfo.name;
-    data["email"] = userInfo.email;
-    session->asyncSend(data.toStyledString(), static_cast<uint16_t>(MessageID::ID_NOTIFY_FRIEND_AUTH));
-
+    session->asyncSend(request->json(), static_cast<uint16_t>(MessageID::ID_NOTIFY_CHAT_MSG));
     return Status::OK;
 }
 
-Status ChatServiceImpl::NotifyTextChatMsg(ServerContext *context, const message::TextChatData *request,
-    message::TextChatMsgRsp *response) {
-    return Status::OK;
-}
-
-Status ChatServiceImpl::NotifyOffline(grpc::ServerContext *context, const message::UserOfflineReq *request,
-    message::UserOfflineRsp *response) {
-    const auto session = UserMgr::getInstance()->getSession(request->uid());
-    if (!session) { // 用户已经下线
+Status ChatServiceImpl::NotifyOffline(ServerContext *context, const ChatServiceReq *request, ChatServiceRsp *response) {
+    const auto to = request->to_uid();
+    const auto session = UserMgr::getInstance()->getSession(to);
+    if (!session) {
+        response->set_error(static_cast<int32_t>(ErrorCodes::USER_IS_OFFLINE));
         return Status::OK;
     }
+
     session->notifyOffline();
     return Status::OK;
 }

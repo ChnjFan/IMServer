@@ -16,17 +16,24 @@ class MysqlMgr : public Singleton<MysqlMgr> {
 public:
     ~MysqlMgr();
 
-    bool addFriendApply(const int& from, const int& to);
-
     bool getApplyUserList(int uid, ApplyUserList &applyUserList);
-
-    bool updateFriendRelation(int authUid, int applyUid);
 
     bool updateUserInfo(const UserInfo& userInfo);
     bool getUserInfo(UserInfo& user_info);
     bool getUserFullInfo(UserFullInfo& userFullInfo);
 
-    bool getFriendList(int uid, FriendInfoList &friendList);
+    bool getFriendRelation(int uid, int friendId, FriendRelation & fr) const;
+    bool checkFriendRelation(int uid, int friendId);
+
+    bool checkFriendApply(int uid, int friendId);
+    bool updateFriendApply(int uid, int friendId, int status, const std::string& msg);
+    bool getFriendApplyCount(int uid, int &count);
+    bool getFriendApplyList(int uid, int sinceId, std::vector<FriendApplyInfo> &applyInfoList);
+
+    bool updateFriendRelation(const FriendInfo& friendInfo);
+    bool createFriendRelation(const FriendInfo& friendInfo);
+
+    bool getFriendList(int uid, int sinceId, std::vector<FriendInfo> &friendList);
 
     bool addConversation(int uid, int to, const std::string& convId, int convType);
     bool getConversation(int uid, ConversationList& convList);

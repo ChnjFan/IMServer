@@ -25,12 +25,16 @@ CREATE TABLE `friend_apply` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   `uid` int NOT NULL COMMENT '当前用户ID',
   `friend_id` int NOT NULL COMMENT '好友ID',
+  `msg` varchar(128) NOT NULL COMMENT '好友申请留言',
   `status` tinyint NOT NULL DEFAULT '0' COMMENT '申请状态 0-待审批 1-已同意 2-已拒绝 3-已过期',
+  `expire_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '过期时间（7天有效期）',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_apply_friend` (`uid`,`friend_id`) COMMENT '唯一索引：一个用户对一个好友只有一条申请记录',
   KEY `idx_uid` (`uid`),
   KEY `idx_friend_id` (`friend_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf16 COMMENT='IM添加好友申请表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf16 COMMENT='IM添加好友申请表';
 
 -- ----------------------------
 -- Table structure for friend_relation
@@ -44,13 +48,13 @@ CREATE TABLE `friend_relation` (
   `status` tinyint NOT NULL DEFAULT '1' COMMENT '好友状态 1-正常 2-拉黑 3-删除 4-屏蔽消息',
   `is_star` tinyint NOT NULL DEFAULT '0' COMMENT '是否星标好友 0-否 1-是',
   `is_hide` tinyint NOT NULL DEFAULT '0' COMMENT '是否隐藏该好友 0-否 1-是',
-  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '成为好友时间',
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '成为好友时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_user_friend` (`uid`,`friend_id`) COMMENT '唯一索引：一个用户对一个好友只有一条记录',
   KEY `idx_friend_id` (`friend_id`),
   KEY `idx_status` (`uid`,`status`) COMMENT '查询正常好友/拉黑列表专用索引'
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf16 COMMENT='IM好友关系表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf16 COMMENT='IM好友关系表';
 
 -- ----------------------------
 -- Table structure for message
@@ -64,10 +68,10 @@ CREATE TABLE `message` (
   `content` text COMMENT '消息内容/资源URL',
   `msg_id` int NOT NULL COMMENT '消息ID',
   `status` tinyint DEFAULT '0' COMMENT '消息状态 0:发送中,1:已送达,2:已读',
-  `created_at` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `create_time` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_conv_msg` (`conv_id`,`msg_id`) COMMENT '会话内消息ID索引'
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf16 COMMENT='IM消息表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf16 COMMENT='IM消息表';
 
 -- ----------------------------
 -- Table structure for user
@@ -126,12 +130,12 @@ CREATE TABLE `user_conversation` (
   `last_msg_id` int DEFAULT NULL COMMENT '最新消息ID',
   `last_msg_content` text COMMENT '最新消息摘要',
   `last_time` datetime(6) DEFAULT NULL COMMENT '最新消息时间',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `idx_user_conv` (`uid`,`conv_id`) COMMENT '用户会话索引',
   KEY `idx_user_time` (`uid`,`last_time`) COMMENT '用户最新消息时间索引'
-) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf16 COMMENT='IM用户会话表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf16 COMMENT='IM用户会话表';
 
 -- ----------------------------
 -- Table structure for user_id

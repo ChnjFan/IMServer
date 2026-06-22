@@ -14,6 +14,7 @@
 #include <json/json.h>
 
 #include "const.h"
+#include "FriendRelation.h"
 #include "Singleton.h"
 #include "MsgNode.h"
 #include "ThreadPool.h"
@@ -25,17 +26,6 @@ struct ApplyUserInfo {
     int uid;
     std::string name;
     std::string email;
-};
-
-struct FriendInfo {
-    int uid;
-    uint8_t status;
-    uint8_t isStar;
-    uint8_t isHidden;
-    uint8_t pad;
-    std::string name;
-    std::string email;
-    std::string alias;
 };
 
 struct ConversationInfo {
@@ -63,8 +53,8 @@ struct MessageInfo {
 };
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
+typedef std::function<void(const std::string& serverName)> notifyDiffServerOnlineUserCallback;
 typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
-typedef std::vector<std::shared_ptr<FriendInfo>> FriendInfoList;
 typedef std::vector<std::shared_ptr<ConversationInfo>> ConversationList;
 
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
@@ -76,29 +66,35 @@ public:
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 
+    void notifyOnlineUserMsg(int uid, const std::string& msg, MessageID msgId, const notifyDiffServerOnlineUserCallback &callback);
+
     static bool searchUserInfoByUid(int uid, UserInfo& userInfo);
 
 private:
     friend class Singleton<ChatLogicSystem>;
 
+    // 初始化聊天服务逻辑
     ChatLogicSystem();
     void initHandlers();
     void registerHandler(uint16_t msgId, const msgHandler& handler);
-
+    // 处理消息
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
 
+    // todo 待修复
     bool getConversationList(int uid, ConversationList& convList);
-
     void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
 
-
-    /**
-     * 客户端踢人逻辑
-     */
+    // 客户端踢人逻辑
     void kickOnlineUser(int uid) const;
 
+    // 登录逻辑
     void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    int getApplyFriendCount(int uid);
+    void firstPageInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    bool getFriendList(int uid, int sinceId, std::vector<FriendInfo>& friendList);
+    void searchFriendListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // 搜索好友用户
     static void getSearchInfoFromJson(Json::Value& root, UserInfo& userInfo);
@@ -109,14 +105,24 @@ private:
     // 查询用户详细信息
     static bool searchUserFullInfoInRedis(UserFullInfo& userFullInfo);
     static bool searchUserFullInfoByUid(int uid, UserFullInfo& userFullInfo);
-    static void setFriendRelation(int from, int uid, Json::Value& root);
+
+    // 添加好友
+    bool getFriendRelationFromRedis(int from, int uid, FriendRelation& fr);
+    bool getFriendRelation(int from, int uid, FriendRelation& fr);
+    void setFriendRelation(int from, int uid, Json::Value& root);
     void searchUserFullInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    void addFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    bool getFriendApplyList(int uid, int sinceId, std::vector<FriendApplyInfo>& applyInfoList);
+    void searchFriendApplyListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 认证好友
+    static bool checkFriendRelation(int uid, int friendId);
+    static bool checkFriendApply(int uid, int friendId);
+    static bool checkFriendApplyInvalid(int uid, int friendId);
+    void friendApplyHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // 修改用户信息
-    static void getUserInfoFromJson(Json::Value& root, UserInfo& userInfo);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);

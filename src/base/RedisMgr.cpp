@@ -317,6 +317,67 @@ bool RedisMgr::rPop(const std::string &key, std::string &value) {
     return true;
 }
 
+bool RedisMgr::sAdd(const std::string &key, const std::string &value) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "SADD %s %s", key.c_str(), value.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::hSet: RedisCommand() SADD ["<< key << " : " << value <<"] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    return true;
+}
+
+bool RedisMgr::sRem(const std::string &key, const std::string &value) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "SREM %s %s", key.c_str(), value.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::sRem: RedisCommand() SREM ["<< key << " : " << value <<"] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    return true;
+}
+
+bool RedisMgr::sIsMember(const std::string &key, const std::string &value) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "SISMEMBER %s %s", key.c_str(), value.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER) {
+        std::cout << "RedisMgr::sIsMember: RedisCommand() SISMEMBER ["<< key << " : " << value <<"] failed!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    const bool result = (reply->integer == 1);
+    freeReplyObject(reply);
+    return result;
+}
+
 bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::string &value) {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
@@ -603,17 +664,57 @@ bool RedisMgr::existsKey(const std::string &key) const {
         redisPool_->returnConnection(conn);
     });
 
-    auto reply = static_cast<redisReply *>(redisCommand(conn, "exists %s", key.c_str()));
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "exists %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
         std::cout << "RedisMgr::existsKey: RedisCommand() [" << key << "] not found!" << std::endl;
         freeReplyObject(reply);
-        reply = nullptr;
         return false;
     }
 
     freeReplyObject(reply);
-    reply = nullptr;
     std::cout << "RedisMgr::existsKey: RedisCommand() [" << key << "] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::setExpire(const std::string &key, const int expire) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "EXPIRE %s %d", key.c_str(), expire));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
+        std::cout << "RedisMgr::setExpire: RedisCommand() [" << key << "] not found!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    std::cout << "RedisMgr::setExpire: RedisCommand() [" << key << "expire: " << expire <<"] OK!" << std::endl;
+    return true;
+}
+
+bool RedisMgr::clearExpire(const std::string &key) const {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return false;
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "PERSIST %s %d", key.c_str()));
+    if (nullptr == reply || reply->type != REDIS_REPLY_INTEGER || reply->integer == 0) {
+        std::cout << "RedisMgr::clearExpire: RedisCommand() [" << key << "] not found!" << std::endl;
+        freeReplyObject(reply);
+        return false;
+    }
+
+    freeReplyObject(reply);
+    std::cout << "RedisMgr::clearExpire: RedisCommand() [" << key <<"] OK!" << std::endl;
     return true;
 }
 

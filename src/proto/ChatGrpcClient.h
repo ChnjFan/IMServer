@@ -19,27 +19,21 @@ using grpc::Channel;
 using grpc::Status;
 using grpc::ClientContext;
 
-using message::AddFriendReq;
-using message::AddFriendRsp;
-using message::AuthFriendReq;
-using message::AuthFriendRsp;
-using message::SendChatMsgReq;
-using message::SendChatMsgRsp;
 using message::ChatService;
-using message::UserOfflineReq;
-using message::UserOfflineRsp;
+using message::ChatServiceReq;
+using message::ChatServiceRsp;
 
 class ChatGrpcClient : public Singleton<ChatGrpcClient> {
 public:
     typedef std::unique_ptr<ServiceConnPool<ChatService>> ChatServicePool;
 
-    AddFriendRsp NotifyAddFriend(std::string& serviceName, const AddFriendReq &request);
+    ChatServiceRsp NotifyAddFriend(const std::string& serviceName, const ChatServiceReq &request);
 
-    AuthFriendRsp NotifyAuthFriend(std::string& serviceName, const AuthFriendReq &request);
+    ChatServiceRsp NotifyAuthFriend(const std::string& serviceName, const ChatServiceReq &request);
 
-    SendChatMsgRsp SendChatMsg(std::string& serviceName, const SendChatMsgReq& request);
+    ChatServiceRsp SendChatMsg(const std::string& serviceName, const ChatServiceReq& request);
 
-     ErrorCodes NotifyOffline(const std::string& serviceName, int uid);
+    ErrorCodes NotifyOffline(const std::string& serviceName, int uid);
 
 private:
     friend class Singleton<ChatGrpcClient>;

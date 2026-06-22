@@ -46,6 +46,11 @@ enum class ErrorCodes : int32_t {
     USER_EXISTS = 3001,
     USER_EMAIL_NOT_EXISTS = 3002,
     USER_NOT_EXISTS = 3003,
+    USER_IS_FRIEND_RELATION = 3004,
+    USER_IS_OFFLINE = 3005,
+
+    FRIEND_APPLY_NOT_EXISTS = 3101,
+    FRIEND_NOT_EXISTS = 3102,
 
     CHAT_LOGIN_TOKEN_ERROR = 4001,
     CHAT_LOGIN_UID_ERROR = 4002,
@@ -59,14 +64,21 @@ enum class MessageID : uint16_t {
     ID_CHAT_LOGIN = 1005,       // 登录聊天服务器
     ID_CHAT_LOGIN_RSP = 1006,   // 登录聊天服务器响应
 
+    ID_FIRST_PAGE_REQ = 1101,   // 主页页面信息
+    ID_FIRST_PAGE_RSP = 1102,   // 主页页面信息
+
     ID_USER_SEARCH_REQ = 2001,  // 用户搜索请求
     ID_USER_SEARCH_RSP = 2002,  // 用户搜索响应
-    ID_ADD_FRIEND_REQ = 2003,   // 添加用户请求
-    ID_ADD_FRIEND_RSP = 2014,   // 添加用户响应
-    ID_NOTIFY_FRIEND_ADD = 2005,   // 通知用户好友申请
+    ID_FRIEND_APPLY_REQ = 2003,   // 添加用户请求
+    ID_FRIEND_APPLY_RSP = 2004,   // 添加用户响应
+    ID_NOTIFY_FRIEND_APPLY = 2005,   // 通知用户好友申请
     ID_FRIEND_AUTH_REQ = 2006,   // 同意添加好友请求
     ID_FRIEND_AUTH_RSP = 2007,   // 同意添加好友响应
     ID_NOTIFY_FRIEND_AUTH = 2008,   // 通知用户好友认证
+    ID_GET_FRIEND_REPLY_REQ = 2009, // 获取好友申请请求
+    ID_GET_FRIEND_REPLY_RSP = 2010, // 获取好友申请响应
+    ID_GET_FRIEND_LIST_REQ = 2011,  // 获取好友列表请求
+    ID_GET_FRIEND_LIST_RSP = 2012,  // 获取好友列表响应
 
     ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
     ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应

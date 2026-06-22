@@ -16,22 +16,19 @@ using grpc::ServerBuilder;
 using grpc::ServerUnaryReactor;
 using grpc::Status;
 
-using message::AddFriendReq;
-using message::AddFriendRsp;
-using message::AuthFriendReq;
-using message::AuthFriendRsp;
 using message::ChatService;
+using message::ChatServiceReq;
+using message::ChatServiceRsp;
 
 class ChatServiceImpl final : public ChatService::Service {
 public:
     ChatServiceImpl();
 
-    Status NotifyAddFriend(ServerContext* context, const ::message::AddFriendReq* request, ::message::AddFriendRsp* response) override;
-    Status ReplyAddFriend(ServerContext* context, const ::message::ReplyFriendReq* request, ::message::ReplyFriendRsp* response) override;
-    Status SendChatMsg(ServerContext* context, const ::message::SendChatMsgReq* request, ::message::SendChatMsgRsp* response) override;
-    Status NotifyAuthFriend(ServerContext* context, const ::message::AuthFriendReq* request, ::message::AuthFriendRsp* response) override;
-    Status NotifyTextChatMsg(ServerContext* context, const ::message::TextChatData* request, ::message::TextChatMsgRsp* response) override;
-    Status NotifyOffline(grpc::ServerContext *context, const message::UserOfflineReq *request, message::UserOfflineRsp *response) override;
+    Status NotifyAddFriend(ServerContext* context, const ChatServiceReq* request, ChatServiceRsp* response) override;
+    Status ReplyAddFriend(ServerContext* context, const ChatServiceReq* request, ChatServiceRsp* response) override;
+    Status NotifyAuthFriend(ServerContext* context, const ChatServiceReq* request, ChatServiceRsp* response) override;
+    Status SendChatMsg(ServerContext* context, const ChatServiceReq* request, ChatServiceRsp* response) override;
+    Status NotifyOffline(ServerContext* context, const ChatServiceReq* request, ChatServiceRsp* response) override;
 };
 
 

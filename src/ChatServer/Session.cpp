@@ -88,6 +88,8 @@ void Session::updateState(const SessionState state) const {
             USER_ONLINE_SERVER_NAME, serverName);
         RedisMgr::getInstance()->hSet(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_),
             USER_SESSION_ID, sessionId_);
+        // 登录后要清除过期时间
+        RedisMgr::getInstance()->clearExpire(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_));
     }
     else if (state == SessionState::OFFLINE) {
         // 先检查是否有其他终端登录
@@ -96,8 +98,8 @@ void Session::updateState(const SessionState state) const {
         if (sessionId.empty() || sessionId != sessionId_) {
             return; // 没有登录 session 或其他终端已经登录，直接返回
         }
-        // 下线清除在线状态
-        RedisMgr::getInstance()->del(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_));
+        // 下线设置过期时间，用户可以重复登录
+        RedisMgr::getInstance()->setExpire(USER_ONLINE_INFO_PREFIX+ std::to_string(uid_), 300);
     }
 }
 

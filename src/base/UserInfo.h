@@ -8,12 +8,6 @@
 #include <string>
 #include <json/json.h>
 
-enum class FriendStatus : uint8_t {
-    NOT_FRIEND = 0,
-    FRIEND_PRESENT = 1,
-    FRIEND_BACKLIST = 2
-};
-
 struct UserInfo {
     int uid = 0;
     int gender = 0;
@@ -21,12 +15,17 @@ struct UserInfo {
     std::string email;
     std::string avatarUrl;
     std::string password;
+    std::string createTime;
+    std::string birthday;
+    std::string region;
+    std::string signature;
+    std::string selfIntro;
 
     UserInfo() : uid(-1) {};
 
     void fromJson(const Json::Value& json) {
         if (json.isMember("uid")) {
-            this->uid = json["uid"].asInt();
+            this->uid = std::stoi(json["uid"].asString());
         }
         if (json.isMember("gender")) {
             this->gender = json["gender"].asInt();
@@ -43,17 +42,45 @@ struct UserInfo {
         if (json.isMember("password")) {
             this->password = json["password"].asString();
         }
+        if (json.isMember("create_time")) {
+            this->createTime = json["create_time"].asString();
+        }
+        if (json.isMember("birthday")) {
+            this->birthday = json["birthday"].asString();
+        }
+        if (json.isMember("region")) {
+            this->region = json["region"].asString();
+        }
+        if (json.isMember("signature")) {
+            this->signature = json["signature"].asString();
+        }
+        if (json.isMember("self_intro")) {
+            this->selfIntro = json["self_intro"].asString();
+        }
     }
 
     void toJson(Json::Value& root, const bool needPwd = false) const {
         if (uid < 0) {
             return;
         }
-        root["uid"] = this->uid;
+        root["uid"] = std::to_string(this->uid);
         root["gender"] = this->gender;
         root["name"] = this->name;
         root["email"] = this->email;
         root["avatar_url"] = this->avatarUrl;
+        root["create_time"] = this->createTime;
+        if (!birthday.empty()) {
+            root["birthday"] = this->birthday;
+        }
+        if (!region.empty()) {
+            root["region"] = this->region;
+        }
+        if (!signature.empty()) {
+            root["signature"] = this->signature;
+        }
+        if (!selfIntro.empty()) {
+            root["self_intro"] = this->selfIntro;
+        }
         if (needPwd) {
             root["password"] = this->password;
         }
@@ -113,7 +140,7 @@ struct UserProfileInfo {
         }
     }
 
-    void toJson(Json::Value& root, const bool needPwd = false) const {
+    void toJson(Json::Value& root) const {
         root["friend_status"] = this->friendStatus;
         root["privacy_friend"] = this->privacyFriend;
         root["privacy_chat"] = this->privacyChat;
@@ -140,7 +167,7 @@ struct UserFullInfo {
 
     void toJson(Json::Value& root, const bool needPwd = false) const {
         baseInfo.toJson(root, needPwd);
-        profileInfo.toJson(root, needPwd);
+        profileInfo.toJson(root);
     }
 };
 
