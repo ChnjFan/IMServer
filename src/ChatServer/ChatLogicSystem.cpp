@@ -807,8 +807,31 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
     });
 }
 
+PartsList ChatLogicSystem::getUpdateUserInfoPart(const Json::Value &root) {
+    std::vector<std::string> keys = root.getMemberNames();
+    PartsList results;
+    // 剔除错误码
+    std::unordered_set<std::string> removes{"error"};
+    std::unordered_set<std::string> stringPart{"email", "name", "avatar_url", "phone", "birthday",
+        "region", "signature", "self_intro"};
+    std::unordered_set<std::string> numberPart{"gender"};
+
+    for (const auto& key : keys) {
+        if (removes.find(key) != removes.end()) {
+            continue;
+        }
+        else if (stringPart.find(key) != stringPart.end()) {
+            results["string"].push_back(key);
+        }
+        else if (numberPart.find(key) != numberPart.end()) {
+            results["number"].push_back(key);
+        }
+    }
+    return results;
+}
+
 void ChatLogicSystem::updateUserInfoHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
-    const std::string &data) {
+                                           const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
     Defer defer([&root, session]() {
@@ -822,26 +845,30 @@ void ChatLogicSystem::updateUserInfoHandle(const std::shared_ptr<Session> &sessi
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 
-    UserInfo userInfo;
+    const auto parts = getUpdateUserInfoPart(srcRoot);
+    if (parts.empty()) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+
     if (!srcRoot.isMember("uid")) {
         root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
         return;
     }
-    userInfo.fromJson(srcRoot);
-
+    const auto uid = std::stoi(srcRoot["uid"].asString());
     UserInfo oldInfo;
-    if (!searchUserInfoByUid(userInfo.uid, oldInfo)) {
+    if (!searchUserInfoByUid(uid, oldInfo)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::USER_NOT_EXISTS);
         return;
     }
 
-    if (!MysqlMgr::getInstance()->updateUserInfo(userInfo)) {
+    if (!MysqlMgr::getInstance()->updateUserInfo(srcRoot, parts)) {
         root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
         return;
     }
 
-    if (!RedisMgr::getInstance()->del(USER_BASE_INFO_PREFIX + std::to_string(userInfo.uid))
-        || !RedisMgr::getInstance()->del(USER_PROFILE_INFO_PREFIX + std::to_string(userInfo.uid))
+    if (!RedisMgr::getInstance()->del(USER_BASE_INFO_PREFIX + std::to_string(uid))
+        || !RedisMgr::getInstance()->del(USER_PROFILE_INFO_PREFIX + std::to_string(uid))
         || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.email)
         || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.name)) {
         std::cout << "Failed to delete user info, waiting to add delay task" << std::endl;

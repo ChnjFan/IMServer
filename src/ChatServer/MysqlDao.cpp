@@ -106,6 +106,61 @@ bool MysqlDao::updateUserInfo(const UserInfo &user_info) {
     }
 }
 
+bool MysqlDao::updateUserInfo(const Json::Value &root, const PartsList &parts) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    std::vector<std::string> setParts;
+    int paramCount = 1;
+    std::vector<std::pair<int, std::string>> strParams;
+    std::vector<std::pair<int, int>> intParams;
+
+    for (auto& [type, partValue] : parts) {
+        if (type == "string") {
+            for (auto& part : partValue) {
+                setParts.emplace_back(part + " = ?");
+                strParams.emplace_back(paramCount++, root[part].asString());
+            }
+        }
+        else if (type == "number") {
+            for (auto& part : partValue) {
+                setParts.emplace_back(part + " = ?");
+                intParams.emplace_back(paramCount++, root[part].asInt());
+            }
+        }
+    }
+
+    std::string sql = "UPDATE user SET ";
+    for (size_t i = 0; i < setParts.size(); i++) {
+        if (i > 0) sql += ",";
+        sql += setParts[i];
+    }
+    sql += ", update_time = NOW() WHERE uid = ?";
+    const auto uid = std::stoi(root["uid"].asString());
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
+        for (auto& [index, value] : strParams) {
+            stmt->setString(index, value);
+        }
+        for (auto& [index, value] : intParams) {
+            stmt->setInt(index, value);
+        }
+        stmt->setInt(paramCount, uid);
+        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            return false;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "update user info SQLException: " << e.what() << std::endl;
+        std::cout << sql << paramCount << std::endl;
+        return false;
+    }
+}
+
 bool MysqlDao::getUserInfo(UserInfo &user_info) {
     auto conn = pool_->getConnect();
     if (!conn) {

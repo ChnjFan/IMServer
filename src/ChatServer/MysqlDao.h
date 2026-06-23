@@ -1,9 +1,9 @@
 #ifndef IMSERVER_MYSQLDAO_H
 #define IMSERVER_MYSQLDAO_H
 
-#include "ChatLogicSystem.h"
 #include "MysqlPool.h"
 #include "const.h"
+#include "FriendRelation.h"
 
 class MysqlDao {
 public:
@@ -13,6 +13,7 @@ public:
     bool getApplyUserList(int uid, ApplyUserList & applyUserList, int start, int size);
 
     bool updateUserInfo(const UserInfo & user_info);
+    bool updateUserInfo(const Json::Value& root, const PartsList& parts);
     bool getUserInfo(UserInfo &user_info);
     bool getUserProfileInfo(int uid, UserProfileInfo &user_profile_info);
 

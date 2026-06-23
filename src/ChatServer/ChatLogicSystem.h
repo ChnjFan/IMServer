@@ -17,45 +17,11 @@
 #include "FriendRelation.h"
 #include "Singleton.h"
 #include "MsgNode.h"
+#include "MysqlMgr.h"
 #include "ThreadPool.h"
 #include "UserInfo.h"
 
-struct ApplyUserInfo {
-    uint8_t status;
-    uint8_t pad[3];
-    int uid;
-    std::string name;
-    std::string email;
-};
-
-struct ConversationInfo {
-    std::string conv_id;
-    uint8_t conv_type;
-    uint8_t is_top;
-    uint8_t is_mute;
-    uint8_t pad;
-    int to_uid;
-    int unread_count;
-    int last_msg_id;
-    std::string last_msg;
-    std::string last_time;
-};
-
-struct MessageInfo {
-    std::string conv_id;
-    int sender_uid;
-    int receiver_uid;
-    int msg_id;
-    uint8_t msg_type;
-    uint8_t status;
-    uint8_t pad[2];
-    std::string content;
-};
-
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
-typedef std::function<void(const std::string& serverName)> notifyDiffServerOnlineUserCallback;
-typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
-typedef std::vector<std::shared_ptr<ConversationInfo>> ConversationList;
 
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
@@ -123,6 +89,7 @@ private:
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // 修改用户信息
+    static PartsList getUpdateUserInfoPart(const Json::Value &root);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);

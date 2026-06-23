@@ -15,6 +15,10 @@ bool MysqlMgr::updateUserInfo(const UserInfo &userInfo) {
     return db_.updateUserInfo(userInfo);
 }
 
+bool MysqlMgr::updateUserInfo(const Json::Value &root, const PartsList& parts) {
+    return db_.updateUserInfo(root, parts);
+}
+
 bool MysqlMgr::getUserInfo(UserInfo &user_info) {
     return db_.getUserInfo(user_info);
 }
