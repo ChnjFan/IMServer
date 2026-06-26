@@ -19,19 +19,11 @@
 #define USER_ONLINE_SERVER_NAME "server_name"
 #define USER_ONLINE_TOKEN "token"
 #define USER_SESSION_ID "session_id"
+#define LOGIN_COUNT "login_chat_server_count"
 // 用户状态
 #define USER_COUNTER_PREFIX "user_counter_"     // 用户状态计数
-#define USER_FRIEND_REPLY_COUNT "friend_reply"  // 好友申请计数
-// 用户信息
-#define UID_INDEX_MAP_PREFIX "uid_index_"
-#define USER_BASE_INFO_PREFIX "user_base_info_"
-#define USER_PROFILE_INFO_PREFIX "user_profile_info_"
-#define LOGIN_COUNT "login_chat_server_count"
 // 好友申请
 #define FRIEND_APPLY_PREFIX "friend_apply_"
-// 好友关系
-#define FRIEND_SET_PREFIX "friend_set_"
-#define FRIEND_RELATION_INFO_PREFIX "friend_relation_info_"
 
 // 聊天会话缓存
 #define CHAT_CONVER_PREFIX "chat_conver_"

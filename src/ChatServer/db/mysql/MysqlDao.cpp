@@ -161,7 +161,48 @@ bool MysqlDao::updateUserInfo(const Json::Value &root, const PartsList &parts) {
     }
 }
 
-bool MysqlDao::getUserInfo(UserInfo &user_info) {
+bool MysqlDao::getUserBaseInfo(UserBaseInfo &info) {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    try {
+        const std::string sql = "SELECT * FROM user WHERE " + info.getSearchProperty() + " = ?";
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
+        if (const std::string value = info.getSearchPropertyStringValue(); !value.empty()) {
+            stmt->setString(1, value);
+        }
+        else if (const int uid = info.getSearchPropertyIntValue(); uid >= 0) {
+            stmt->setInt(1, uid);
+        }
+        else {
+            return false;
+        }
+
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        while (res->next()) {
+            info.uid = res->getInt("uid");
+            info.gender = static_cast<int8_t>(res->getInt("gender"));
+            info.name = res->getString("name");
+            info.email = res->getString("email");
+            info.password = res->getString("pwd");
+            info.salt = res->getString("salt");
+            info.avatarUrl = res->getString("avatar");
+            info.createTime = res->getString("create_time");
+            info.updateTime = res->getString("update_time");
+            break;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user info SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
+bool MysqlDao::getUserBaseInfo(UserInfo &user_info) {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -383,180 +424,180 @@ bool MysqlDao::getFriendReplyCount(const int uid, int &count) {
     }
 }
 
-bool MysqlDao::getFriendApplyList(const int uid, const int since_id, std::vector<FriendApplyInfo> &applyList) {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return false;
-    }
-    Defer defer([this, &conn]() {
-        pool_->returnConnect(std::move(conn));
-    });
-
-    try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
-            "SELECT apply.id as apply_id, "
-            "apply.uid as apply_uid, "
-            "apply.friend_id as apply_friend_id, "
-            "apply.msg as apply_msg, "
-            "apply.status as apply_status, "
-            "apply.expire_time as apply_expire_time, "
-            "apply.create_time as apply_create_time, "
-            "apply.update_time as apply_update_time, "
-            "user.uid as user_uid, "
-            "user.name as name, "
-            "user.email as email, "
-            "user.avatar as avatar, "
-            "user.gender as gender "
-            "FROM friend_apply as apply JOIN user "
-            "ON user.uid = IF(apply.uid = ?, apply.friend_id, apply.uid)"
-            "WHERE (apply.uid = ? OR apply.friend_id = ?) "
-            "AND apply.id > ? ORDER by apply.id ASC LIMIT ? "));
-        stmt->setInt(1, uid);
-        stmt->setInt(2, uid);
-        stmt->setInt(3, uid);
-        stmt->setInt(4, since_id);
-        stmt->setInt(5, 20);
-        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        while (res->next()) {
-            FriendApplyInfo applyInfo;
-            applyInfo.id = res->getInt("apply_id");
-            applyInfo.uid = res->getInt("apply_uid");
-            applyInfo.friendId = res->getInt("apply_friend_id");
-            applyInfo.msg = res->getString("apply_msg");
-            applyInfo.status = res->getInt("apply_status");
-            applyInfo.expiresTime = res->getString("apply_expire_time");
-            applyInfo.createdTime = res->getString("apply_create_time");
-            applyInfo.updateTime = res->getString("apply_update_time");
-            applyInfo.userInfo.uid = res->getInt("user_uid");
-            applyInfo.userInfo.name = res->getString("name");
-            applyInfo.userInfo.email = res->getString("email");
-            applyInfo.userInfo.avatarUrl = res->getString("avatar");
-            applyInfo.userInfo.gender = res->getInt("gender");
-            applyList.push_back(applyInfo);
-        }
-        return !applyList.empty();
-    } catch (sql::SQLException& e) {
-        std::cout << "get user SQLException: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool MysqlDao::updateFriendRelation(const FriendInfo &friendInfo) {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return false;
-    }
-    Defer defer([this, &conn]() {
-        pool_->returnConnect(std::move(conn));
-    });
-    try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
-            "INSERT INTO friend_relation (uid, friend_id, alias, status, is_star, is_hide) values (?,?,?,?,?,?) "
-            "ON DUPLICATE KEY UPDATE uid = uid, friend_id = friend_id, (alias, status, is_star, is_hide) values (?,?,?,?)"));
-        stmt->setInt(1, friendInfo.uid);
-        stmt->setInt(2, friendInfo.friendId);
-        stmt->setString(3, friendInfo.relation.alias);
-        stmt->setInt(4, friendInfo.relation.status);
-        stmt->setInt(5, friendInfo.relation.isStar);
-        stmt->setInt(6, friendInfo.relation.isHide);
-        stmt->setString(7, friendInfo.relation.alias);
-        stmt->setInt(8, friendInfo.relation.status);
-        stmt->setInt(9, friendInfo.relation.isStar);
-        stmt->setInt(10, friendInfo.relation.isHide);
-        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
-            return false;
-        }
-        return true;
-    } catch (sql::SQLException &e) {
-        std::cout << "add friend relation SQLException: " << e.what() << std::endl;
-        return false;
-    }
-}
-
-bool MysqlDao::createFriendRelation(const FriendInfo &friendInfo) {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return false;
-    }
-    const auto oldCommit = conn->conn_->getAutoCommit();
-    Defer defer([this, oldCommit, &conn]() {
-        conn->conn_->setAutoCommit(oldCommit);
-        pool_->returnConnect(std::move(conn));
-    });
-    try {
-        conn->conn_->setAutoCommit(false);
-
-        const std::unique_ptr<sql::PreparedStatement> stmt_apply(conn->conn_->prepareStatement(
-            "UPDATE friend_apply SET status = 1 WHERE uid = ? AND friend_id = ? AND status = 0"));
-        stmt_apply->setInt(1, friendInfo.friendId);
-        stmt_apply->setInt(2, friendInfo.uid);
-        if (const int rowAffected = stmt_apply->executeUpdate(); rowAffected < 0) {
-            return false;
-        }
-
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
-            "INSERT INTO friend_relation (uid, friend_id, alias) values (?,?,?)"));
-        stmt->setInt(1, friendInfo.uid);
-        stmt->setInt(2, friendInfo.friendId);
-        stmt->setString(3, friendInfo.relation.alias);
-        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
-            return false;
-        }
-
-        stmt->setInt(1, friendInfo.friendId);
-        stmt->setInt(2, friendInfo.uid);
-        stmt->setString(3, "");
-        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
-            return false;
-        }
-        conn->conn_->commit();
-        return true;
-    } catch (sql::SQLException &e) {
-        std::cout << "add friend relation SQLException: " << e.what() << std::endl;
-        conn->conn_->rollback();
-        return false;
-    }
-}
-
-bool MysqlDao::getFriendList(int uid, int sinceId, std::vector<FriendInfo> &friendList) {
-    auto conn = pool_->getConnect();
-    if (!conn) {
-        return false;
-    }
-    Defer defer([this, &conn]() {
-        pool_->returnConnect(std::move(conn));
-    });
-
-    try {
-        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
-            "SELECT relation.friend_id AS rel_fid, relation.alias AS rel_alias, relation.status AS rel_status, "
-                    "relation.is_star AS rel_star, relation.id AS rel_id, user.name AS user_name, user.avatar AS user_avatar "
-                    "FROM friend_relation as relation join user on relation.friend_id = user.uid "
-                    "WHERE relation.uid = ? AND relation.is_hide = 0 AND relation.id > ? "
-                    "ORDER by relation.id ASC LIMIT ? "));
-        stmt->setInt(1, uid);
-        stmt->setInt(2, sinceId);
-        stmt->setInt(3, 200);
-        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
-        while (res->next()) {
-            FriendInfo info;
-            info.uid = uid;
-            info.friendId = res->getInt("rel_fid");
-            info.userInfo.baseInfo.uid = info.friendId;
-            info.userInfo.baseInfo.name = res->getString("user_name");
-            info.userInfo.baseInfo.avatarUrl = res->getString("user_avatar");
-            info.relation.id = res->getInt("rel_id");
-            info.relation.alias = res->getString("rel_alias");
-            info.relation.status = res->getInt("rel_status");
-            info.relation.isStar = res->getInt("rel_star");
-            friendList.push_back(info);
-        }
-        return true;
-    } catch (sql::SQLException& e) {
-        std::cout << "get user SQLException: " << e.what() << std::endl;
-        return false;
-    }
-}
+// bool MysqlDao::getFriendApplyList(const int uid, const int since_id, std::vector<FriendApplyInfo> &applyList) {
+//     auto conn = pool_->getConnect();
+//     if (!conn) {
+//         return false;
+//     }
+//     Defer defer([this, &conn]() {
+//         pool_->returnConnect(std::move(conn));
+//     });
+//
+//     try {
+//         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+//             "SELECT apply.id as apply_id, "
+//             "apply.uid as apply_uid, "
+//             "apply.friend_id as apply_friend_id, "
+//             "apply.msg as apply_msg, "
+//             "apply.status as apply_status, "
+//             "apply.expire_time as apply_expire_time, "
+//             "apply.create_time as apply_create_time, "
+//             "apply.update_time as apply_update_time, "
+//             "user.uid as user_uid, "
+//             "user.name as name, "
+//             "user.email as email, "
+//             "user.avatar as avatar, "
+//             "user.gender as gender "
+//             "FROM friend_apply as apply JOIN user "
+//             "ON user.uid = IF(apply.uid = ?, apply.friend_id, apply.uid)"
+//             "WHERE (apply.uid = ? OR apply.friend_id = ?) "
+//             "AND apply.id > ? ORDER by apply.id ASC LIMIT ? "));
+//         stmt->setInt(1, uid);
+//         stmt->setInt(2, uid);
+//         stmt->setInt(3, uid);
+//         stmt->setInt(4, since_id);
+//         stmt->setInt(5, 20);
+//         const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+//         while (res->next()) {
+//             FriendApplyInfo applyInfo;
+//             applyInfo.id = res->getInt("apply_id");
+//             applyInfo.uid = res->getInt("apply_uid");
+//             applyInfo.friendId = res->getInt("apply_friend_id");
+//             applyInfo.msg = res->getString("apply_msg");
+//             applyInfo.status = res->getInt("apply_status");
+//             applyInfo.expiresTime = res->getString("apply_expire_time");
+//             applyInfo.createdTime = res->getString("apply_create_time");
+//             applyInfo.updateTime = res->getString("apply_update_time");
+//             applyInfo.userInfo.uid = res->getInt("user_uid");
+//             applyInfo.userInfo.name = res->getString("name");
+//             applyInfo.userInfo.email = res->getString("email");
+//             applyInfo.userInfo.avatarUrl = res->getString("avatar");
+//             applyInfo.userInfo.gender = res->getInt("gender");
+//             applyList.push_back(applyInfo);
+//         }
+//         return !applyList.empty();
+//     } catch (sql::SQLException& e) {
+//         std::cout << "get user SQLException: " << e.what() << std::endl;
+//         return false;
+//     }
+// }
+//
+// bool MysqlDao::updateFriendRelation(const FriendInfo &friendInfo) {
+//     auto conn = pool_->getConnect();
+//     if (!conn) {
+//         return false;
+//     }
+//     Defer defer([this, &conn]() {
+//         pool_->returnConnect(std::move(conn));
+//     });
+//     try {
+//         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+//             "INSERT INTO friend_relation (uid, friend_id, alias, status, is_star, is_hide) values (?,?,?,?,?,?) "
+//             "ON DUPLICATE KEY UPDATE uid = uid, friend_id = friend_id, (alias, status, is_star, is_hide) values (?,?,?,?)"));
+//         stmt->setInt(1, friendInfo.uid);
+//         stmt->setInt(2, friendInfo.friendId);
+//         stmt->setString(3, friendInfo.relation.alias);
+//         stmt->setInt(4, friendInfo.relation.status);
+//         stmt->setInt(5, friendInfo.relation.isStar);
+//         stmt->setInt(6, friendInfo.relation.isHide);
+//         stmt->setString(7, friendInfo.relation.alias);
+//         stmt->setInt(8, friendInfo.relation.status);
+//         stmt->setInt(9, friendInfo.relation.isStar);
+//         stmt->setInt(10, friendInfo.relation.isHide);
+//         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+//             return false;
+//         }
+//         return true;
+//     } catch (sql::SQLException &e) {
+//         std::cout << "add friend relation SQLException: " << e.what() << std::endl;
+//         return false;
+//     }
+// }
+//
+// bool MysqlDao::createFriendRelation(const FriendInfo &friendInfo) {
+//     auto conn = pool_->getConnect();
+//     if (!conn) {
+//         return false;
+//     }
+//     const auto oldCommit = conn->conn_->getAutoCommit();
+//     Defer defer([this, oldCommit, &conn]() {
+//         conn->conn_->setAutoCommit(oldCommit);
+//         pool_->returnConnect(std::move(conn));
+//     });
+//     try {
+//         conn->conn_->setAutoCommit(false);
+//
+//         const std::unique_ptr<sql::PreparedStatement> stmt_apply(conn->conn_->prepareStatement(
+//             "UPDATE friend_apply SET status = 1 WHERE uid = ? AND friend_id = ? AND status = 0"));
+//         stmt_apply->setInt(1, friendInfo.friendId);
+//         stmt_apply->setInt(2, friendInfo.uid);
+//         if (const int rowAffected = stmt_apply->executeUpdate(); rowAffected < 0) {
+//             return false;
+//         }
+//
+//         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+//             "INSERT INTO friend_relation (uid, friend_id, alias) values (?,?,?)"));
+//         stmt->setInt(1, friendInfo.uid);
+//         stmt->setInt(2, friendInfo.friendId);
+//         stmt->setString(3, friendInfo.relation.alias);
+//         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+//             return false;
+//         }
+//
+//         stmt->setInt(1, friendInfo.friendId);
+//         stmt->setInt(2, friendInfo.uid);
+//         stmt->setString(3, "");
+//         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+//             return false;
+//         }
+//         conn->conn_->commit();
+//         return true;
+//     } catch (sql::SQLException &e) {
+//         std::cout << "add friend relation SQLException: " << e.what() << std::endl;
+//         conn->conn_->rollback();
+//         return false;
+//     }
+// }
+//
+// bool MysqlDao::getFriendList(int uid, int sinceId, std::vector<FriendInfo> &friendList) {
+//     auto conn = pool_->getConnect();
+//     if (!conn) {
+//         return false;
+//     }
+//     Defer defer([this, &conn]() {
+//         pool_->returnConnect(std::move(conn));
+//     });
+//
+//     try {
+//         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+//             "SELECT relation.friend_id AS rel_fid, relation.alias AS rel_alias, relation.status AS rel_status, "
+//                     "relation.is_star AS rel_star, relation.id AS rel_id, user.name AS user_name, user.avatar AS user_avatar "
+//                     "FROM friend_relation as relation join user on relation.friend_id = user.uid "
+//                     "WHERE relation.uid = ? AND relation.is_hide = 0 AND relation.id > ? "
+//                     "ORDER by relation.id ASC LIMIT ? "));
+//         stmt->setInt(1, uid);
+//         stmt->setInt(2, sinceId);
+//         stmt->setInt(3, 200);
+//         const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+//         while (res->next()) {
+//             FriendInfo info;
+//             info.uid = uid;
+//             info.friendId = res->getInt("rel_fid");
+//             info.userInfo.baseInfo.uid = info.friendId;
+//             info.userInfo.baseInfo.name = res->getString("user_name");
+//             info.userInfo.baseInfo.avatarUrl = res->getString("user_avatar");
+//             info.relation.id = res->getInt("rel_id");
+//             info.relation.alias = res->getString("rel_alias");
+//             info.relation.status = res->getInt("rel_status");
+//             info.relation.isStar = res->getInt("rel_star");
+//             friendList.push_back(info);
+//         }
+//         return true;
+//     } catch (sql::SQLException& e) {
+//         std::cout << "get user SQLException: " << e.what() << std::endl;
+//         return false;
+//     }
+// }
 
 bool MysqlDao::addConversation(int uid, int to, const std::string &convId, int convType) {
     auto conn = pool_->getConnect();

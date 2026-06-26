@@ -19,7 +19,7 @@
 #include "MsgNode.h"
 #include "MysqlMgr.h"
 #include "ThreadPool.h"
-#include "UserInfo.h"
+#include "common/model/UserBaseInfo.h"
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
 
@@ -34,7 +34,6 @@ public:
 
     void notifyOnlineUserMsg(int uid, const std::string& msg, MessageID msgId, const notifyDiffServerOnlineUserCallback &callback);
 
-    static bool searchUserInfoByUid(int uid, UserInfo& userInfo);
 
 private:
     friend class Singleton<ChatLogicSystem>;
@@ -53,45 +52,45 @@ private:
 
     // 客户端踢人逻辑
     void kickOnlineUser(int uid) const;
-
     // 登录逻辑
-    void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
-    int getApplyFriendCount(int uid);
+    void loginHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data) const;
+
+    static int getApplyFriendCount(int uid);
     void firstPageInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    bool getFriendList(int uid, int sinceId, std::vector<FriendInfo>& friendList);
+    // 搜索好友列表
     void searchFriendListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    // 搜索好友用户
-    static void getSearchInfoFromJson(Json::Value& root, UserInfo& userInfo);
-    static std::string getSearchKey(UserInfo& userInfo);
-    static bool searchUserInfo(UserInfo& userInfo);
-    void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
-
     // 查询用户详细信息
-    static bool searchUserFullInfoInRedis(UserFullInfo& userFullInfo);
-    static bool searchUserFullInfoByUid(int uid, UserFullInfo& userFullInfo);
+    static void getSearchInfoFromJson(Json::Value& root, UserBaseInfo& userInfo);
+    static bool searchUserFullInfo(UserBaseInfo& baseInfo, UserProfile& profile);
+    static bool isFriend(int uid, int friendId);
 
-    // 添加好友
-    bool getFriendRelationFromRedis(int from, int uid, FriendRelation& fr);
-    bool getFriendRelation(int from, int uid, FriendRelation& fr);
-    void setFriendRelation(int from, int uid, Json::Value& root);
+    static void setFriendRelation(int uid, int friendId, Json::Value& root);
     void searchUserFullInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    bool getFriendApplyList(int uid, int sinceId, std::vector<FriendApplyInfo>& applyInfoList);
-    void searchFriendApplyListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    // 搜索好友用户
+    static std::string getSearchKey(UserBaseInfo& userInfo);
+    static bool searchUserBaseInfo(UserBaseInfo& userInfo);
+    void searchUserHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-    // 认证好友
+    // 获取好友申请列表
+    void searchFriendApplyListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    // 好友申请
     static bool checkFriendRelation(int uid, int friendId);
-    static bool checkFriendApply(int uid, int friendId);
     static bool checkFriendApplyInvalid(int uid, int friendId);
     void friendApplyHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    // 认证好友
     void friendAuthHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    // 更新好友关系
+    void updateFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
 
     // 修改用户信息
     static PartsList getUpdateUserInfoPart(const Json::Value &root);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
+    // =============== 待修复 ===============
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 

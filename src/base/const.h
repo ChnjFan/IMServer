@@ -79,6 +79,8 @@ enum class MessageID : uint16_t {
     ID_GET_FRIEND_REPLY_RSP = 2010, // 获取好友申请响应
     ID_GET_FRIEND_LIST_REQ = 2011,  // 获取好友列表请求
     ID_GET_FRIEND_LIST_RSP = 2012,  // 获取好友列表响应
+    ID_UPDATE_FRIEND_REQ = 2013,    // 更新好友关系请求
+    ID_UPDATE_FRIEND_RSP = 2014,    // 更新好友关系响应
 
     ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
     ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应

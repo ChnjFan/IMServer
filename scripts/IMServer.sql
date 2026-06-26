@@ -88,7 +88,9 @@ CREATE TABLE `user` (
   `gender` tinyint NOT NULL DEFAULT 0 COMMENT '0未知 1男 2女',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_uid` (`uid`) COMMENT '用户uid索引',
+  UNIQUE KEY `idx_email` (`email`) COMMENT '用户email索引'
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf16 COMMENT='用户主表';
 
 CREATE TABLE `user_profile` (
@@ -105,7 +107,7 @@ CREATE TABLE `user_profile` (
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_ user_id` (`uid`) COMMENT '用户信息ID索引'
+  UNIQUE KEY `idx_user_id` (`uid`) COMMENT '用户信息ID索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户扩展资料表';
 -- ----------------------------
 -- Records of user
