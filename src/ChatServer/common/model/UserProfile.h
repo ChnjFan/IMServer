@@ -36,6 +36,10 @@ struct UserProfile {
     void fromSqlResult(const std::shared_ptr<sql::ResultSet>& result);
     void toJson(Json::Value& value) const;
 
+    [[nodiscard]] std::string getUpdateProperty() const;
+    [[nodiscard]] bool getUpdatePropertyStringValue(std::string& value) const;
+    [[nodiscard]] bool getUpdatePropertyIntValue(int& value) const;
+
     // 判断 KEY 是否是 user_profile 字段
     static bool isProperty(const std::string& value);
 };
@@ -130,6 +134,74 @@ inline void UserProfile::toJson(Json::Value &value) const {
     if (extraJson.has_value()) {
         value["extra"] = extraJson.value();
     }
+}
+
+inline std::string UserProfile::getUpdateProperty() const {
+    if (privacyFriend >= 0) {
+        return "privacy_friend";
+    }
+    if (privacyChat >= 0) {
+        return "privacy_chat";
+    }
+    if (blacklistSwitch >= 0) {
+        return "blacklist_switch";
+    }
+    if (birthday.has_value()) {
+        return "birthday";
+    }
+    if (region.has_value()) {
+        return "region";
+    }
+    if (signature.has_value()) {
+        return "signature";
+    }
+    if (selfIntro.has_value()) {
+        return "self_intro";
+    }
+    if (extraJson.has_value()) {
+        return "extra_json";
+    }
+    return "";
+}
+
+inline bool UserProfile::getUpdatePropertyStringValue(std::string &value) const {
+    if (birthday.has_value()) {
+        value = birthday.value();
+        return true;
+    }
+    if (region.has_value()) {
+        value = region.value();
+        return true;
+    }
+    if (signature.has_value()) {
+        value = signature.value();
+        return true;
+    }
+    if (selfIntro.has_value()) {
+        value = selfIntro.value();
+        return true;
+    }
+    if (extraJson.has_value()) {
+        value = extraJson.value();
+        return true;
+    }
+    return false;
+}
+
+inline bool UserProfile::getUpdatePropertyIntValue(int &value) const {
+    if (privacyFriend >= 0) {
+        value = privacyFriend;
+        return true;
+    }
+    if (privacyChat >= 0) {
+        value = privacyChat;
+        return true;
+    }
+    if (blacklistSwitch >= 0) {
+        value = blacklistSwitch;
+        return true;
+    }
+    return false;
 }
 
 inline bool UserProfile::isProperty(const std::string &value) {

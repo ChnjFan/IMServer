@@ -91,6 +91,42 @@ bool UserInfoDao::selectUserBaseInfo(UserBaseInfo &info) const {
     }
 }
 
+bool UserInfoDao::updateUserBaseInfo(const UserBaseInfo &info) const {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    const auto oldCommit = conn->conn_->getAutoCommit();
+    Defer defer([this, oldCommit, &conn]() {
+        conn->conn_->setAutoCommit(oldCommit);
+        pool_->returnConnect(std::move(conn));
+    });
+
+    const std::string property = info.getUpdateProperty();
+    if (property.empty() || info.uid < 0) {
+        return false;
+    }
+
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+            "UPDATE user SET " + property + " = ? WHERE uid = ?"));
+        if (std::string strValue; info.getUpdatePropertyStringValue(strValue)) {
+            stmt->setString(1, strValue);
+        }
+        else if (int value; info.getUpdatePropertyIntValue(value)) {
+            stmt->setInt(1, value);
+        }
+        stmt->setInt(2, info.uid);
+        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            return false;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 bool UserInfoDao::getUserPassword(UserBaseInfo &info) const {
     auto conn = pool_->getConnect();
     if (!conn) {
@@ -156,4 +192,40 @@ bool UserInfoDao::selectUserProfileInfo(const int uid, UserProfile &info) const 
 bool UserInfoDao::selectUserFullInfo(UserBaseInfo &base, UserProfile &profile) const {
     selectUserBaseInfo(base);
     return selectUserProfileInfo(base.uid, profile);
+}
+
+bool UserInfoDao::updateUserProfileInfo(const UserProfile &profile) const {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    const auto oldCommit = conn->conn_->getAutoCommit();
+    Defer defer([this, oldCommit, &conn]() {
+        conn->conn_->setAutoCommit(oldCommit);
+        pool_->returnConnect(std::move(conn));
+    });
+
+    const std::string property = profile.getUpdateProperty();
+    if (property.empty() || profile.uid < 0) {
+        return false;
+    }
+
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
+            "UPDATE user_profile SET " + property + " = ? WHERE uid = ?"));
+        if (std::string strValue; profile.getUpdatePropertyStringValue(strValue)) {
+            stmt->setString(1, strValue);
+        }
+        else if (int value; profile.getUpdatePropertyIntValue(value)) {
+            stmt->setInt(1, value);
+        }
+        stmt->setInt(2, profile.uid);
+        if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            return false;
+        }
+        return true;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user SQLException: " << e.what() << std::endl;
+        return false;
+    }
 }

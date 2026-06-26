@@ -70,11 +70,11 @@ bool UserInfoCache::updateUidMap(const UserBaseInfo &info) {
         return false;
     }
 
-    if (!info.email.empty()) {
-        ret |= RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + info.email, std::to_string(info.uid));
+    if (info.email.has_value()) {
+        ret |= RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + info.email.value(), std::to_string(info.uid));
     }
-    if (!info.name.empty()) {
-        ret |= RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + info.name, std::to_string(info.uid));
+    if (info.name.has_value()) {
+        ret |= RedisMgr::getInstance()->set(UID_INDEX_MAP_PREFIX + info.name.value(), std::to_string(info.uid));
     }
     return ret;
 }

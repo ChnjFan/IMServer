@@ -21,13 +21,13 @@ struct UserBaseInfo {
     int uid = -1;
     int8_t gender = 0;
     int8_t pad[3];
-    std::string name;
-    std::string email;
-    std::string password;
-    std::string salt;
-    std::string avatarUrl;
-    std::string createTime;
-    std::string updateTime;
+    std::optional<std::string> name;
+    std::optional<std::string> email;
+    std::optional<std::string> password;
+    std::optional<std::string> salt;
+    std::optional<std::string> avatarUrl;
+    std::optional<std::string> createTime;
+    std::optional<std::string> updateTime;
 
     inline static std::unordered_set<std::string> keys{"id", "uid", "gender", "name",
     "email", "password", "salt", "avatar_url", "create_time", "update_time"};
@@ -41,6 +41,10 @@ struct UserBaseInfo {
     [[nodiscard]] std::string getSearchProperty() const;
     [[nodiscard]] std::string getSearchPropertyStringValue() const;
     [[nodiscard]] int getSearchPropertyIntValue() const;
+
+    [[nodiscard]] std::string getUpdateProperty() const;
+    [[nodiscard]] bool getUpdatePropertyStringValue(std::string& value) const;
+    [[nodiscard]] bool getUpdatePropertyIntValue(int& value) const;
 
     // 判断 KEY 是否是 user_profile 字段
     static bool isProperty(const std::string& value);
@@ -103,25 +107,31 @@ inline void UserBaseInfo::toJson(Json::Value &value) const {
 
     value["uid"] = uid;
     value["id"] = id;
-    if (!name.empty()) {
-        value["name"] = name;
+    if (name.has_value()) {
+        value["name"] = name.value();
     }
-    if (!email.empty()) {
-        value["email"] = email;
+    if (email.has_value()) {
+        value["email"] = email.value();
     }
     if (gender == static_cast<int8_t>(GenderType::MALE)
         || gender == static_cast<int8_t>(GenderType::FEMALE)) {
         value["gender"] = gender;
     }
-    if (!password.empty()) {
-        value["password"] = password;
+    if (password.has_value()) {
+        value["password"] = password.value();
     }
-    if (!salt.empty()) {
-        value["salt"] = salt;
+    if (salt.has_value()) {
+        value["salt"] = salt.value();
     }
-    value["avatar_url"] = avatarUrl;
-    value["create_time"] = createTime;
-    value["update_time"] = updateTime;
+    if (avatarUrl.has_value()) {
+        value["avatar_url"] = avatarUrl.value();
+    }
+    if (createTime.has_value()) {
+        value["create_time"] = createTime.value();
+    }
+    if (updateTime.has_value()) {
+        value["update_time"] = updateTime.value();
+    }
 }
 
 inline std::string UserBaseInfo::getSearchProperty() const {
@@ -129,21 +139,21 @@ inline std::string UserBaseInfo::getSearchProperty() const {
     if (uid >= 0) {
         return "uid";
     }
-    if (!email.empty()) {
+    if (email.has_value()) {
         return "email";
     }
-    if (!name.empty()) {
+    if (name.has_value()) {
         return "name";
     }
     return "";
 }
 
 inline std::string UserBaseInfo::getSearchPropertyStringValue() const {
-    if (!email.empty()) {
-        return email;
+    if (email.has_value()) {
+        return email.value();
     }
-    if (!name.empty()) {
-        return name;
+    if (name.has_value()) {
+        return name.value();
     }
     return "";
 }
@@ -153,6 +163,75 @@ inline int UserBaseInfo::getSearchPropertyIntValue() const {
         return -1;
     }
     return uid;
+}
+
+inline std::string UserBaseInfo::getUpdateProperty() const {
+    if (gender == static_cast<int8_t>(GenderType::MALE)
+        || gender == static_cast<int8_t>(GenderType::FEMALE)) {
+        return "gender";
+    }
+    if (name.has_value()) {
+        return "name";
+    }
+    if (email.has_value()) {
+        return "email";
+    }
+    if (password.has_value()) {
+        return "password";
+    }
+    if (salt.has_value()) {
+        return "salt";
+    }
+    if (avatarUrl.has_value()) {
+        return "avatar_url";
+    }
+    if (createTime.has_value()) {
+        return "create_time";
+    }
+    if (updateTime.has_value()) {
+        return "update_time";
+    }
+    return "";
+}
+
+inline bool UserBaseInfo::getUpdatePropertyStringValue(std::string &value) const {
+    if (name.has_value()) {
+        value = name.value();
+        return true;
+    }
+    if (email.has_value()) {
+        value = email.value();
+        return true;
+    }
+    if (password.has_value()) {
+        value = password.value();
+        return true;
+    }
+    if (salt.has_value()) {
+        value = salt.value();
+        return true;
+    }
+    if (avatarUrl.has_value()) {
+        value = avatarUrl.value();
+        return true;
+    }
+    if (createTime.has_value()) {
+        value = createTime.value();
+        return true;
+    }
+    if (updateTime.has_value()) {
+        value = updateTime.value();
+        return true;
+    }
+    return false;
+}
+
+inline bool UserBaseInfo::getUpdatePropertyIntValue(int &value) const {
+    if (gender == static_cast<int8_t>(GenderType::MALE) || gender == static_cast<int8_t>(GenderType::FEMALE)) {
+        value = gender;
+        return true;
+    }
+    return false;
 }
 
 inline bool UserBaseInfo::isProperty(const std::string &value) {

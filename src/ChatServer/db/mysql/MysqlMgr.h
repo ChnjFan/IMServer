@@ -27,6 +27,9 @@ public:
     // 详细信息必须用 UID 查询
     bool selectUserProfileInfo(int uid, UserProfile &info) const;
     bool selectUserFullInfo(UserBaseInfo& base, UserProfile& profile) const;
+    // 修改用户信息
+    bool updateUserBaseInfo(const UserBaseInfo& info) const;
+    bool updateUserProfileInfo(const UserProfile& profile) const;
 
     // 好友信息接口
     [[nodiscard]] std::vector<FriendInfo> selectFriendList(int uid, const std::string& sinceTime) const;

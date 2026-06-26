@@ -500,11 +500,11 @@ void ChatLogicSystem::searchUserFullInfoHandle(const std::shared_ptr<Session> &s
 
 
 std::string ChatLogicSystem::getSearchKey(UserBaseInfo &userInfo) {
-    if (!userInfo.email.empty()) {
-        return userInfo.email;
+    if (userInfo.email.has_value()) {
+        return userInfo.email.value();
     }
-    if (!userInfo.name.empty()) {
-        return userInfo.name;
+    if (userInfo.name.has_value()) {
+        return userInfo.name.value();
     }
     return "";
 }
@@ -516,8 +516,8 @@ bool ChatLogicSystem::searchUserBaseInfo(UserBaseInfo& userInfo) {
     // 缓存没有映射关系，只能去数据库查询
     if (!MysqlMgr::getInstance()->selectUserBaseInfo(userInfo) || userInfo.uid < 0) {
         std::cout << "Not found user [uid: " << userInfo.uid
-            << " email: " << userInfo.email
-            << " name: " << userInfo.name << "]" << std::endl;
+            << " email: " << userInfo.email.value()
+            << " name: " << userInfo.name.value() << "]" << std::endl;
         return false;
     }
     // 更新缓存
@@ -785,16 +785,7 @@ void ChatLogicSystem::updateUserInfoHandle(const std::shared_ptr<Session> &sessi
     }
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 
-    const auto parts = getUpdateUserInfoPart(srcRoot);
-    if (parts.empty()) {
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
-        return;
-    }
-
-    if (!srcRoot.isMember("uid")) {
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
-        return;
-    }
+    // 暂时只能支持修改一个字段
     const auto uid = std::stoi(srcRoot["uid"].asString());
     UserBaseInfo oldInfo;
     oldInfo.uid = uid;
@@ -803,17 +794,33 @@ void ChatLogicSystem::updateUserInfoHandle(const std::shared_ptr<Session> &sessi
         return;
     }
 
-    // if (!MysqlMgr::getInstance()->updateUserInfo(srcRoot, parts)) {
-    //     root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
-    //     return;
-    // }
+    UserBaseInfo info;
+    info.fromJson(srcRoot);
+    UserProfile profile;
+    profile.fromJson(srcRoot);
+    if (!MysqlMgr::getInstance()->updateUserBaseInfo(info)
+        && !MysqlMgr::getInstance()->updateUserProfileInfo(profile)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
 
     if (!RedisMgr::getInstance()->del(USER_BASE_INFO_PREFIX + std::to_string(uid))
         || !RedisMgr::getInstance()->del(USER_PROFILE_INFO_PREFIX + std::to_string(uid))
-        || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.email)
-        || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.name)) {
+        || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.email.value())
+        || !RedisMgr::getInstance()->del(UID_INDEX_MAP_PREFIX + oldInfo.name.value())) {
         std::cout << "Failed to delete user info, waiting to add delay task" << std::endl;
     }
+}
+
+void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP));
+    });
+
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 }
 
 /**
@@ -940,17 +947,6 @@ void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, 
     const auto worker = std::make_shared<LogicWorker>(session, msgId, data);
     worker->init();
     workerPool_.addTask(worker);
-}
-
-void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
-    const std::string &data) {
-    Json::Value root;
-    Defer defer([&root, session]() {
-        const std::string jsonStr = root.toStyledString();
-        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP));
-    });
-
-    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 }
 
 

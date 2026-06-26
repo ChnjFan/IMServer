@@ -23,6 +23,14 @@ bool MysqlMgr::selectUserFullInfo(UserBaseInfo &base, UserProfile &profile) cons
     return userDao_.selectUserFullInfo(base, profile);
 }
 
+bool MysqlMgr::updateUserBaseInfo(const UserBaseInfo &info) const {
+    return userDao_.updateUserBaseInfo(info);
+}
+
+bool MysqlMgr::updateUserProfileInfo(const UserProfile &profile) const {
+    return userDao_.updateUserProfileInfo(profile);
+}
+
 std::vector<FriendInfo> MysqlMgr::selectFriendList(const int uid, const std::string& sinceTime) const {
     return friendDao_.selectFriendList(uid, sinceTime);
 }

@@ -85,18 +85,18 @@ private:
     // 更新好友关系
     void updateFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
-
     // 修改用户信息
     static PartsList getUpdateUserInfoPart(const Json::Value &root);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 心跳包处理
+    void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // =============== 待修复 ===============
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
-
-    void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
     std::thread worker_;
