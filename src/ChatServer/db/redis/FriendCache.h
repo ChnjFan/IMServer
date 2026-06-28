@@ -23,6 +23,7 @@ public:
 
     static bool isFriend(int uid, int friendId);
     static bool updateFriendSet(int uid, int friendId);
+    static bool deleteFriendSet(int uid, int friendId);
     static bool getFriendInfo(int uid, int friendId, FriendInfo& info);
 
     static void clearFriendApplyCount(int uid);

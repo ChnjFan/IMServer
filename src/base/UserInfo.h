@@ -179,19 +179,6 @@ struct ApplyUserInfo {
     std::string email;
 };
 
-struct ConversationInfo {
-    std::string conv_id;
-    uint8_t conv_type;
-    uint8_t is_top;
-    uint8_t is_mute;
-    uint8_t pad;
-    int to_uid;
-    int unread_count;
-    int last_msg_id;
-    std::string last_msg;
-    std::string last_time;
-};
-
 struct MessageInfo {
     std::string conv_id;
     int sender_uid;
@@ -206,7 +193,6 @@ struct MessageInfo {
 
 typedef std::function<void(const std::string& serverName)> notifyDiffServerOnlineUserCallback;
 typedef std::vector<std::shared_ptr<ApplyUserInfo>> ApplyUserList;
-typedef std::vector<std::shared_ptr<ConversationInfo>> ConversationList;
 using PartsList = std::unordered_map<std::string, std::vector<std::string>>;
 
 #endif //IMSERVER_USERINFO_H

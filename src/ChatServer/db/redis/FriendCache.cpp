@@ -23,6 +23,15 @@ bool FriendCache::updateFriendSet(const int uid, const int friendId) {
     return RedisMgr::getInstance()->sAdd(FRIEND_SET_PREFIX + std::to_string(uid), std::to_string(friendId));
 }
 
+bool FriendCache::deleteFriendSet(const int uid, const int friendId) {
+    if (uid < 0 || friendId < 0) {
+        std::cout << "[isFriend] Input invalid param" << std::endl;
+        return false;
+    }
+
+    return RedisMgr::getInstance()->sRem(FRIEND_SET_PREFIX + std::to_string(uid), std::to_string(friendId));
+}
+
 bool FriendCache::getFriendInfo(const int uid, const int friendId, FriendInfo &info) {
     const std::string res = RedisMgr::getInstance()->hGet(FRIEND_RELATION_INFO_PREFIX + std::to_string(uid),
             std::to_string(friendId));

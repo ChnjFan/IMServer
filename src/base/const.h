@@ -32,6 +32,7 @@ constexpr int MAX_BUFFER_SIZE = 8196;
 #define CODE_PREFIX "code_"
 
 enum class ErrorCodes : int32_t {
+    // 通用错误
     SUCCESS = 0,
     ERROR_REQUEST_JSON = 1001,
     RPC_FAILED = 1002,
@@ -40,9 +41,12 @@ enum class ErrorCodes : int32_t {
     FILE_ERROR = 1005,
     REQUEST_NOT_FOUND = 1006,
 
+    // 权限错误
     VERIFY_CODE_EXPIRED = 2001,
     VERIFY_CODE_NOT_REACHED = 2002,
+    CONV_CREATE_NO_PERMISSION = 2003,
 
+    // 业务逻辑错误
     USER_EXISTS = 3001,
     USER_EMAIL_NOT_EXISTS = 3002,
     USER_NOT_EXISTS = 3003,
@@ -52,6 +56,7 @@ enum class ErrorCodes : int32_t {
     FRIEND_APPLY_NOT_EXISTS = 3101,
     FRIEND_NOT_EXISTS = 3102,
 
+    // 系统错误
     CHAT_LOGIN_TOKEN_ERROR = 4001,
     CHAT_LOGIN_UID_ERROR = 4002,
 };
@@ -81,6 +86,8 @@ enum class MessageID : uint16_t {
     ID_GET_FRIEND_LIST_RSP = 2012,  // 获取好友列表响应
     ID_UPDATE_FRIEND_REQ = 2013,    // 更新好友关系请求
     ID_UPDATE_FRIEND_RSP = 2014,    // 更新好友关系响应
+    ID_DELETE_FRIEND_REQ = 2015,    // 删除好友请求
+    ID_DELETE_FRIEND_RSP = 2016,
 
     ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
     ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应

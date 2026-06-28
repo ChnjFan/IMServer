@@ -14,8 +14,10 @@
 #include "common/model/UserBaseInfo.h"
 #include "common/model/UserProfile.h"
 #include "common/model/FriendApply.h"
+#include "common/model/ConversationInfo.h"
 #include "db/mysql/dao/UserInfoDao.h"
 #include "db/mysql/dao/FriendInfoDao.h"
+#include "db/mysql/dao/ConversationDao.h"
 
 class MysqlMgr : public Singleton<MysqlMgr> {
 public:
@@ -44,6 +46,8 @@ public:
     [[nodiscard]] bool checkFriendApplyExist(int uid, int friendId) const;
     bool updateFriendApply(int uid, int friendId, int status = 0, const std::string& msg = "");
     bool getFriendApplyCount(int uid, int& count);
+
+    bool createConversation(const ConversationInfo& info, std::string& result);
 
     // ============= 旧接口 ==============
     // bool getApplyUserList(int uid, ApplyUserList &applyUserList);
@@ -78,6 +82,7 @@ private:
 
     UserInfoDao userDao_;
     FriendInfoDao friendDao_;
+    ConversationDao convDao_;
     // MysqlDao db_;
 };
 

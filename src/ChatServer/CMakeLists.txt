@@ -21,17 +21,16 @@ set(CHAT_SERVER_SOURCES
     core/LogicWorker.h
     core/UserMgr.cpp
     core/UserMgr.h
-    core/FriendRelation.h
-    
-    # db/mysql 目录 - 数据库访问层
+
+        # db/mysql 目录 - 数据库访问层
     db/mysql/MysqlMgr.cpp
     db/mysql/MysqlMgr.h
-    db/mysql/MysqlDao.cpp
-    db/mysql/MysqlDao.h
     db/mysql/dao/UserInfoDao.cpp
     db/mysql/dao/UserInfoDao.h
     db/mysql/dao/FriendInfoDao.cpp
     db/mysql/dao/FriendInfoDao.h
+    db/mysql/dao/ConversationDao.cpp
+    db/mysql/dao/ConversationDao.h
 
     # db/redis 目录 - Redis 访问层
     db/redis/UserInfoCache.cpp

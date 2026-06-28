@@ -46,7 +46,7 @@ bool MysqlMgr::createFriendRelation(const FriendApply &applyInfo) {
     return friendDao_.createFriendRelation(applyInfo);
 }
 
-bool MysqlMgr::updateFriendRelation(int uid, const FriendInfo &friendInfo) {
+bool MysqlMgr::updateFriendRelation(const int uid, const FriendInfo &friendInfo) {
     return friendDao_.updateFriendRelation(uid, friendInfo);
 }
 
@@ -64,6 +64,10 @@ bool MysqlMgr::updateFriendApply(const int uid, const int friendId, const int st
 
 bool MysqlMgr::getFriendApplyCount(const int uid, int &count) {
     return friendDao_.getFriendApplyCount(uid, count);
+}
+
+bool MysqlMgr::createConversation(const ConversationInfo &info, std::string& result) {
+    return convDao_.createConversation(info, result);
 }
 
 //

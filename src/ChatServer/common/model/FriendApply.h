@@ -10,6 +10,13 @@
 #include <json/json.h>
 #include <jdbc/cppconn/resultset.h>
 
+enum class FriendApplyStatus : uint8_t {
+    NORMAL = 0,
+    ACCESS = 1,
+    REJECT = 2,
+    EXPIRE = 3,
+};
+
 struct FriendApply {
     int uid = -1;           // 发起申请人
     int friendId = -1;      // 待添加人

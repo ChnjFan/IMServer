@@ -44,7 +44,7 @@ std::vector<FriendInfo> FriendInfoDao::selectFriendList(const int uid, const std
         const std::string sql = "SELECT " + std::string(FRIEND_LIST_INFO_PARTS)
                                 + "FROM friend_relation JOIN user ON friend_relation.friend_id = user.uid "
                                 "WHERE friend_relation.uid = ? AND friend_relation.is_hide = 0 "
-                                "AND friend_relation.update_time > ? "
+                                "AND friend_relation.status != 3 AND friend_relation.update_time > ? "
                                 "ORDER by friend_relation.update_time ASC LIMIT ? ";
         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
         stmt->setInt(1, uid);

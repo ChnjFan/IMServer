@@ -14,7 +14,6 @@
 #include <json/json.h>
 
 #include "const.h"
-#include "FriendRelation.h"
 #include "Singleton.h"
 #include "MsgNode.h"
 #include "MysqlMgr.h"
@@ -22,6 +21,7 @@
 #include "common/model/UserBaseInfo.h"
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
+typedef std::function<void(const std::string& serviceName)> notifyOnlineUserCallback;
 
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
@@ -32,8 +32,7 @@ public:
 
     void insertMsgNode(const std::shared_ptr<LogicNode> &msg);
 
-    void notifyOnlineUserMsg(int uid, const std::string& msg, MessageID msgId, const notifyDiffServerOnlineUserCallback &callback);
-
+    void notifyOnlineUserMsg(int uid, const std::string& msg, MessageID msgId, const notifyOnlineUserCallback &callback);
 
 private:
     friend class Singleton<ChatLogicSystem>;
@@ -45,10 +44,6 @@ private:
     // 处理消息
     void dealMsg();
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
-
-    // todo 待修复
-    bool getConversationList(int uid, ConversationList& convList);
-    void addHistoryMessage(Json::Value& root, ChatMsgStatus status);
 
     // 客户端踢人逻辑
     void kickOnlineUser(int uid) const;
@@ -86,15 +81,20 @@ private:
     void updateFriendHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // 修改用户信息
-    static PartsList getUpdateUserInfoPart(const Json::Value &root);
     void updateUserInfoHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 创建会话
+    static bool isPrivateChat(int uid);
+    static int getOtherUidByConvId(const std::string& convId, int uid);
+    static bool checkConversationValid(int uid, int other);
+    void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     // 心跳包处理
     void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
+
     // =============== 待修复 ===============
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
-    void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 

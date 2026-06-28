@@ -403,7 +403,7 @@ ID_OFFLINE_SYNC_RSP      = 4012,
 
 ```json
 // → 请求
-{ "uid": 3, "conv_id": "c2c_3_7" }
+{ "uid": 3, "friend_id": "7" }
 
 // ← 成功
 {
@@ -663,7 +663,6 @@ struct MessageInfo {
 
 | 文件 | 变更内容 |
 |------|----------|
-| `scripts/IMServer.sql` | 新增 `conversation` 表、修改 `user_conversation` 表、新增 `create_conversation` 存储过程、改造 `save_chat_message` 存储过程 |
 | `src/base/const.h` | 新增 6 个 MessageID 枚举值（4005-4012） |
 | `src/base/UserInfo.h` | 修改 `ConversationInfo` 结构体：移除 `to_uid`，新增 `status`/`last_read_msg_id`/`update_time` |
 | `src/base/RedisMgr.h` | 新增 `incr()` 方法、更新 Redis key 宏 |
