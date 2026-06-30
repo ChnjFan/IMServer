@@ -80,10 +80,10 @@ CREATE PROCEDURE `create_conversation`(
     IN  `p_conv_id` VARCHAR(64),
     IN  `p_uid1`    INT,
     IN  `p_uid2`    INT,
-    OUT `result`    INT
+    OUT `result`    CHAR(20)
 )
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; SET result = -1; END;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; SET result = 'FAIL'; END;
     START TRANSACTION;
 
     -- 会话主表不存在则创建
@@ -101,7 +101,8 @@ BEGIN
     VALUES (p_uid2, p_conv_id, 0, 0)
     ON DUPLICATE KEY UPDATE `is_deleted` = 0, `update_time` = NOW();
 
-    SET result = 0;
+    -- 获取创建时间
+    SELECT `create_time` INTO result FROM `conversation` WHERE `conv_id` = p_conv_id;
     COMMIT;
 END;
 
@@ -110,34 +111,34 @@ END;
 -- ----------------------------
 DROP PROCEDURE IF EXISTS `save_chat_message`;
 CREATE PROCEDURE `save_chat_message`(
-    IN  `p_conv_id`   VARCHAR(64),
-    IN  `sender_uid`  INT,
-    IN  `receive_uid`  INT,
-    IN  `msg_type`    TINYINT,
-    IN  `p_msg_id`      INT,          -- 服务端生成的会话内自增ID
-    IN  `stat`        TINYINT,
-    IN  `content`     TEXT,
-    OUT `result`      CHAR(20)
+    IN  `p_conv_id`     VARCHAR(64),
+    IN  `p_sender_uid`  INT,
+    IN  `receive_uid`   INT,
+    IN  `p_msg_type`    TINYINT,
+    IN  `p_msg_id`      INT,          -- 客户端的消息 ID
+    IN  `stat`          TINYINT,
+    IN  `p_content`       TEXT,
+    OUT `result`        INT
 )
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; SET result = ""; END;
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; SET result = -1; END;
     START TRANSACTION;
 
     IF EXISTS (SELECT 1 FROM `message` WHERE `conv_id` = p_conv_id AND `msg_id` = p_msg_id) THEN
-        SET result = NOW();   -- 幂等：消息已存在
+        SET result = 0;
         COMMIT;
     ELSE
         -- 插入消息记录
         INSERT INTO `message` (`conv_id`, `sender_uid`, `msg_type`, `content`, `msg_id`, `status`)
-        VALUES (p_conv_id, sender_uid, msg_type, content, msg_id, stat);
+        VALUES (p_conv_id, p_sender_uid, p_msg_type, p_content, p_msg_id, stat);
         -- 更新会话 last_* 字段
         UPDATE `conversation`
-        SET `last_msg_id` = p_msg_id, `last_msg_content` = content, `last_time` = NOW()
+        SET `last_msg_id` = p_msg_id, `last_msg_content` = p_content, `last_time` = NOW()
         WHERE `conv_id` = p_conv_id;
         -- 更新发送方的用户会话更新时间
         UPDATE `user_conversation`
         SET `update_time` = NOW()
-        WHERE `conv_id` = p_conv_id AND `uid` = sender_uid;
+        WHERE `conv_id` = p_conv_id AND `uid` = p_sender_uid;
         -- 更新接收方的用户会话计数
         IF EXISTS (SELECT 1 FROM `user_conversation` WHERE `uid` = receive_uid AND `conv_id` = p_conv_id) THEN
             UPDATE `user_conversation`
@@ -148,7 +149,7 @@ BEGIN
             VALUES (receive_uid, p_conv_id, 1, 0);
         END IF;
 
-        SET result = update_time;
+        SELECT `id` INTO result FROM `message` WHERE `conv_id` = p_conv_id AND `msg_id` = p_msg_id;
     END IF;
 COMMIT;
 END;

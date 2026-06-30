@@ -85,16 +85,19 @@ private:
 
     // 创建会话
     static bool isPrivateChat(int uid);
-    static int getOtherUidByConvId(const std::string& convId, int uid);
     static bool checkConversationValid(int uid, int other);
     void conversationCreateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
+    static void getConversationTitleInfo(const ConversationInfo& convInfo, Json::Value& root);
+    void conversationListFetchHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
+    // 聊天消息
+    void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     // 心跳包处理
     void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
 
     // =============== 待修复 ===============
-    void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 

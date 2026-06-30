@@ -104,24 +104,16 @@ enum class MessageID : uint16_t {
 
     ID_CHAT_CONVERSATION_REQ = 4001,    // 会话创建请求
     ID_CHAT_CONVERSATION_RSP = 4002,    // 会话创建响应
-    ID_CONV_HISTORY_MSG_REQ = 4003,    // 会话历史消息请求
-    ID_CONV_HISTORY_MSG_RSP = 4004,    // 会话历史消息请求
+    ID_CONV_HISTORY_MSG_REQ = 4003,     // 会话历史消息请求
+    ID_CONV_HISTORY_MSG_RSP = 4004,     // 会话历史消息请求
+    ID_CONV_LIST_REQ = 4005,            // 拉取会话列表
+    ID_CONV_LIST_RSP = 4006,
 
     ID_NOTIFY_OFFLINE = 5001,       // 通知客户端离线
     ID_HEART_BEAT_REQ = 5002,       // PING
     ID_HEART_BEAT_RSP = 5003,       // PONG
     ID_CLIENT_COMMON_RSP = 5004,    // 客户端通用应答
     INVALID_ID,
-};
-
-enum class ChatMsgType : uint8_t {
-    TEXT = 1,       // 文本消息
-};
-
-enum class ChatMsgStatus : uint8_t {
-    SENDING = 0,       // 发送中
-    IS_SEND = 1,       // 已发送
-    IS_READ = 2,       // 已读
 };
 
 class Defer {

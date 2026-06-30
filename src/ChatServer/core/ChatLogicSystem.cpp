@@ -21,6 +21,7 @@
 #include "db/mysql/MysqlMgr.h"
 #include "db/redis/UserInfoCache.h"
 #include "common/model/ConversationInfo.h"
+#include "common/model/MessageInfo.h"
 
 ChatLogicSystem::~ChatLogicSystem() {
     close();
@@ -119,6 +120,10 @@ void ChatLogicSystem::initHandlers() {
     registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_CONVERSATION_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return conversationCreateHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CONV_LIST_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return conversationListFetchHandle(session, msgId, data);
         });
     registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_UPLOAD_FILE_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
@@ -734,20 +739,6 @@ bool ChatLogicSystem::isPrivateChat(const int uid) {
     return profile.privacyChat == 1;
 }
 
-int ChatLogicSystem::getOtherUidByConvId(const std::string &convId, const int uid) {
-    static const std::regex reg(R"(^c2c_(\d+)_(\d+))");
-    std::smatch matched;
-    if (!std::regex_match(convId, matched, reg))
-        return -1; // 格式非法
-
-    const int u1 = std::stoi(matched[1].str());
-    const int u2 = std::stoi(matched[2].str());
-    if (u1 != uid && u2 != uid) {// 会话要包含传入的 uid
-        return -1;
-    }
-    return (u1 == uid) ? u2 : u1;
-}
-
 bool ChatLogicSystem::checkConversationValid(const int uid, const int other) {
     // 自己也可以跟自己建立会话
     if (uid == other) {
@@ -804,6 +795,98 @@ void ChatLogicSystem::conversationCreateHandle(const std::shared_ptr<Session> &s
     convInfo.toJson(root);
 }
 
+void ChatLogicSystem::getConversationTitleInfo(const ConversationInfo& convInfo, Json::Value &root) {
+    const auto otherUid = convInfo.getOtherUid();
+    if (otherUid < 0) {
+        std::cout << "getConversationTitleInfo get other uid error" << std::endl;
+        return;
+    }
+    UserBaseInfo userBaseInfo;
+    userBaseInfo.uid = otherUid;
+    if (!searchUserBaseInfo(userBaseInfo)) {
+        return;
+    }
+    if (userBaseInfo.name.has_value()) {
+        root["title"] = userBaseInfo.name.value();
+    }
+    if (userBaseInfo.avatarUrl.has_value()) {
+        root["avatar_url"] = userBaseInfo.avatarUrl.value();
+    }
+}
+
+void ChatLogicSystem::conversationListFetchHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+                                                  const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CONV_LIST_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    const auto uid = std::stoi(srcRoot["uid"].asString());
+    auto sinceTime = srcRoot["since_update_time"].asString();
+    if (sinceTime.empty()) {
+        sinceTime = "0000-00-00 00:00:00";
+    }
+    const std::vector<ConversationInfo> searchResult = MysqlMgr::getInstance()->selectConversationList(uid, sinceTime);
+    if (searchResult.empty()) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::FRIEND_APPLY_NOT_EXISTS);
+        return;
+    }
+
+    for (auto& searchInfo : searchResult) {
+        Json::Value info;
+        searchInfo.toJson(info);
+        searchInfo.uid = uid;
+        getConversationTitleInfo(searchInfo, info);
+        root["data"].append(info);
+    }
+}
+
+void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, &srcRoot, session, this]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    root["conv_id"] = srcRoot["conv_id"];
+
+    MessageInfo info;
+    info.fromJson(srcRoot);
+    info.status = static_cast<uint8_t>(MessageStatus::SENDING);
+    int serverId = -1;
+    if (!MysqlMgr::getInstance()->createMessage(info, serverId)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
+    root["server_id"] = serverId;
+
+    notifyOnlineUserMsg(info.toUid, data, MessageID::ID_NOTIFY_CHAT_MSG,
+            [serverId, &root, &info, &data](const std::string& serverName) {
+        ChatServiceReq request;
+        request.set_from_uid(info.fromUid);
+        request.set_to_uid(info.toUid);
+        request.set_json(data);
+        const auto reply = ChatGrpcClient::getInstance()->SendChatMsg(serverName, request);
+        if (reply.error() == static_cast<int32_t>(ErrorCodes::SUCCESS)
+            && !MysqlMgr::getInstance()->updateMessageStatus(serverId, MessageStatus::IS_SEND)) {
+            root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        }
+    });
+}
+
 void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
     const std::string &data) {
     Json::Value root;
@@ -813,61 +896,6 @@ void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, u
     });
 
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-}
-
-/**
- * @brief 会话消息处理函数
- * @param session
- * @param msgId
- * @param data
- *
- * @note
- * 消息格式：
- *     'from_uid': UserSession().uid,
- *     'to_uid': toUid,
- *     'conv_id': c2c_,
- *     'msg_type': 1/2,
- *     'content': text/{'filename': name, 'size': 8.2MB},
- *     'msg_id': localId,
- */
-void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
-    Json::Value root;
-    Json::Value srcRoot;
-    auto status = ChatMsgStatus::SENDING;
-    Defer defer([&root, &srcRoot, &status, session, this]() {
-        const std::string jsonStr = root.toStyledString();
-        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
-        // addHistoryMessage(srcRoot, status);
-    });
-    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
-        std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
-        return;
-    }
-    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    root["msg_id"] = srcRoot["msg_id"];
-    root["conv_id"] = srcRoot["conv_id"];
-
-    const auto from = srcRoot["from_uid"].asInt();
-    const auto to = srcRoot["to_uid"].asInt();
-    // 检查是否在线
-    auto serviceName = RedisMgr::getInstance()->hGet(
-        USER_ONLINE_INFO_PREFIX + std::to_string(to), USER_ONLINE_SERVER_NAME);
-    if (serviceName.empty()) {
-        return;
-    }
-
-    if (serviceName == selfServerName_) {
-        const auto toSession = UserMgr::getInstance()->getSession(to);
-        if (nullptr == toSession) {
-            return;
-        }
-        // 转发消息给对应客户端
-        toSession->asyncSend(data, static_cast<std::uint16_t>(MessageID::ID_NOTIFY_CHAT_MSG));
-        status = ChatMsgStatus::IS_SEND;
-        return;
-    }
-
 }
 
 /**

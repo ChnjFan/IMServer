@@ -7,6 +7,7 @@
 
 #include <string>
 #include <unordered_set>
+#include <regex>
 #include <json/json.h>
 #include <jdbc/cppconn/resultset.h>
 
@@ -16,7 +17,7 @@ enum class ConvType : int8_t {
 };
 
 struct ConversationInfo {
-    int uid = -1;           // 发起申请人
+    mutable int uid = -1;           // 发起申请人
     int friendId = -1;      // 好友 ID
     int unreadCount = -1;   // 未读消息计数
     int lastMsgId = -1;     // 最新消息 ID
@@ -28,6 +29,8 @@ struct ConversationInfo {
     std::string convId;     // 会话 ID，c2c_ / group_
     std::optional<std::string> lastMsgContent; // 最新消息摘要，最大 15 个字符
     std::optional<std::string> lastTime; // 最新消息时间
+    std::optional<std::string> title;
+    std::optional<std::string> createTime;
     std::optional<std::string> updateTime;
 
     inline static std::unordered_set<std::string> keys{"uid", "unread_count", "status",
@@ -39,7 +42,10 @@ struct ConversationInfo {
     void fromJson(Json::Value& value);
     void toJson(Json::Value& value) const;
 
+    static ConversationInfo fromConversationListSearch(const std::shared_ptr<sql::ResultSet>& result);
+
     void generateConvId();
+    [[nodiscard]] int getOtherUid() const;
 
     // [[nodiscard]] std::string getSearchProperty() const;
     // [[nodiscard]] std::string getSearchPropertyStringValue() const;
@@ -72,7 +78,7 @@ inline void ConversationInfo::fromJson(Json::Value &value) {
         lastReadMsgId = value["last_read_msg_id"].asInt();
     }
     if (value.isMember("last_time")) {
-        updateTime = value["last_time"].asString();
+        lastTime = value["last_time"].asString();
     }
     if (value.isMember("conv_type")) {
         convType = static_cast<int8_t>(value["conv_type"].asInt());
@@ -88,6 +94,12 @@ inline void ConversationInfo::fromJson(Json::Value &value) {
     }
     if (value.isMember("update_time")) {
         updateTime = value["update_time"].asString();
+    }
+    if (value.isMember("createTime")) {
+        createTime = value["createTime"].asString();
+    }
+    if (value.isMember("title")) {
+        title = value["title"].asString();
     }
 }
 
@@ -125,9 +137,30 @@ inline void ConversationInfo::toJson(Json::Value &value) const {
     if (updateTime.has_value()) {
         value["update_time"] = updateTime.value();
     }
+    if (createTime.has_value()) {
+        value["create_time"] = createTime.value();
+    }
     if (lastTime.has_value()) {
         value["last_time"] = lastTime.value();
     }
+    if (title.has_value()) {
+        value["title"] = title.value();
+    }
+}
+
+inline ConversationInfo ConversationInfo::fromConversationListSearch(const std::shared_ptr<sql::ResultSet> &result) {
+    ConversationInfo info;
+    info.convId = result->getString("conv_id");
+    info.convType = static_cast<int8_t>(result->getUInt("conv_type"));
+    info.lastMsgId = result->getInt("last_msg_id");
+    info.lastMsgContent = result->getString("last_msg_content");
+    info.lastTime = result->getString("last_time");
+    info.updateTime = result->getString("update_time");
+    info.createTime = result->getString("create_time");
+    info.unreadCount = result->getInt("unread_count");
+    info.isTop = static_cast<int8_t>(result->getUInt("is_top"));
+    info.isMute = static_cast<int8_t>(result->getUInt("is_mute"));
+    return info;
 }
 
 inline void ConversationInfo::generateConvId() {
@@ -151,6 +184,20 @@ inline void ConversationInfo::generateConvId() {
             break;
         }
     }
+}
+
+inline int ConversationInfo::getOtherUid() const {
+    static const std::regex reg(R"(^c2c_(\d+)_(\d+))");
+    std::smatch matched;
+    if (!std::regex_match(convId, matched, reg))
+        return -1; // 格式非法
+
+    const int u1 = std::stoi(matched[1].str());
+    const int u2 = std::stoi(matched[2].str());
+    if (u1 != uid && u2 != uid) {// 会话要包含传入的 uid
+        return -1;
+    }
+    return (u1 == uid) ? u2 : u1;
 }
 
 #endif //IMSERVER_CONVERSATIONINFO_H

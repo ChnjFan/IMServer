@@ -7,13 +7,20 @@
 
 #include "MysqlPool.h"
 #include "common/model/ConversationInfo.h"
+#include "common/model/MessageInfo.h"
 
 class ConversationDao {
 public:
     ConversationDao();
     ~ConversationDao();
 
-    bool createConversation(const ConversationInfo& info, std::string& result);
+    bool createConversation(const ConversationInfo& info, std::string& result) const;
+
+    bool createMessage(const MessageInfo & info, int& result) const;
+
+    [[nodiscard]] bool updateMessageStatus(int id, MessageStatus status) const;
+
+    [[nodiscard]] std::vector<ConversationInfo> selectConversationList(int uid, const std::string & sinceTime) const;
 
 private:
     std::unique_ptr<MysqlPool> pool_;
