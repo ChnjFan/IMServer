@@ -113,10 +113,6 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return updateUserInfoHandle(session, msgId, data);
         });
-    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_MSG_REQ),
-        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
-            return chatMsgHandle(session, msgId, data);
-        });
     registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_CONVERSATION_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return conversationCreateHandle(session, msgId, data);
@@ -125,13 +121,27 @@ void ChatLogicSystem::initHandlers() {
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return conversationListFetchHandle(session, msgId, data);
         });
-    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_UPLOAD_FILE_REQ),
+
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_MSG_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
-            return uploadFileHandle(session, msgId, data);
+            return chatMsgHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CONV_HISTORY_MSG_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return historyChatMsgFetchHandle(session, msgId, data);
+        });
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CONV_MSG_UPDATE_STATUS_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return msgStatusUpdateHandle(session, msgId, data);
         });
     registerHandler(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ),
         [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
             return heartbeatHandle(session, msgId, data);
+        });
+
+    registerHandler(static_cast<uint16_t>(MessageID::ID_CHAT_UPLOAD_FILE_REQ),
+        [this](const std::shared_ptr<Session> &session, const uint16_t msgId, const std::string& data) {
+            return uploadFileHandle(session, msgId, data);
         });
 }
 
@@ -887,8 +897,64 @@ void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uin
     });
 }
 
-void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+void ChatLogicSystem::historyChatMsgFetchHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
     const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CONV_HISTORY_MSG_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+
+    const auto convId = srcRoot["conv_id"].asString();
+    const auto sinceMsgId = srcRoot["since_msg_id"].asInt();
+    const auto limit = srcRoot["limit"].asInt();
+    const std::vector<MessageInfo> searchResult = MysqlMgr::getInstance()->selectMessageList(convId, sinceMsgId, limit);
+    if (searchResult.empty()) {
+        root["has_more"] = 0;
+        return;
+    }
+
+    for (auto& searchInfo : searchResult) {
+        Json::Value info;
+        searchInfo.toJson(info);
+        root["data"].append(info);
+    }
+
+    root["has_more"] = searchResult.size() < limit ? 0 : 1;
+}
+
+void ChatLogicSystem::msgStatusUpdateHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+    const std::string &data) {
+    Json::Value root;
+    Json::Value srcRoot;
+    Defer defer([&root, session]() {
+        const std::string jsonStr = root.toStyledString();
+        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CONV_MSG_UPDATE_STATUS_RSP));
+    });
+    if (Json::Reader reader; !reader.parse(data, srcRoot)) {
+        std::cout << "Failed to parse JSON data" << std::endl;
+        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        return;
+    }
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+
+    MessageStatusInfo info;
+    info.fromJson(srcRoot);
+    if (!MysqlMgr::getInstance()->updateConvMessagesStatus(info)) {
+        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
+        return;
+    }
+}
+
+void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
+                                      const std::string &data) {
     Json::Value root;
     Defer defer([&root, session]() {
         const std::string jsonStr = root.toStyledString();

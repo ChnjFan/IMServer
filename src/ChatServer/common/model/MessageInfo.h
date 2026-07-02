@@ -7,8 +7,10 @@
 
 #include <string>
 #include <unordered_set>
-#include <boost/beast/http/field.hpp>
 #include <json/json.h>
+#include <jdbc/cppconn/resultset.h>
+
+#include "common/utils/ConversationConvert.h"
 
 enum class MessageType : uint8_t {
     TEXT = 1,       // 文本消息
@@ -27,7 +29,7 @@ struct MessageInfo {
     int msgId = -1;
     int8_t type = -1;
     int8_t status = -1;
-    int8_t pad[2];
+    int8_t pad[2] = {0};
     std::optional<std::string> convId;
     std::optional<std::string> content;
     std::optional<std::string> createTime;
@@ -38,6 +40,7 @@ struct MessageInfo {
     void fromJson(Json::Value& value);
     void toJson(Json::Value& value) const;
 
+    static MessageInfo fromMessageListSearch(const std::shared_ptr<sql::ResultSet>& result);
 };
 
 inline void MessageInfo::fromJson(Json::Value &value) {
@@ -94,6 +97,48 @@ inline void MessageInfo::toJson(Json::Value &value) const {
     }
     if (createTime.has_value()) {
         value["create_time"] = createTime.value();
+    }
+}
+
+inline MessageInfo MessageInfo::fromMessageListSearch(const std::shared_ptr<sql::ResultSet> &result) {
+    MessageInfo info;
+    info.msgId = result->getInt("id");
+    info.convId = result->getString("conv_id");
+    info.fromUid = result->getInt("sender_uid");
+    info.toUid = getOtherUid(info.convId.value(), info.fromUid);
+    info.type = static_cast<int8_t>(result->getInt("msg_type"));
+    info.status = static_cast<int8_t>(result->getInt("status"));
+    info.content = result->getString("content");
+    info.createTime = result->getString("create_time");
+    return info;
+}
+
+struct MessageStatusInfo {
+    int uid = -1;
+    int count = -1;
+    int lastMsgId = -1;
+    int8_t status = -1;
+    int8_t pad[3] = {0};
+    std::optional<std::string> convId;
+
+    void fromJson(Json::Value &value);
+};
+
+inline void MessageStatusInfo::fromJson(Json::Value &value) {
+    if (value.isMember("count") && !value["count"].isNull()) {
+        count = value["count"].asInt();
+    }
+    if (value.isMember("last_msg_id") && !value["last_msg_id"].isNull()) {
+        lastMsgId= value["last_msg_id"].asInt();
+    }
+    if (value.isMember("status") && !value["status"].isNull()) {
+        status = static_cast<int8_t>(value["status"].asInt());
+    }
+    if (value.isMember("conv_id") && !value["conv_id"].isNull()) {
+        convId = value["conv_id"].asString();
+    }
+    if (value.isMember("uid") && !value["uid"].isNull()) {
+        uid = std::stoi(value["uid"].asString());
     }
 }
 

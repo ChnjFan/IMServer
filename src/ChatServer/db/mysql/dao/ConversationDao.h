@@ -22,6 +22,10 @@ public:
 
     [[nodiscard]] std::vector<ConversationInfo> selectConversationList(int uid, const std::string & sinceTime) const;
 
+    std::vector<MessageInfo> selectMessageList(const std::string & convId, int since_msg_id, int limit);
+
+    bool updateConvMessagesStatus(const MessageStatusInfo & info);
+
 private:
     std::unique_ptr<MysqlPool> pool_;
 };

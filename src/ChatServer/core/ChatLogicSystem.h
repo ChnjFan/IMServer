@@ -93,6 +93,9 @@ private:
 
     // 聊天消息
     void chatMsgHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void historyChatMsgFetchHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+    void msgStatusUpdateHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
+
     // 心跳包处理
     void heartbeatHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 

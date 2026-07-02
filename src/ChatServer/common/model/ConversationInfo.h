@@ -11,6 +11,8 @@
 #include <json/json.h>
 #include <jdbc/cppconn/resultset.h>
 
+#include "common/utils/ConversationConvert.h"
+
 enum class ConvType : int8_t {
     PRIVATE_CHAT = 1,
     GROUP_CHAT = 2,
@@ -187,17 +189,7 @@ inline void ConversationInfo::generateConvId() {
 }
 
 inline int ConversationInfo::getOtherUid() const {
-    static const std::regex reg(R"(^c2c_(\d+)_(\d+))");
-    std::smatch matched;
-    if (!std::regex_match(convId, matched, reg))
-        return -1; // 格式非法
-
-    const int u1 = std::stoi(matched[1].str());
-    const int u2 = std::stoi(matched[2].str());
-    if (u1 != uid && u2 != uid) {// 会话要包含传入的 uid
-        return -1;
-    }
-    return (u1 == uid) ? u2 : u1;
+    return ::getOtherUid(convId, uid);
 }
 
 #endif //IMSERVER_CONVERSATIONINFO_H

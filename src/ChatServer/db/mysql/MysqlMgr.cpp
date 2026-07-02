@@ -82,6 +82,14 @@ bool MysqlMgr::updateMessageStatus(const int id, const MessageStatus status) con
     return convDao_.updateMessageStatus(id, status);
 }
 
+std::vector<MessageInfo> MysqlMgr::selectMessageList(const std::string &convId, const int sinceMsgId, const int limit) {
+    return convDao_.selectMessageList(convId, sinceMsgId, limit);
+}
+
+bool MysqlMgr::updateConvMessagesStatus(const MessageStatusInfo &info) {
+    return convDao_.updateConvMessagesStatus(info);
+}
+
 
 
 

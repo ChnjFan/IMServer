@@ -56,6 +56,9 @@ public:
     bool createMessage(const MessageInfo& info, int& result) const;
     bool updateMessageStatus(int id, MessageStatus status) const;
 
+    std::vector<MessageInfo> selectMessageList(const std::string& convId, int sinceMsgId, int limit);
+
+    bool updateConvMessagesStatus(const MessageStatusInfo & info);
 
 private:
     friend class Singleton<MysqlMgr>;

@@ -52,9 +52,11 @@ enum class ErrorCodes : int32_t {
     USER_NOT_EXISTS = 3003,
     USER_IS_FRIEND_RELATION = 3004,
     USER_IS_OFFLINE = 3005,
-
+    // 好友相关错误
     FRIEND_APPLY_NOT_EXISTS = 3101,
     FRIEND_NOT_EXISTS = 3102,
+    // 聊天消息相关
+    CHAT_MSG_NOT_EXISTS = 3201,
 
     // 系统错误
     CHAT_LOGIN_TOKEN_ERROR = 4001,
@@ -108,6 +110,8 @@ enum class MessageID : uint16_t {
     ID_CONV_HISTORY_MSG_RSP = 4004,     // 会话历史消息请求
     ID_CONV_LIST_REQ = 4005,            // 拉取会话列表
     ID_CONV_LIST_RSP = 4006,
+    ID_CONV_MSG_UPDATE_STATUS_REQ = 4007,   // 会话消息更新状态
+    ID_CONV_MSG_UPDATE_STATUS_RSP = 4008,
 
     ID_NOTIFY_OFFLINE = 5001,       // 通知客户端离线
     ID_HEART_BEAT_REQ = 5002,       // PING
