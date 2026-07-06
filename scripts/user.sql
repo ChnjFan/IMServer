@@ -28,7 +28,7 @@ CREATE TABLE `user` (
     `email` varchar(128) NOT NULL COMMENT '邮箱',
     `pwd` varchar(128) NOT NULL COMMENT '加密密码',
     `salt` varchar(64) NOT NULL COMMENT '密码加密盐值',
-    `avatar` varchar(256) DEFAULT '' COMMENT '头像URL',
+    `avatar_url` varchar(256) DEFAULT '' COMMENT '头像URL',
     `gender` tinyint NOT NULL DEFAULT 0 COMMENT '0未知 1男 2女',
     `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

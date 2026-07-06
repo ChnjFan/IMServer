@@ -378,6 +378,32 @@ bool RedisMgr::sIsMember(const std::string &key, const std::string &value) {
     return result;
 }
 
+std::unordered_set<std::string> RedisMgr::sMembers(const std::string &key) {
+    const auto conn = redisPool_->getConnection();
+    if (conn == nullptr) {
+        return {};
+    }
+    Defer defer([&conn, this] {
+        redisPool_->returnConnection(conn);
+    });
+
+    const auto reply = static_cast<redisReply *>(redisCommand(conn, "SMEMBERS %s", key.c_str()));
+    std::unordered_set<std::string> result;
+    if (nullptr == reply) {
+        std::cout << "RedisMgr::sMembers: RedisCommand() SMEMBERS [" << key << "] failed!" << std::endl;
+        return result;
+    }
+    if (reply->type == REDIS_REPLY_ARRAY) {
+        for (size_t i = 0; i < reply->elements; ++i) {
+            if (reply->element[i]->str) {
+                result.insert(std::string(reply->element[i]->str, reply->element[i]->len));
+            }
+        }
+    }
+    freeReplyObject(reply);
+    return result;
+}
+
 bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::string &value) {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
@@ -532,8 +558,7 @@ std::string RedisMgr::hGet(const std::string &key, const std::string &hKey) {
     return value;
 }
 
-std::unordered_map<std::string, std::string> RedisMgr::hGetAll(const std::string &key,
-    const std::vector<std::string> &hkeys) {
+std::unordered_map<std::string, std::string> RedisMgr::hGetAll(const std::string &key) const {
     const auto conn = redisPool_->getConnection();
     if (conn == nullptr) {
         return {};

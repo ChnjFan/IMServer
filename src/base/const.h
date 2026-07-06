@@ -61,62 +61,71 @@ enum class ErrorCodes : int32_t {
     // 系统错误
     CHAT_LOGIN_TOKEN_ERROR = 4001,
     CHAT_LOGIN_UID_ERROR = 4002,
+
+    // 资源服务器错误
+    RESOURCE_AUTH_FAILED    = 5001,   // Token 无效/过期/uid 不匹配
+    RESOURCE_ACCESS_DENIED  = 5002,   // 非会话成员
+    RESOURCE_NOT_FOUND      = 5003,   // 资源不存在
+    RESOURCE_MD5_MISMATCH   = 5004,   // 文件 MD5 校验失败
+    RESOURCE_FORMAT_INVALID = 5005,   // 文件名格式非法
+    RESOURCE_SIZE_EXCEEDED  = 5006,   // 文件超过大小限制
+    RESOURCE_STALE_UPLOAD   = 5007,   // 上传会话超时
 };
 
 enum class MessageID : uint16_t {
-    ID_GET_VERIFY_CODE = 1001,  // 获取验证码
-    ID_REG_USER = 1002,         // 注册用户
-    ID_RESET_PWD = 1003,        // 重置密码
-    ID_USER_LOGIN = 1004,       // 登录用户
-    ID_CHAT_LOGIN = 1005,       // 登录聊天服务器
-    ID_CHAT_LOGIN_RSP = 1006,   // 登录聊天服务器响应
+    ID_GET_VERIFY_CODE = 1001, // 获取验证码
+    ID_REG_USER = 1002, // 注册用户
+    ID_RESET_PWD = 1003, // 重置密码
+    ID_USER_LOGIN = 1004, // 登录用户
+    ID_CHAT_LOGIN = 1005, // 登录聊天服务器
+    ID_CHAT_LOGIN_RSP = 1006, // 登录聊天服务器响应
 
-    ID_FIRST_PAGE_REQ = 1101,   // 主页页面信息
-    ID_FIRST_PAGE_RSP = 1102,   // 主页页面信息
+    ID_FIRST_PAGE_REQ = 1101, // 主页页面信息
+    ID_FIRST_PAGE_RSP = 1102, // 主页页面信息
 
-    ID_USER_SEARCH_REQ = 2001,  // 用户搜索请求
-    ID_USER_SEARCH_RSP = 2002,  // 用户搜索响应
-    ID_FRIEND_APPLY_REQ = 2003,   // 添加用户请求
-    ID_FRIEND_APPLY_RSP = 2004,   // 添加用户响应
-    ID_NOTIFY_FRIEND_APPLY = 2005,   // 通知用户好友申请
-    ID_FRIEND_AUTH_REQ = 2006,   // 同意添加好友请求
-    ID_FRIEND_AUTH_RSP = 2007,   // 同意添加好友响应
-    ID_NOTIFY_FRIEND_AUTH = 2008,   // 通知用户好友认证
+    ID_USER_SEARCH_REQ = 2001, // 用户搜索请求
+    ID_USER_SEARCH_RSP = 2002, // 用户搜索响应
+    ID_FRIEND_APPLY_REQ = 2003, // 添加用户请求
+    ID_FRIEND_APPLY_RSP = 2004, // 添加用户响应
+    ID_NOTIFY_FRIEND_APPLY = 2005, // 通知用户好友申请
+    ID_FRIEND_AUTH_REQ = 2006, // 同意添加好友请求
+    ID_FRIEND_AUTH_RSP = 2007, // 同意添加好友响应
+    ID_NOTIFY_FRIEND_AUTH = 2008, // 通知用户好友认证
     ID_GET_FRIEND_REPLY_REQ = 2009, // 获取好友申请请求
     ID_GET_FRIEND_REPLY_RSP = 2010, // 获取好友申请响应
-    ID_GET_FRIEND_LIST_REQ = 2011,  // 获取好友列表请求
-    ID_GET_FRIEND_LIST_RSP = 2012,  // 获取好友列表响应
-    ID_UPDATE_FRIEND_REQ = 2013,    // 更新好友关系请求
-    ID_UPDATE_FRIEND_RSP = 2014,    // 更新好友关系响应
-    ID_DELETE_FRIEND_REQ = 2015,    // 删除好友请求
+    ID_GET_FRIEND_LIST_REQ = 2011, // 获取好友列表请求
+    ID_GET_FRIEND_LIST_RSP = 2012, // 获取好友列表响应
+    ID_UPDATE_FRIEND_REQ = 2013, // 更新好友关系请求
+    ID_UPDATE_FRIEND_RSP = 2014, // 更新好友关系响应
+    ID_DELETE_FRIEND_REQ = 2015, // 删除好友请求
     ID_DELETE_FRIEND_RSP = 2016,
 
-    ID_UPDATE_USERINFO_REQ = 2101,  // 更新用户信息请求
-    ID_UPDATE_USERINFO_RSP = 2102,  // 更新用户信息响应
-    ID_GET_USER_FULL_INFO_REQ = 2103,   // 获取用户详细信息请求
-    ID_GET_USER_FULL_INFO_RSP = 2104,   // 获取用户详细信息响应
+    ID_UPDATE_USERINFO_REQ = 2101, // 更新用户信息请求
+    ID_UPDATE_USERINFO_RSP = 2102, // 更新用户信息响应
+    ID_GET_USER_FULL_INFO_REQ = 2103, // 获取用户详细信息请求
+    ID_GET_USER_FULL_INFO_RSP = 2104, // 获取用户详细信息响应
 
-    ID_CHAT_MSG_REQ = 3001,         // 聊天消息请求
-    ID_CHAT_MSG_RSP = 3002,         // 聊天消息响应
-    ID_NOTIFY_CHAT_MSG = 3003,      //  推送聊天消息
-    ID_CHAT_UPLOAD_FILE_REQ = 3004,     // 上传文件请求
-    ID_CHAT_UPLOAD_FILE_RSP = 3005,     // 上传文件响应
-    ID_CHAT_DOWNLOAD_FILE_REQ = 3006,   // 下载文件请求
-    ID_CHAT_DOWNLOAD_FILE_RSP = 3007,   // 下载文件响应
+    ID_CHAT_MSG_REQ = 3001, // 聊天消息请求
+    ID_CHAT_MSG_RSP = 3002, // 聊天消息响应
+    ID_NOTIFY_CHAT_MSG = 3003, //  推送聊天消息
+    ID_CHAT_UPLOAD_FILE_REQ = 3004, // 上传文件请求
+    ID_CHAT_UPLOAD_FILE_RSP = 3005, // 上传文件响应
+    ID_CHAT_DOWNLOAD_FILE_REQ = 3006, // 下载文件请求
+    ID_CHAT_DOWNLOAD_FILE_RSP = 3007, // 下载文件响应
 
-    ID_CHAT_CONVERSATION_REQ = 4001,    // 会话创建请求
-    ID_CHAT_CONVERSATION_RSP = 4002,    // 会话创建响应
-    ID_CONV_HISTORY_MSG_REQ = 4003,     // 会话历史消息请求
-    ID_CONV_HISTORY_MSG_RSP = 4004,     // 会话历史消息请求
-    ID_CONV_LIST_REQ = 4005,            // 拉取会话列表
+    ID_CHAT_CONVERSATION_REQ = 4001, // 会话创建请求
+    ID_CHAT_CONVERSATION_RSP = 4002, // 会话创建响应
+    ID_CONV_HISTORY_MSG_REQ = 4003, // 会话历史消息请求
+    ID_CONV_HISTORY_MSG_RSP = 4004, // 会话历史消息请求
+    ID_CONV_LIST_REQ = 4005, // 拉取会话列表
     ID_CONV_LIST_RSP = 4006,
-    ID_CONV_MSG_UPDATE_STATUS_REQ = 4007,   // 会话消息更新状态
+    ID_CONV_MSG_UPDATE_STATUS_REQ = 4007, // 会话消息更新状态
     ID_CONV_MSG_UPDATE_STATUS_RSP = 4008,
 
-    ID_NOTIFY_OFFLINE = 5001,       // 通知客户端离线
-    ID_HEART_BEAT_REQ = 5002,       // PING
-    ID_HEART_BEAT_RSP = 5003,       // PONG
-    ID_CLIENT_COMMON_RSP = 5004,    // 客户端通用应答
+    ID_NOTIFY_OFFLINE = 5001, // 通知客户端离线
+    ID_HEART_BEAT_REQ = 5002, // PING
+    ID_HEART_BEAT_RSP = 5003, // PONG
+    ID_CLIENT_COMMON_RSP = 5004, // 客户端通用应答
     INVALID_ID,
 };
 
@@ -159,7 +168,7 @@ inline std::string ms_to_datetime(const long long timestamp_ms)
              time_info.tm_min,
              time_info.tm_sec);
 
-    return std::string(buf);
+    return {buf};
 }
 
 inline std::string base64_decode(const std::string& base64_str)

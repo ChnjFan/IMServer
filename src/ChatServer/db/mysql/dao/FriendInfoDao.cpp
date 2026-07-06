@@ -9,7 +9,7 @@
 constexpr std::string_view FRIEND_LIST_INFO_PARTS = "friend_relation.friend_id, friend_relation.update_time, "
                                                     "friend_relation.alias, friend_relation.status, "
                                                     "friend_relation.is_star, friend_relation.create_time, "
-                                                    "user.name, user.avatar, user.email ";
+                                                    "user.name, user.avatar_url, user.email ";
 constexpr std::string_view FRIEND_INFO_STATUS_PARTS = "uid, friend_id, status ";
 constexpr std::string_view FRIEND_APPLY_INFO_STATUS_PARTS = "friend_apply.uid, friend_apply.friend_id, "
                                                     "friend_apply.msg, friend_apply.status, friend_apply.expire_time, "

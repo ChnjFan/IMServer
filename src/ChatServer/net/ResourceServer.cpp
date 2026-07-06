@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "ChatServer.h"
+#include "ResourceServer.h"
 
 #include "AsioIOServicePool.h"
 #include "UserMgr.h"

@@ -9,7 +9,6 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "const.h"
-#include "ConfigMgr.h"
 #include "RedisMgr.h"
 #include "DistLock.h"
 
@@ -23,35 +22,25 @@ StatusServiceImpl::StatusServiceImpl() {
         return;
     }
 
-    std::string servers = config["ChatServers"]["Name"];
-    std::stringstream ss(config["ChatServers"]["Name"]);
-    std::string serverName;
-    while (std::getline(ss, serverName, ',')) {
-        if (serverName.empty()) {
-            continue;
-        }
-        ChatServerInfo server;
-        server.name = serverName;
-        server.host = config[serverName]["Host"];
-        server.port = config[serverName]["Port"];
-        server.connCount = 0;
-        chatServers_.insert({serverName, server});
-    }
+    initChatServer(config);
+    initResourceServer(config);
+}
+
+Status StatusServiceImpl::GetResourceServer(ServerContext *context, const GetResourceServerReq *request,
+                                            GetResourceServerRsp *response) {
+    auto& config = ConfigMgr::getInstance();
+    response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
+    response->set_host(config["ResourceServer"]["Host"]);
+    response->set_port(config["ResourceServer"]["Port"]);
+    return Status::OK;
 }
 
 Status StatusServiceImpl::GetChatServer(ServerContext *context, const GetChatServerReq *request,
                                         GetChatServerRsp *response) {
-    auto& config = ConfigMgr::getInstance();
     const auto& server = getChatServerInfo();
     response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
     response->set_host(server.host);
-    if (config["Nginx"][server.name].empty()) {
-        response->set_port(server.port);
-    }
-    else { // 返回反向代理端口
-        response->set_port(config["Nginx"][server.name]);
-    }
-    std::cout <<  "Get ChatServer Address" << std::endl;
+    response->set_port(server.port);
 
     random_generator generator;
     std::string token = boost::uuids::to_string(generator());
@@ -75,7 +64,60 @@ Status StatusServiceImpl::Login(ServerContext *context, const message::LoginReq 
     return Status::OK;
 }
 
-ChatServerInfo StatusServiceImpl::getChatServerInfo() {
+Status StatusServiceImpl::VerifyToken(ServerContext *context, const VerifyTokenReq *request, VerifyTokenRsp *response) {
+    const auto uid = request->uid();
+    const auto& token = request->token();
+
+    response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
+    response->set_uid(uid);
+
+    if (checkToken(uid, token)) {
+        response->set_error(static_cast<int32_t>(ErrorCodes::SUCCESS));
+    } else {
+        response->set_error(static_cast<int32_t>(ErrorCodes::RESOURCE_AUTH_FAILED));
+    }
+    return Status::OK;
+}
+
+void StatusServiceImpl::initChatServer(ConfigMgr &config) {
+    std::stringstream ss(config["ChatServers"]["Name"]);
+    std::string serverName;
+    while (std::getline(ss, serverName, ',')) {
+        if (serverName.empty()) {
+            continue;
+        }
+        ServerInfo server;
+        server.name = serverName;
+        server.host = config[serverName]["Host"];
+        if (config["Nginx"][serverName].empty()) {
+            server.port = config[serverName]["Port"];
+        }
+        else {
+            server.port = config["Nginx"][serverName];
+        }
+        server.connCount = 0;
+        chatServers_.insert({serverName, server});
+    }
+}
+
+void StatusServiceImpl::initResourceServer(ConfigMgr &config) {
+    std::stringstream ss(config["ChatServers"]["Name"]);
+    std::string serverName;
+    while (std::getline(ss, serverName, ',')) {
+        if (serverName.empty()) {
+            continue;
+        }
+        ServerInfo server;
+        server.name = serverName;
+        server.host = config[serverName]["Host"];
+        server.port = config[serverName]["Port"];
+        server.httpPort = config[serverName]["HttpPort"];
+        server.connCount = 0;
+        resourceServers_.insert({serverName, server});
+    }
+}
+
+ServerInfo StatusServiceImpl::getChatServerInfo() {
     std::lock_guard<std::mutex> lock(serverMutex_);
     if (chatServers_.empty()) {
         std::cout << "Not found ChatServer" << std::endl;
@@ -126,7 +168,7 @@ bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
     const auto expect = RedisMgr::getInstance()->hGet(
         USER_ONLINE_INFO_PREFIX + std::to_string(uid), USER_ONLINE_TOKEN);
     if (expect.empty()) {
-        std::cout << "Check [uid: " << uid << "not found" << std::endl;
+        std::cout << "Check [uid: " << uid << "] not found" << std::endl;
         return false;
     }
     std::cout << "Check [uid: " << uid << ", token: " << token << "]" << std::endl;

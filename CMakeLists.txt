@@ -25,6 +25,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g -ggdb")
 option(BUILD_GATE_SERVER "Build GateServer" ON)
 option(BUILD_CHAT_SERVER "Build ChatServer" ON)
 option(BUILD_STATUS_SERVER "Build StatusServer" ON)
+option(BUILD_RESOURCE_SERVER "Build ResourceServer" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
@@ -32,6 +33,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 find_package(Boost 1.90 REQUIRED COMPONENTS filesystem)
+
+find_package(OpenSSL REQUIRED)
+add_library(crypto_deps INTERFACE)
+target_link_libraries(crypto_deps INTERFACE OpenSSL::Crypto)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(JSONCPP REQUIRED jsoncpp)
@@ -110,6 +115,10 @@ endif()
 
 if(BUILD_STATUS_SERVER)
     add_subdirectory(src/StatusServer)
+endif()
+
+if(BUILD_RESOURCE_SERVER)
+    add_subdirectory(src/ResourceServer)
 endif()
 
 add_custom_target(copy_config ALL

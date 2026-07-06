@@ -95,7 +95,7 @@ inline void UserBaseInfo::fromSqlResult(const std::shared_ptr<sql::ResultSet> &r
     gender = static_cast<int8_t>(result->getInt("gender"));
     name = result->getString("name");
     email = result->getString("email");
-    avatarUrl = result->getString("avatar");
+    avatarUrl = result->getString("avatar_url");
     createTime = result->getString("create_time");
     updateTime = result->getString("update_time");
 }

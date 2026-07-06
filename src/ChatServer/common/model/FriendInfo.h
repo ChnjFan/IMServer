@@ -55,7 +55,7 @@ inline FriendInfo FriendInfo::fromFriendListSearch(const std::shared_ptr<sql::Re
     info.alias = result->getString("alias");
     info.name = result->getString("name");
     info.email = result->getString("email");
-    info.avatarUrl = result->getString("avatar");
+    info.avatarUrl = result->getString("avatar_url");
     info.createTime = result->getString("create_time");
     info.updateTime = result->getString("update_time");
     return info;

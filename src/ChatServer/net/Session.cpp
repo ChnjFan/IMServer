@@ -10,7 +10,7 @@
 #include "Session.h"
 
 #include "ChatLogicSystem.h"
-#include "ChatServer.h"
+#include "ResourceServer.h"
 #include "DistLock.h"
 #include "RedisMgr.h"
 #include "ConfigMgr.h"

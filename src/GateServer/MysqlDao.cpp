@@ -126,7 +126,7 @@ bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, 
 
         userInfo.uid = res->getInt("uid");
         userInfo.name = res->getString("name");
-        userInfo.avatarUrl = res->getString("avatar");
+        userInfo.avatarUrl = res->getString("avatar_url");
         userInfo.password = originPassword;
         userInfo.email = email;
         return true;

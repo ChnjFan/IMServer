@@ -9,6 +9,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <string>
+#include <unordered_set>
 #include <hiredis/hiredis.h>
 
 #include "const.h"
@@ -74,6 +76,7 @@ public:
     bool sAdd(const std::string& key, const std::string& value);
     bool sRem(const std::string& key, const std::string& value);
     bool sIsMember(const std::string& key, const std::string& value);
+    std::unordered_set<std::string> sMembers(const std::string& key);
     // 哈希
     bool hSet(const std::string& key, const std::string& hKey, const std::string& value);
     bool hSet(const std::string& key, const std::unordered_map<std::string, std::string>& values);
@@ -81,7 +84,7 @@ public:
     bool hSet(const char* key, const char* hKey, const char* hValue, size_t hSize);
     bool hDel(const std::string& key, const std::string & hKey);
     std::string hGet(const std::string& key, const std::string& hKey);
-    std::unordered_map<std::string, std::string> hGetAll(const std::string& key, const std::vector<std::string>& hkeys);
+    std::unordered_map<std::string, std::string> hGetAll(const std::string& key) const;
     // 有序集合
     bool zSet(const std::string& key, long long score, const std::string& value);
     bool zRevrange(const std::string& key, std::vector<std::string>& values, int start, int end);

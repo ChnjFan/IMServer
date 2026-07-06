@@ -6,7 +6,7 @@
 #include "UserInfoDao.h"
 #include "ConfigMgr.h"
 
-constexpr std::string_view USER_BASE_INFO_PARTS = "id, uid, gender, name, email, avatar, create_time, update_time";
+constexpr std::string_view USER_BASE_INFO_PARTS = "id, uid, gender, name, email, avatar_url, create_time, update_time";
 constexpr std::string_view USER_PROFILE_INFO_PARTS = "uid, signature, birthday, region, self_intro, create_time";
 constexpr std::string_view USER_PROFILE_CONFIG_PARTS = "uid, privacy_friend, privacy_chat, blacklist_switch";
 

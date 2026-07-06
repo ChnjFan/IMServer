@@ -26,6 +26,60 @@ namespace _pbi = ::google::protobuf::internal;
 namespace _fl = ::google::protobuf::internal::field_layout;
 namespace message {
 
+inline constexpr VerifyTokenRsp::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        error_{0},
+        uid_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR VerifyTokenRsp::VerifyTokenRsp(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(VerifyTokenRsp_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct VerifyTokenRspDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR VerifyTokenRspDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~VerifyTokenRspDefaultTypeInternal() {}
+  union {
+    VerifyTokenRsp _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 VerifyTokenRspDefaultTypeInternal _VerifyTokenRsp_default_instance_;
+
+inline constexpr VerifyTokenReq::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        token_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        uid_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR VerifyTokenReq::VerifyTokenReq(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(VerifyTokenReq_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct VerifyTokenReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR VerifyTokenReqDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~VerifyTokenReqDefaultTypeInternal() {}
+  union {
+    VerifyTokenReq _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 VerifyTokenReqDefaultTypeInternal _VerifyTokenReq_default_instance_;
+
 inline constexpr LoginRsp::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
       : _cached_size_{0},
@@ -140,6 +194,62 @@ struct GetVerifyReqDefaultTypeInternal {
 
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
     PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetVerifyReqDefaultTypeInternal _GetVerifyReq_default_instance_;
+
+inline constexpr GetResourceServerRsp::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        host_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        port_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        error_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR GetResourceServerRsp::GetResourceServerRsp(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(GetResourceServerRsp_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct GetResourceServerRspDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetResourceServerRspDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetResourceServerRspDefaultTypeInternal() {}
+  union {
+    GetResourceServerRsp _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetResourceServerRspDefaultTypeInternal _GetResourceServerRsp_default_instance_;
+
+inline constexpr GetResourceServerReq::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        uid_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR GetResourceServerReq::GetResourceServerReq(::_pbi::ConstantInitialized)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(GetResourceServerReq_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(::_pbi::ConstantInitialized()) {
+}
+struct GetResourceServerReqDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetResourceServerReqDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetResourceServerReqDefaultTypeInternal() {}
+  union {
+    GetResourceServerReq _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetResourceServerReqDefaultTypeInternal _GetResourceServerReq_default_instance_;
 
 inline constexpr GetChatServerRsp::Impl_::Impl_(
     ::_pbi::ConstantInitialized) noexcept
@@ -281,6 +391,20 @@ const ::uint32_t
         0,
         1,
         0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerReq, _impl_._has_bits_),
+        4, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerReq, _impl_.uid_),
+        0,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerRsp, _impl_._has_bits_),
+        6, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerRsp, _impl_.error_),
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerRsp, _impl_.host_),
+        PROTOBUF_FIELD_OFFSET(::message::GetResourceServerRsp, _impl_.port_),
+        2,
+        0,
+        1,
+        0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::message::GetChatServerReq, _impl_._has_bits_),
         4, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::message::GetChatServerReq, _impl_.uid_),
@@ -313,6 +437,20 @@ const ::uint32_t
         2,
         0,
         0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenReq, _impl_._has_bits_),
+        5, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenReq, _impl_.uid_),
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenReq, _impl_.token_),
+        1,
+        0,
+        0x081, // bitmap
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenRsp, _impl_._has_bits_),
+        5, // hasbit index offset
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenRsp, _impl_.error_),
+        PROTOBUF_FIELD_OFFSET(::message::VerifyTokenRsp, _impl_.uid_),
+        0,
+        1,
+        0x081, // bitmap
         PROTOBUF_FIELD_OFFSET(::message::ChatServiceReq, _impl_._has_bits_),
         6, // hasbit index offset
         PROTOBUF_FIELD_OFFSET(::message::ChatServiceReq, _impl_.from_uid_),
@@ -338,20 +476,28 @@ static const ::_pbi::MigrationSchema
     schemas[] ABSL_ATTRIBUTE_SECTION_VARIABLE(protodesc_cold) = {
         {0, sizeof(::message::GetVerifyReq)},
         {5, sizeof(::message::GetVerifyRsp)},
-        {14, sizeof(::message::GetChatServerReq)},
-        {19, sizeof(::message::GetChatServerRsp)},
-        {30, sizeof(::message::LoginReq)},
-        {37, sizeof(::message::LoginRsp)},
-        {46, sizeof(::message::ChatServiceReq)},
-        {55, sizeof(::message::ChatServiceRsp)},
+        {14, sizeof(::message::GetResourceServerReq)},
+        {19, sizeof(::message::GetResourceServerRsp)},
+        {28, sizeof(::message::GetChatServerReq)},
+        {33, sizeof(::message::GetChatServerRsp)},
+        {44, sizeof(::message::LoginReq)},
+        {51, sizeof(::message::LoginRsp)},
+        {60, sizeof(::message::VerifyTokenReq)},
+        {67, sizeof(::message::VerifyTokenRsp)},
+        {74, sizeof(::message::ChatServiceReq)},
+        {83, sizeof(::message::ChatServiceRsp)},
 };
 static const ::_pb::Message* PROTOBUF_NONNULL const file_default_instances[] = {
     &::message::_GetVerifyReq_default_instance_._instance,
     &::message::_GetVerifyRsp_default_instance_._instance,
+    &::message::_GetResourceServerReq_default_instance_._instance,
+    &::message::_GetResourceServerRsp_default_instance_._instance,
     &::message::_GetChatServerReq_default_instance_._instance,
     &::message::_GetChatServerRsp_default_instance_._instance,
     &::message::_LoginReq_default_instance_._instance,
     &::message::_LoginRsp_default_instance_._instance,
+    &::message::_VerifyTokenReq_default_instance_._instance,
+    &::message::_VerifyTokenRsp_default_instance_._instance,
     &::message::_ChatServiceReq_default_instance_._instance,
     &::message::_ChatServiceRsp_default_instance_._instance,
 };
@@ -359,44 +505,53 @@ const char descriptor_table_protodef_message_2eproto[] ABSL_ATTRIBUTE_SECTION_VA
     protodesc_cold) = {
     "\n\rmessage.proto\022\007message\"\035\n\014GetVerifyReq"
     "\022\r\n\005email\030\001 \001(\t\":\n\014GetVerifyRsp\022\r\n\005error"
-    "\030\001 \001(\005\022\r\n\005email\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"\037\n\020G"
-    "etChatServerReq\022\013\n\003uid\030\001 \001(\005\"L\n\020GetChatS"
-    "erverRsp\022\r\n\005error\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n"
-    "\004port\030\003 \001(\t\022\r\n\005token\030\004 \001(\t\"&\n\010LoginReq\022\013"
-    "\n\003uid\030\001 \001(\005\022\r\n\005token\030\002 \001(\t\"5\n\010LoginRsp\022\r"
-    "\n\005error\030\001 \001(\005\022\013\n\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001("
-    "\t\"@\n\016ChatServiceReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n"
-    "\006to_uid\030\002 \001(\005\022\014\n\004json\030\003 \001(\t\"O\n\016ChatServi"
-    "ceRsp\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016"
-    "\n\006to_uid\030\003 \001(\005\022\014\n\004json\030\004 \001(\t2N\n\rVerifySe"
-    "rvice\022=\n\rGetVerifyCode\022\025.message.GetVeri"
-    "fyReq\032\025.message.GetVerifyRsp2\205\001\n\rStatusS"
-    "ervice\022E\n\rGetChatServer\022\031.message.GetCha"
-    "tServerReq\032\031.message.GetChatServerRsp\022-\n"
-    "\005Login\022\021.message.LoginReq\032\021.message.Logi"
-    "nRsp2\247\003\n\013ChatService\022C\n\017NotifyAddFriend\022"
-    "\027.message.ChatServiceReq\032\027.message.ChatS"
-    "erviceRsp\022B\n\016ReplyAddFriend\022\027.message.Ch"
-    "atServiceReq\032\027.message.ChatServiceRsp\022\?\n"
-    "\013SendChatMsg\022\027.message.ChatServiceReq\032\027."
-    "message.ChatServiceRsp\022D\n\020NotifyAuthFrie"
-    "nd\022\027.message.ChatServiceReq\032\027.message.Ch"
-    "atServiceRsp\022E\n\021NotifyTextChatMsg\022\027.mess"
-    "age.ChatServiceReq\032\027.message.ChatService"
-    "Rsp\022A\n\rNotifyOffline\022\027.message.ChatServi"
-    "ceReq\032\027.message.ChatServiceRspb\006proto3"
+    "\030\001 \001(\005\022\r\n\005email\030\002 \001(\t\022\014\n\004code\030\003 \001(\t\"#\n\024G"
+    "etResourceServerReq\022\013\n\003uid\030\001 \001(\005\"A\n\024GetR"
+    "esourceServerRsp\022\r\n\005error\030\001 \001(\005\022\014\n\004host\030"
+    "\002 \001(\t\022\014\n\004port\030\003 \001(\t\"\037\n\020GetChatServerReq\022"
+    "\013\n\003uid\030\001 \001(\005\"L\n\020GetChatServerRsp\022\r\n\005erro"
+    "r\030\001 \001(\005\022\014\n\004host\030\002 \001(\t\022\014\n\004port\030\003 \001(\t\022\r\n\005t"
+    "oken\030\004 \001(\t\"&\n\010LoginReq\022\013\n\003uid\030\001 \001(\005\022\r\n\005t"
+    "oken\030\002 \001(\t\"5\n\010LoginRsp\022\r\n\005error\030\001 \001(\005\022\013\n"
+    "\003uid\030\002 \001(\005\022\r\n\005token\030\003 \001(\t\",\n\016VerifyToken"
+    "Req\022\013\n\003uid\030\001 \001(\005\022\r\n\005token\030\002 \001(\t\",\n\016Verif"
+    "yTokenRsp\022\r\n\005error\030\001 \001(\005\022\013\n\003uid\030\002 \001(\005\"@\n"
+    "\016ChatServiceReq\022\020\n\010from_uid\030\001 \001(\005\022\016\n\006to_"
+    "uid\030\002 \001(\005\022\014\n\004json\030\003 \001(\t\"O\n\016ChatServiceRs"
+    "p\022\r\n\005error\030\001 \001(\005\022\020\n\010from_uid\030\002 \001(\005\022\016\n\006to"
+    "_uid\030\003 \001(\005\022\014\n\004json\030\004 \001(\t2N\n\rVerifyServic"
+    "e\022=\n\rGetVerifyCode\022\025.message.GetVerifyRe"
+    "q\032\025.message.GetVerifyRsp2\231\002\n\rStatusServi"
+    "ce\022Q\n\021GetResourceServer\022\035.message.GetRes"
+    "ourceServerReq\032\035.message.GetResourceServ"
+    "erRsp\022E\n\rGetChatServer\022\031.message.GetChat"
+    "ServerReq\032\031.message.GetChatServerRsp\022-\n\005"
+    "Login\022\021.message.LoginReq\032\021.message.Login"
+    "Rsp\022\?\n\013VerifyToken\022\027.message.VerifyToken"
+    "Req\032\027.message.VerifyTokenRsp2\247\003\n\013ChatSer"
+    "vice\022C\n\017NotifyAddFriend\022\027.message.ChatSe"
+    "rviceReq\032\027.message.ChatServiceRsp\022B\n\016Rep"
+    "lyAddFriend\022\027.message.ChatServiceReq\032\027.m"
+    "essage.ChatServiceRsp\022\?\n\013SendChatMsg\022\027.m"
+    "essage.ChatServiceReq\032\027.message.ChatServ"
+    "iceRsp\022D\n\020NotifyAuthFriend\022\027.message.Cha"
+    "tServiceReq\032\027.message.ChatServiceRsp\022E\n\021"
+    "NotifyTextChatMsg\022\027.message.ChatServiceR"
+    "eq\032\027.message.ChatServiceRsp\022A\n\rNotifyOff"
+    "line\022\027.message.ChatServiceReq\032\027.message."
+    "ChatServiceRspb\006proto3"
 };
 static ::absl::once_flag descriptor_table_message_2eproto_once;
 PROTOBUF_CONSTINIT const ::_pbi::DescriptorTable descriptor_table_message_2eproto = {
     false,
     false,
-    1118,
+    1462,
     descriptor_table_protodef_message_2eproto,
     "message.proto",
     &descriptor_table_message_2eproto_once,
     nullptr,
     0,
-    8,
+    12,
     schemas,
     file_default_instances,
     TableStruct_message_2eproto::offsets,
@@ -1003,6 +1158,580 @@ void GetVerifyRsp::InternalSwap(GetVerifyRsp* PROTOBUF_RESTRICT PROTOBUF_NONNULL
 }
 
 ::google::protobuf::Metadata GetVerifyRsp::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class GetResourceServerReq::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<GetResourceServerReq>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(GetResourceServerReq, _impl_._has_bits_);
+};
+
+GetResourceServerReq::GetResourceServerReq(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, GetResourceServerReq_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.GetResourceServerReq)
+}
+GetResourceServerReq::GetResourceServerReq(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const GetResourceServerReq& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, GetResourceServerReq_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+PROTOBUF_NDEBUG_INLINE GetResourceServerReq::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0} {}
+
+inline void GetResourceServerReq::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.uid_ = {};
+}
+GetResourceServerReq::~GetResourceServerReq() {
+  // @@protoc_insertion_point(destructor:message.GetResourceServerReq)
+  SharedDtor(*this);
+}
+inline void GetResourceServerReq::SharedDtor(MessageLite& self) {
+  GetResourceServerReq& this_ = static_cast<GetResourceServerReq&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL GetResourceServerReq::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) GetResourceServerReq(arena);
+}
+constexpr auto GetResourceServerReq::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(GetResourceServerReq),
+                                            alignof(GetResourceServerReq));
+}
+constexpr auto GetResourceServerReq::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_GetResourceServerReq_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &GetResourceServerReq::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<GetResourceServerReq>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &GetResourceServerReq::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<GetResourceServerReq>(), &GetResourceServerReq::ByteSizeLong,
+              &GetResourceServerReq::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(GetResourceServerReq, _impl_._cached_size_),
+          false,
+      },
+      &GetResourceServerReq::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull GetResourceServerReq_class_data_ =
+        GetResourceServerReq::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+GetResourceServerReq::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&GetResourceServerReq_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(GetResourceServerReq_class_data_.tc_table);
+  return GetResourceServerReq_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 0, 0, 2>
+GetResourceServerReq::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(GetResourceServerReq, _impl_._has_bits_),
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    GetResourceServerReq_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::GetResourceServerReq>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 uid = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(GetResourceServerReq, _impl_.uid_), 0>(),
+     {8, 0, 0, PROTOBUF_FIELD_OFFSET(GetResourceServerReq, _impl_.uid_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 uid = 1;
+    {PROTOBUF_FIELD_OFFSET(GetResourceServerReq, _impl_.uid_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+PROTOBUF_NOINLINE void GetResourceServerReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.GetResourceServerReq)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.uid_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL GetResourceServerReq::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const GetResourceServerReq& this_ = static_cast<const GetResourceServerReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL GetResourceServerReq::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const GetResourceServerReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.GetResourceServerReq)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 uid = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (this_._internal_uid() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_uid(), target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.GetResourceServerReq)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t GetResourceServerReq::ByteSizeLong(const MessageLite& base) {
+  const GetResourceServerReq& this_ = static_cast<const GetResourceServerReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t GetResourceServerReq::ByteSizeLong() const {
+  const GetResourceServerReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.GetResourceServerReq)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+   {
+    // int32 uid = 1;
+    cached_has_bits = this_._impl_._has_bits_[0];
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (this_._internal_uid() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_uid());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void GetResourceServerReq::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<GetResourceServerReq*>(&to_msg);
+  auto& from = static_cast<const GetResourceServerReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.GetResourceServerReq)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000001u) != 0) {
+    if (from._internal_uid() != 0) {
+      _this->_impl_.uid_ = from._impl_.uid_;
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetResourceServerReq::CopyFrom(const GetResourceServerReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.GetResourceServerReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void GetResourceServerReq::InternalSwap(GetResourceServerReq* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  swap(_impl_.uid_, other->_impl_.uid_);
+}
+
+::google::protobuf::Metadata GetResourceServerReq::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class GetResourceServerRsp::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<GetResourceServerRsp>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_._has_bits_);
+};
+
+GetResourceServerRsp::GetResourceServerRsp(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, GetResourceServerRsp_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.GetResourceServerRsp)
+}
+PROTOBUF_NDEBUG_INLINE GetResourceServerRsp::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    const ::message::GetResourceServerRsp& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        host_(arena, from.host_),
+        port_(arena, from.port_) {}
+
+GetResourceServerRsp::GetResourceServerRsp(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const GetResourceServerRsp& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, GetResourceServerRsp_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  GetResourceServerRsp* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  _impl_.error_ = from._impl_.error_;
+
+  // @@protoc_insertion_point(copy_constructor:message.GetResourceServerRsp)
+}
+PROTOBUF_NDEBUG_INLINE GetResourceServerRsp::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        host_(arena),
+        port_(arena) {}
+
+inline void GetResourceServerRsp::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.error_ = {};
+}
+GetResourceServerRsp::~GetResourceServerRsp() {
+  // @@protoc_insertion_point(destructor:message.GetResourceServerRsp)
+  SharedDtor(*this);
+}
+inline void GetResourceServerRsp::SharedDtor(MessageLite& self) {
+  GetResourceServerRsp& this_ = static_cast<GetResourceServerRsp&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.host_.Destroy();
+  this_._impl_.port_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL GetResourceServerRsp::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) GetResourceServerRsp(arena);
+}
+constexpr auto GetResourceServerRsp::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(GetResourceServerRsp),
+                                            alignof(GetResourceServerRsp));
+}
+constexpr auto GetResourceServerRsp::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_GetResourceServerRsp_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &GetResourceServerRsp::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<GetResourceServerRsp>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &GetResourceServerRsp::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<GetResourceServerRsp>(), &GetResourceServerRsp::ByteSizeLong,
+              &GetResourceServerRsp::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_._cached_size_),
+          false,
+      },
+      &GetResourceServerRsp::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull GetResourceServerRsp_class_data_ =
+        GetResourceServerRsp::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+GetResourceServerRsp::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&GetResourceServerRsp_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(GetResourceServerRsp_class_data_.tc_table);
+  return GetResourceServerRsp_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 0, 45, 2>
+GetResourceServerRsp::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_._has_bits_),
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    GetResourceServerRsp_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::GetResourceServerRsp>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // int32 error = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(GetResourceServerRsp, _impl_.error_), 2>(),
+     {8, 2, 0, PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.error_)}},
+    // string host = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 0, 0, PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.host_)}},
+    // string port = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 1, 0, PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.port_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 error = 1;
+    {PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.error_), _Internal::kHasBitsOffset + 2, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    // string host = 2;
+    {PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.host_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string port = 3;
+    {PROTOBUF_FIELD_OFFSET(GetResourceServerRsp, _impl_.port_), _Internal::kHasBitsOffset + 1, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\34\0\4\4\0\0\0\0"
+    "message.GetResourceServerRsp"
+    "host"
+    "port"
+  }},
+};
+PROTOBUF_NOINLINE void GetResourceServerRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.GetResourceServerRsp)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      _impl_.host_.ClearNonDefaultToEmpty();
+    }
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      _impl_.port_.ClearNonDefaultToEmpty();
+    }
+  }
+  _impl_.error_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL GetResourceServerRsp::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const GetResourceServerRsp& this_ = static_cast<const GetResourceServerRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL GetResourceServerRsp::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const GetResourceServerRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.GetResourceServerRsp)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 error = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000004u) != 0) {
+    if (this_._internal_error() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_error(), target);
+    }
+  }
+
+  // string host = 2;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (!this_._internal_host().empty()) {
+      const ::std::string& _s = this_._internal_host();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "message.GetResourceServerRsp.host");
+      target = stream->WriteStringMaybeAliased(2, _s, target);
+    }
+  }
+
+  // string port = 3;
+  if ((this_._impl_._has_bits_[0] & 0x00000002u) != 0) {
+    if (!this_._internal_port().empty()) {
+      const ::std::string& _s = this_._internal_port();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "message.GetResourceServerRsp.port");
+      target = stream->WriteStringMaybeAliased(3, _s, target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.GetResourceServerRsp)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t GetResourceServerRsp::ByteSizeLong(const MessageLite& base) {
+  const GetResourceServerRsp& this_ = static_cast<const GetResourceServerRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t GetResourceServerRsp::ByteSizeLong() const {
+  const GetResourceServerRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.GetResourceServerRsp)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000007u) != 0) {
+    // string host = 2;
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (!this_._internal_host().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_host());
+      }
+    }
+    // string port = 3;
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (!this_._internal_port().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_port());
+      }
+    }
+    // int32 error = 1;
+    if ((cached_has_bits & 0x00000004u) != 0) {
+      if (this_._internal_error() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_error());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void GetResourceServerRsp::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<GetResourceServerRsp*>(&to_msg);
+  auto& from = static_cast<const GetResourceServerRsp&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.GetResourceServerRsp)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000007u) != 0) {
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (!from._internal_host().empty()) {
+        _this->_internal_set_host(from._internal_host());
+      } else {
+        if (_this->_impl_.host_.IsDefault()) {
+          _this->_internal_set_host("");
+        }
+      }
+    }
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (!from._internal_port().empty()) {
+        _this->_internal_set_port(from._internal_port());
+      } else {
+        if (_this->_impl_.port_.IsDefault()) {
+          _this->_internal_set_port("");
+        }
+      }
+    }
+    if ((cached_has_bits & 0x00000004u) != 0) {
+      if (from._internal_error() != 0) {
+        _this->_impl_.error_ = from._impl_.error_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GetResourceServerRsp::CopyFrom(const GetResourceServerRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.GetResourceServerRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void GetResourceServerRsp::InternalSwap(GetResourceServerRsp* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.host_, &other->_impl_.host_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.port_, &other->_impl_.port_, arena);
+  swap(_impl_.error_, other->_impl_.error_);
+}
+
+::google::protobuf::Metadata GetResourceServerRsp::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================
@@ -2256,6 +2985,582 @@ void LoginRsp::InternalSwap(LoginRsp* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) 
 }
 
 ::google::protobuf::Metadata LoginRsp::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class VerifyTokenReq::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<VerifyTokenReq>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_._has_bits_);
+};
+
+VerifyTokenReq::VerifyTokenReq(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, VerifyTokenReq_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.VerifyTokenReq)
+}
+PROTOBUF_NDEBUG_INLINE VerifyTokenReq::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const Impl_& from,
+    const ::message::VerifyTokenReq& from_msg)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        token_(arena, from.token_) {}
+
+VerifyTokenReq::VerifyTokenReq(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena,
+    const VerifyTokenReq& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, VerifyTokenReq_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  VerifyTokenReq* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_, from);
+  _impl_.uid_ = from._impl_.uid_;
+
+  // @@protoc_insertion_point(copy_constructor:message.VerifyTokenReq)
+}
+PROTOBUF_NDEBUG_INLINE VerifyTokenReq::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0},
+        token_(arena) {}
+
+inline void VerifyTokenReq::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.uid_ = {};
+}
+VerifyTokenReq::~VerifyTokenReq() {
+  // @@protoc_insertion_point(destructor:message.VerifyTokenReq)
+  SharedDtor(*this);
+}
+inline void VerifyTokenReq::SharedDtor(MessageLite& self) {
+  VerifyTokenReq& this_ = static_cast<VerifyTokenReq&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.token_.Destroy();
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL VerifyTokenReq::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) VerifyTokenReq(arena);
+}
+constexpr auto VerifyTokenReq::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::CopyInit(sizeof(VerifyTokenReq),
+                                            alignof(VerifyTokenReq));
+}
+constexpr auto VerifyTokenReq::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_VerifyTokenReq_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &VerifyTokenReq::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<VerifyTokenReq>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &VerifyTokenReq::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<VerifyTokenReq>(), &VerifyTokenReq::ByteSizeLong,
+              &VerifyTokenReq::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_._cached_size_),
+          false,
+      },
+      &VerifyTokenReq::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull VerifyTokenReq_class_data_ =
+        VerifyTokenReq::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+VerifyTokenReq::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&VerifyTokenReq_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(VerifyTokenReq_class_data_.tc_table);
+  return VerifyTokenReq_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 36, 2>
+VerifyTokenReq::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    VerifyTokenReq_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::VerifyTokenReq>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // string token = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 0, 0, PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_.token_)}},
+    // int32 uid = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(VerifyTokenReq, _impl_.uid_), 1>(),
+     {8, 1, 0, PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_.uid_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 uid = 1;
+    {PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_.uid_), _Internal::kHasBitsOffset + 1, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    // string token = 2;
+    {PROTOBUF_FIELD_OFFSET(VerifyTokenReq, _impl_.token_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\26\0\5\0\0\0\0\0"
+    "message.VerifyTokenReq"
+    "token"
+  }},
+};
+PROTOBUF_NOINLINE void VerifyTokenReq::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.VerifyTokenReq)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000001u) != 0) {
+    _impl_.token_.ClearNonDefaultToEmpty();
+  }
+  _impl_.uid_ = 0;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL VerifyTokenReq::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const VerifyTokenReq& this_ = static_cast<const VerifyTokenReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL VerifyTokenReq::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const VerifyTokenReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.VerifyTokenReq)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 uid = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000002u) != 0) {
+    if (this_._internal_uid() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_uid(), target);
+    }
+  }
+
+  // string token = 2;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (!this_._internal_token().empty()) {
+      const ::std::string& _s = this_._internal_token();
+      ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+          _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "message.VerifyTokenReq.token");
+      target = stream->WriteStringMaybeAliased(2, _s, target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.VerifyTokenReq)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t VerifyTokenReq::ByteSizeLong(const MessageLite& base) {
+  const VerifyTokenReq& this_ = static_cast<const VerifyTokenReq&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t VerifyTokenReq::ByteSizeLong() const {
+  const VerifyTokenReq& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.VerifyTokenReq)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    // string token = 2;
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (!this_._internal_token().empty()) {
+        total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                        this_._internal_token());
+      }
+    }
+    // int32 uid = 1;
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (this_._internal_uid() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_uid());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void VerifyTokenReq::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<VerifyTokenReq*>(&to_msg);
+  auto& from = static_cast<const VerifyTokenReq&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.VerifyTokenReq)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (!from._internal_token().empty()) {
+        _this->_internal_set_token(from._internal_token());
+      } else {
+        if (_this->_impl_.token_.IsDefault()) {
+          _this->_internal_set_token("");
+        }
+      }
+    }
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (from._internal_uid() != 0) {
+        _this->_impl_.uid_ = from._impl_.uid_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void VerifyTokenReq::CopyFrom(const VerifyTokenReq& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.VerifyTokenReq)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void VerifyTokenReq::InternalSwap(VerifyTokenReq* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.token_, &other->_impl_.token_, arena);
+  swap(_impl_.uid_, other->_impl_.uid_);
+}
+
+::google::protobuf::Metadata VerifyTokenReq::GetMetadata() const {
+  return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
+}
+// ===================================================================
+
+class VerifyTokenRsp::_Internal {
+ public:
+  using HasBits =
+      decltype(::std::declval<VerifyTokenRsp>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+      8 * PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_._has_bits_);
+};
+
+VerifyTokenRsp::VerifyTokenRsp(::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, VerifyTokenRsp_class_data_.base()) {
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena) {
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  SharedCtor(arena);
+  // @@protoc_insertion_point(arena_constructor:message.VerifyTokenRsp)
+}
+VerifyTokenRsp::VerifyTokenRsp(
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena, const VerifyTokenRsp& from)
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+    : ::google::protobuf::Message(arena, VerifyTokenRsp_class_data_.base()),
+#else   // PROTOBUF_CUSTOM_VTABLE
+    : ::google::protobuf::Message(arena),
+#endif  // PROTOBUF_CUSTOM_VTABLE
+      _impl_(from._impl_) {
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+}
+PROTOBUF_NDEBUG_INLINE VerifyTokenRsp::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena)
+      : _cached_size_{0} {}
+
+inline void VerifyTokenRsp::SharedCtor(::_pb::Arena* PROTOBUF_NULLABLE arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, error_),
+           0,
+           offsetof(Impl_, uid_) -
+               offsetof(Impl_, error_) +
+               sizeof(Impl_::uid_));
+}
+VerifyTokenRsp::~VerifyTokenRsp() {
+  // @@protoc_insertion_point(destructor:message.VerifyTokenRsp)
+  SharedDtor(*this);
+}
+inline void VerifyTokenRsp::SharedDtor(MessageLite& self) {
+  VerifyTokenRsp& this_ = static_cast<VerifyTokenRsp&>(self);
+  this_._internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
+  ABSL_DCHECK(this_.GetArena() == nullptr);
+  this_._impl_.~Impl_();
+}
+
+inline void* PROTOBUF_NONNULL VerifyTokenRsp::PlacementNew_(
+    const void* PROTOBUF_NONNULL, void* PROTOBUF_NONNULL mem,
+    ::google::protobuf::Arena* PROTOBUF_NULLABLE arena) {
+  return ::new (mem) VerifyTokenRsp(arena);
+}
+constexpr auto VerifyTokenRsp::InternalNewImpl_() {
+  return ::google::protobuf::internal::MessageCreator::ZeroInit(sizeof(VerifyTokenRsp),
+                                            alignof(VerifyTokenRsp));
+}
+constexpr auto VerifyTokenRsp::InternalGenerateClassData_() {
+  return ::google::protobuf::internal::ClassDataFull{
+      ::google::protobuf::internal::ClassData{
+          &_VerifyTokenRsp_default_instance_._instance,
+          &_table_.header,
+          nullptr,  // OnDemandRegisterArenaDtor
+          nullptr,  // IsInitialized
+          &VerifyTokenRsp::MergeImpl,
+          ::google::protobuf::Message::GetNewImpl<VerifyTokenRsp>(),
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+          &VerifyTokenRsp::SharedDtor,
+          ::google::protobuf::Message::GetClearImpl<VerifyTokenRsp>(), &VerifyTokenRsp::ByteSizeLong,
+              &VerifyTokenRsp::_InternalSerialize,
+#endif  // PROTOBUF_CUSTOM_VTABLE
+          PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_._cached_size_),
+          false,
+      },
+      &VerifyTokenRsp::kDescriptorMethods,
+      &descriptor_table_message_2eproto,
+      nullptr,  // tracker
+  };
+}
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 const
+    ::google::protobuf::internal::ClassDataFull VerifyTokenRsp_class_data_ =
+        VerifyTokenRsp::InternalGenerateClassData_();
+
+PROTOBUF_ATTRIBUTE_WEAK const ::google::protobuf::internal::ClassData* PROTOBUF_NONNULL
+VerifyTokenRsp::GetClassData() const {
+  ::google::protobuf::internal::PrefetchToLocalCache(&VerifyTokenRsp_class_data_);
+  ::google::protobuf::internal::PrefetchToLocalCache(VerifyTokenRsp_class_data_.tc_table);
+  return VerifyTokenRsp_class_data_.base();
+}
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 0, 2>
+VerifyTokenRsp::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    VerifyTokenRsp_class_data_.base(),
+    nullptr,  // post_loop_handler
+    ::_pbi::TcParser::GenericFallback,  // fallback
+    #ifdef PROTOBUF_PREFETCH_PARSE_TABLE
+    ::_pbi::TcParser::GetTable<::message::VerifyTokenRsp>(),  // to_prefetch
+    #endif  // PROTOBUF_PREFETCH_PARSE_TABLE
+  }, {{
+    // int32 uid = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(VerifyTokenRsp, _impl_.uid_), 1>(),
+     {16, 1, 0, PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.uid_)}},
+    // int32 error = 1;
+    {::_pbi::TcParser::SingularVarintNoZag1<::uint32_t, offsetof(VerifyTokenRsp, _impl_.error_), 0>(),
+     {8, 0, 0, PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.error_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // int32 error = 1;
+    {PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.error_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+    // int32 uid = 2;
+    {PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.uid_), _Internal::kHasBitsOffset + 1, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kInt32)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+PROTOBUF_NOINLINE void VerifyTokenRsp::Clear() {
+// @@protoc_insertion_point(message_clear_start:message.VerifyTokenRsp)
+  ::google::protobuf::internal::TSanWrite(&_impl_);
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    ::memset(&_impl_.error_, 0, static_cast<::size_t>(
+        reinterpret_cast<char*>(&_impl_.uid_) -
+        reinterpret_cast<char*>(&_impl_.error_)) + sizeof(_impl_.uid_));
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::uint8_t* PROTOBUF_NONNULL VerifyTokenRsp::_InternalSerialize(
+    const ::google::protobuf::MessageLite& base, ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) {
+  const VerifyTokenRsp& this_ = static_cast<const VerifyTokenRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::uint8_t* PROTOBUF_NONNULL VerifyTokenRsp::_InternalSerialize(
+    ::uint8_t* PROTOBUF_NONNULL target,
+    ::google::protobuf::io::EpsCopyOutputStream* PROTOBUF_NONNULL stream) const {
+  const VerifyTokenRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(serialize_to_array_start:message.VerifyTokenRsp)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  // int32 error = 1;
+  if ((this_._impl_._has_bits_[0] & 0x00000001u) != 0) {
+    if (this_._internal_error() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<1>(
+              stream, this_._internal_error(), target);
+    }
+  }
+
+  // int32 uid = 2;
+  if ((this_._impl_._has_bits_[0] & 0x00000002u) != 0) {
+    if (this_._internal_uid() != 0) {
+      target =
+          ::google::protobuf::internal::WireFormatLite::WriteInt32ToArrayWithField<2>(
+              stream, this_._internal_uid(), target);
+    }
+  }
+
+  if (ABSL_PREDICT_FALSE(this_._internal_metadata_.have_unknown_fields())) {
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            this_._internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:message.VerifyTokenRsp)
+  return target;
+}
+
+#if defined(PROTOBUF_CUSTOM_VTABLE)
+::size_t VerifyTokenRsp::ByteSizeLong(const MessageLite& base) {
+  const VerifyTokenRsp& this_ = static_cast<const VerifyTokenRsp&>(base);
+#else   // PROTOBUF_CUSTOM_VTABLE
+::size_t VerifyTokenRsp::ByteSizeLong() const {
+  const VerifyTokenRsp& this_ = *this;
+#endif  // PROTOBUF_CUSTOM_VTABLE
+  // @@protoc_insertion_point(message_byte_size_start:message.VerifyTokenRsp)
+  ::size_t total_size = 0;
+
+  ::uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void)cached_has_bits;
+
+  ::_pbi::Prefetch5LinesFrom7Lines(&this_);
+  cached_has_bits = this_._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    // int32 error = 1;
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (this_._internal_error() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_error());
+      }
+    }
+    // int32 uid = 2;
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (this_._internal_uid() != 0) {
+        total_size += ::_pbi::WireFormatLite::Int32SizePlusOne(
+            this_._internal_uid());
+      }
+    }
+  }
+  return this_.MaybeComputeUnknownFieldsSize(total_size,
+                                             &this_._impl_._cached_size_);
+}
+
+void VerifyTokenRsp::MergeImpl(::google::protobuf::MessageLite& to_msg, const ::google::protobuf::MessageLite& from_msg) {
+  auto* const _this = static_cast<VerifyTokenRsp*>(&to_msg);
+  auto& from = static_cast<const VerifyTokenRsp&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:message.VerifyTokenRsp)
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  cached_has_bits = from._impl_._has_bits_[0];
+  if ((cached_has_bits & 0x00000003u) != 0) {
+    if ((cached_has_bits & 0x00000001u) != 0) {
+      if (from._internal_error() != 0) {
+        _this->_impl_.error_ = from._impl_.error_;
+      }
+    }
+    if ((cached_has_bits & 0x00000002u) != 0) {
+      if (from._internal_uid() != 0) {
+        _this->_impl_.uid_ = from._impl_.uid_;
+      }
+    }
+  }
+  _this->_impl_._has_bits_[0] |= cached_has_bits;
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void VerifyTokenRsp::CopyFrom(const VerifyTokenRsp& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:message.VerifyTokenRsp)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+
+void VerifyTokenRsp::InternalSwap(VerifyTokenRsp* PROTOBUF_RESTRICT PROTOBUF_NONNULL other) {
+  using ::std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.uid_)
+      + sizeof(VerifyTokenRsp::_impl_.uid_)
+      - PROTOBUF_FIELD_OFFSET(VerifyTokenRsp, _impl_.error_)>(
+          reinterpret_cast<char*>(&_impl_.error_),
+          reinterpret_cast<char*>(&other->_impl_.error_));
+}
+
+::google::protobuf::Metadata VerifyTokenRsp::GetMetadata() const {
   return ::google::protobuf::Message::GetMetadataImpl(GetClassData()->full());
 }
 // ===================================================================

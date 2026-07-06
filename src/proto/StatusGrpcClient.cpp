@@ -82,6 +82,30 @@ GetChatServerRsp StatusGrpcClient::GetChatServer(const int uid) const {
     return reply;
 }
 
+GetResourceServerRsp StatusGrpcClient::GetResourceServer(const int uid) const {
+    ClientContext context;
+    GetResourceServerReq request;
+    GetResourceServerRsp reply;
+    auto stub = pool_->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+    Defer defer([this, &stub]() {
+        pool_->returnConnection(std::move(stub));
+    });
+
+    request.set_uid(uid);
+    if (const auto status = stub->GetResourceServer(&context, request, &reply); status.ok()) {
+        std::cout << "Get RPC connection success" << std::endl;
+        std::cout << "Get RPC connection success" << std::endl;
+        return reply;
+    }
+    reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+    return reply;
+}
+
 LoginRsp StatusGrpcClient::Login(const int uid, const std::string &token) const {
     ClientContext context;
     LoginReq request;
@@ -104,6 +128,30 @@ LoginRsp StatusGrpcClient::Login(const int uid, const std::string &token) const 
     }
 
     reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+    return reply;
+}
+
+VerifyTokenRsp StatusGrpcClient::VerifyToken(const int uid, const std::string &token) const {
+    ClientContext context;
+    VerifyTokenReq request;
+    VerifyTokenRsp reply;
+    auto stub = pool_->getConnection();
+    if (nullptr == stub) {
+        std::cout << "Error get rpc connection" << std::endl;
+        reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
+        return reply;
+    }
+
+    Defer defer([this, &stub] () {
+        pool_->returnConnection(std::move(stub));
+    });
+    request.set_uid(uid);
+    request.set_token(token);
+    if (const auto status = stub->VerifyToken(&context, request, &reply); status.ok()) {
+        std::cout << "Get RPC connection success" << std::endl;
+        return reply;
+    }
+
     return reply;
 }
 

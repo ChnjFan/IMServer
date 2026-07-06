@@ -49,7 +49,7 @@ void LogicSystem::registerPost(const std::string &path, const HttpRequestCallbac
 LogicSystem::LogicSystem() {
     registerGet("/get_test", [](std::shared_ptr<HttpConnection> connection) {
         beast::ostream(connection->response_.body()) << "receive get_test request.\r\n";
-        HttpConnection::UrlParams urlParams = connection->urlParser_.getParams();
+        UrlParams urlParams = connection->urlParser_.getParams();
         for (auto&[param, value] : urlParams) {
             beast::ostream(connection->response_.body()) << "Param " << param << "=" << value << "\r\n";
         }
@@ -238,11 +238,14 @@ LogicSystem::LogicSystem() {
         connection->response_.set(http::field::content_type, "application/json");
         Json::Value root;
         Json::Value srcRoot;
+        Defer defer([&root, &connection] {
+            const std::string jsonStr = root.toStyledString();
+            std::cout << "Response: " << jsonStr << std::endl;
+            boost::beast::ostream(connection->response_.body()) << jsonStr;
+        });
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {
             std::cout << "Failed to parse JSON data" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
-            const std::string jsonStr = root.toStyledString();
-            boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
         }
 
@@ -255,8 +258,6 @@ LogicSystem::LogicSystem() {
         if (bool result = MysqlMgr::getInstance()->checkPasswd(email, passwd, userInfo); !result) {
             std::cout << "User passwd not match" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EMAIL_NOT_EXISTS);
-            const std::string jsonStr = root.toStyledString();
-            boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
         }
 
@@ -265,16 +266,24 @@ LogicSystem::LogicSystem() {
         if (reply.error()) {
             std::cout << "GRPC Status Client error: " << reply.error() << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::RPC_FAILED);
-            const std::string jsonStr = root.toStyledString();
-            boost::beast::ostream(connection->response_.body()) << jsonStr;
             return;
         }
 
-        if (reply.host().empty()) {
+        if (reply.host().empty() || reply.port().empty()) {
             std::cout << "GRPC Status Client not found chatserver" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::RPC_FAILED);
-            const std::string jsonStr = root.toStyledString();
-            boost::beast::ostream(connection->response_.body()) << jsonStr;
+            return;
+        }
+
+        auto resourceServer = StatusGrpcClient::getInstance()->GetResourceServer(userInfo.uid);
+        if (resourceServer.error()) {
+            std::cout << "GRPC Resource Server error: " << resourceServer.error() << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::RPC_FAILED);
+            return;
+        }
+        if (resourceServer.host().empty() || resourceServer.port().empty()) {
+            std::cout << "GRPC Resource Server not found" << std::endl;
+            root["error"] = static_cast<int32_t>(ErrorCodes::RPC_FAILED);
             return;
         }
 
@@ -284,9 +293,7 @@ LogicSystem::LogicSystem() {
         root["token"] = reply.token();
         root["host"] = reply.host();
         root["port"] = reply.port();
-
-        const std::string jsonStr = root.toStyledString();
-        std::cout << "Response: " << jsonStr << std::endl;
-        boost::beast::ostream(connection->response_.body()) << jsonStr;
+        root["resource_host"] = resourceServer.host();
+        root["resource_port"] = resourceServer.port();
     });
 }

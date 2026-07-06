@@ -12,6 +12,8 @@ lib/
 .vscode/
 .idea/
 .claude/
+.agents/
+.codex/
 *.swp
 *.swo
 *~

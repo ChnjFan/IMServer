@@ -131,9 +131,16 @@ BEGIN
         -- 插入消息记录
         INSERT INTO `message` (`conv_id`, `sender_uid`, `msg_type`, `content`, `msg_id`, `status`)
         VALUES (p_conv_id, p_sender_uid, p_msg_type, p_content, p_msg_id, stat);
-        -- 更新会话 last_* 字段
+        -- 更新会话 last_* 字段（根据消息类型生成摘要：1-文本原样，2-[图片]，3-[文件]，4-[视频]）
         UPDATE `conversation`
-        SET `last_msg_id` = p_msg_id, `last_msg_content` = p_content, `last_time` = NOW()
+        SET `last_msg_id` = p_msg_id,
+            `last_msg_content` = CASE p_msg_type
+                WHEN 1 THEN p_content
+                WHEN 2 THEN '[图片]'
+                WHEN 3 THEN '[文件]'
+                WHEN 4 THEN '[视频]'
+            END,
+            `last_time` = NOW()
         WHERE `conv_id` = p_conv_id;
         -- 更新发送方的用户会话更新时间
         UPDATE `user_conversation`

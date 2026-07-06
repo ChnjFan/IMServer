@@ -51,7 +51,7 @@ IMServer 已实现文本消息的收发和会话管理（见 `docs/chat_conv.md`
 | 部署形态 | 独立 ResourceServer 进程 |
 | 鉴权策略 | Token + uid + 会话成员三重校验 |
 | 图片处理 | 压缩（最长边 2048 + JPEG 85%）+ 缩略图（200×200） |
-| 上传协议 | 移植现有 TCP 分片 base64 到 ResourceServer |
+| 上传协议 | HTTP multipart/form-data（单请求完成，无需手动分片） |
 | 视频/语音 | 预留接口，本期不实现转码等高级能力 |
 | 扩展性 | 多实例 + 共享存储，HTTP 层无状态 |
 | 清理策略 | 异步扫描清理 orphan 资源，ChatServer 零感知 |
@@ -66,7 +66,7 @@ IMServer 已实现文本消息的收发和会话管理（见 `docs/chat_conv.md`
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         客户端 (Mobile / Web)                        │
 │                                                                     │
-│  上传: TCP(分片base64) → ResourceServer                             │
+│  上传: HTTP(multipart/form-data) → ResourceServer                   │
 │  发消息: TCP(聊天) → ChatServer    content = "/r/res_a1b2c3d4"       │
 │  下载: HTTP GET → ResourceServer                                    │
 └────────────────┬───────────────────────────────┬────────────────────┘
@@ -76,113 +76,154 @@ IMServer 已实现文本消息的收发和会话管理（见 `docs/chat_conv.md`
 │     ResourceServer       │        │        ChatServer             │
 │                          │        │                               │
 │  ┌────────────────────┐  │        │  _sessions                    │
-│  │  TCP UploadService  │  │        │  _LogicSystem                 │
-│  ├────────────────────┤  │        │  _UserMgr                     │
-│  │  HTTP Download      │  │        │                               │
-│  ├────────────────────┤  │        │  对资源 0 感知                  │
-│  │  ImageProcessor     │  │        │  content 中的 URL 只是纯文本    │
+│  │  ResourceHttpSvc   │  │        │  _LogicSystem                 │
+│  │  (统一 HTTP 入口)   │  │        │  _UserMgr                     │
+│  ├────────────────────┤  │        │                               │
+│  │  HttpConnection    │  │        │  对资源 0 感知                  │
+│  │  (Boost.Beast)     │  │        │  content 中的 URL 只是纯文本    │
 │  ├────────────────────┤  │        │  原样存储、原样转发              │
-│  │  ResourceMetaMgr   │  │        │                               │
-│  ├────────────────────┤  │        └───────────────────────────────┘
+│  │  ResourceLogicSys  │  │        │                               │
+│  │  (URL 路由分发)     │  │        └───────────────────────────────┘
+│  ├────────────────────┤  │
+│  │  AuthMiddleware    │  │        ┌───────────────────────────────┐
+│  │  (三重校验)         │  │        │        StatusServer            │
+│  ├────────────────────┤  │        │   (Token gRPC 校验)            │
+│  │  UploadHandler     │  │        └───────────────────────────────┘
+│  │  (multipart 解析)   │  │
+│  ├────────────────────┤  │
+│  │  DownloadHandler   │  │
+│  │  (文件流输出)       │  │
+│  ├────────────────────┤  │
+│  │  ImageProcessor    │  │
+│  ├────────────────────┤  │
+│  │  ResourceMetaMgr   │  │
+│  ├────────────────────┤  │
 │  │  OrphanScanner     │  │
-│  │  (异步扫孤儿资源)    │  │        ┌───────────────────────────────┐
-│  └────────────────────┘  │        │        StatusServer            │
-│                          │        │   (Token 校验 only)            │
-└──────────────────────────┘        └───────────────────────────────┘
+│  └────────────────────┘  │
+└──────────────────────────┘
 ```
 
 ### 3.2 ResourceServer 内部模块
 
 | 模块 | 职责 | 关键类 |
 |------|------|--------|
-| **ResourceUploadService** | TCP 连接管理、分片接收、文件写入 | `UploadSession`, `ResourceLogicSystem` |
-| **ResourceDownloadService** | HTTP 文件下载、鉴权中间件、Range 支持 | `DownloadConnection`, `AuthMiddleware` |
+| **ResourceHttpService** | HTTP 服务入口，accept 连接，创建 HttpConnection | `ResourceHttpService` |
+| **HttpConnection** | 单个 HTTP 连接：读请求、路由、写响应 | `HttpConnection`, `UrlParser` |
+| **ResourceLogicSystem** | URL 路由分发（GET/POST handler 注册与调用） | `ResourceLogicSystem` |
+| **AuthMiddleware** | 三重校验（Token + uid + 会话成员） | `AuthMiddleware` |
+| **UploadHandler** | multipart/form-data 解析、文件写入、MD5 校验 | `UploadHandler` |
+| **DownloadHandler** | 文件流输出、Range 支持、缩略图 | `DownloadHandler` |
 | **ImageProcessor** | 图片压缩、缩略图生成（stb_image 系列） | `ImageProcessor` |
 | **ResourceMetaMgr** | 资源元数据 CRUD（MySQL）、缓存（Redis） | `ResourceMetaDao`, `ResourceMetaCache` |
 | **OrphanScanner** | 定时扫描孤儿资源并清理 | `OrphanScanner` |
-| **GrpcClientPool** | gRPC 连接池，调用 StatusServer | 复用 `ServiceConnPool<>` |
+| **StatusGrpcClient** | gRPC 连接池，调用 StatusServer 的 VerifyToken | 复用 `ServiceConnPool<StatusService>` |
 
 ### 3.3 数据流
 
 #### 上传流程
-1. TCP 连接建立 → 接收分片 → 写入临时文件
-2. 最后一片到达 → MD5 校验 → rename 临时为正式
-3. 提交图片处理（压缩+缩略图，异步线程池）
-4. 写入 MySQL 元数据 + Redis 缓存
-5. 返回 `resource_id` + `url`（第 3-5 步不阻塞客户端发消息）
+1. HTTP POST `/r/upload`（multipart/form-data）→ 服务端接收完整 body
+2. 解析 multipart → 提取 file 二进制 + conv_id + file_md5
+3. 写入临时文件 → MD5 校验 → rename 临时为正式
+4. 提交图片处理（压缩+缩略图，异步线程池）
+5. 写入 MySQL 元数据 + Redis 缓存
+6. 返回 `resource_id` + `url`（第 4-6 步不阻塞客户端发消息）
 
 #### 下载流程
 1. HTTP GET `/r/{resource_id}` → AuthMiddleware 三重校验
 2. 校验通过 → 返回文件流（支持 Range 断点续传）
 
 #### 消息流转
-- 客户端拿到资源 URL 后，作为普通消息 content 通过 ChatServer 发送
+- 客户端拿到资源 URL 后，作为普通消息 content 通过 ChatServer 发送（TCP 聊天连接）
 - ChatServer 完全不解析 content，URL 等同于纯文本
 
 ---
 
 ## 4. 协议与接口
 
-### 4.1 上传协议（TCP）
+ResourceServer 统一使用 HTTP 协议通信，所有端点复用同一个 HTTP 端口。
 
-复用 IMServer 自定义二进制协议：**4 字节头（2B msgId + 2B bodySize）+ JSON 体**。
+### 4.1 上传协议（HTTP multipart/form-data）
 
-从 ChatServer 的 `LogicWorker::fileUploadHandler` 移植到 ResourceServer。
+使用标准 HTTP `multipart/form-data` 格式上传文件，单请求完成上传，无需手动分片。
 
-**消息 ID：**
+```
+POST /r/upload
+Authorization: Bearer <token>
+X-User-Id: 7
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
-```cpp
-// 已有定义，保留不变
-ID_CHAT_UPLOAD_FILE_REQ     = 3004,   // 上传文件请求
-ID_CHAT_UPLOAD_FILE_RSP     = 3005,   // 上传文件响应
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="photo.jpg"
+Content-Type: image/jpeg
+
+<binary data>
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="conv_id"
+
+c2c_3_7
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file_md5"
+
+d41d8cd98f00b204e9800998ecf8427e
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
 ```
 
-**分片上传 JSON（首个分片携带 file_md5）：**
+**multipart 字段说明：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `file` | File | 是 | 文件二进制内容 |
+| `conv_id` | Text | 是 | 资源所属会话 ID |
+| `file_md5` | Text | 否 | 客户端计算的 MD5（用于秒传二次校验） |
+
+**请求头：**
+
+| 头 | 必填 | 说明 |
+|----|------|------|
+| `Authorization` | 是 | `Bearer <token>`，登录 token |
+| `X-User-Id` | 是 | 上传方 uid（显式传递） |
+| `Content-Type` | 是 | `multipart/form-data; boundary=...` |
+
+**成功响应：**
 
 ```json
-// → 请求 seq=1（首个分片）
 {
-  "from_uid": 3,
-  "conv_id": "c2c_3_7",
-  "name": "photo.jpg",
-  "total_size": 5242880,
-  "trans_size": 65536,
-  "seq": 1,
-  "file_md5": "d41d8cd98f00b204e9800998ecf8427e",
-  "data": "<base64 encoded chunk>"
-}
-
-// → 请求 seq=2（后续分片，不再带 file_md5）
-{
-  "from_uid": 3,
-  "conv_id": "c2c_3_7",
-  "name": "photo.jpg",
-  "total_size": 5242880,
-  "trans_size": 65536,
-  "seq": 2,
-  "data": "<base64 encoded chunk>"
-}
-```
-
-**响应：**
-
-```json
-// ← 中间分片 ACK
-{ "error": 0, "conv_id": "c2c_3_7", "name": "photo.jpg", "seq": 3,
-  "total_size": 5242880, "recv_size": 131072 }
-
-// ← 最后一片完成（MD5 校验通过）
-{ "error": 0, "conv_id": "c2c_3_7", "name": "photo.jpg", "seq": 0,
-  "total_size": 5242880, "recv_size": 5242880,
-  "file_md5": "d41d8cd98f00b204e9800998ecf8427e",
+  "error": 0,
   "resource_id": "res_a1b2c3d4",
   "url": "/r/res_a1b2c3d4",
-  "thumb_url": "/r/res_a1b2c3d4/thumb" }
-
-// ← MD5 校验失败
-{ "error": 5004, "message": "File md5 mismatch, please re-upload",
-  "file_md5": "expected_md5_here" }
+  "thumb_url": "/r/res_a1b2c3d4/thumb"
+}
 ```
+
+**错误响应：**
+
+```json
+// 400 JSON 解析失败
+{ "error": 1001, "message": "Invalid request" }
+
+// 401 Token 无效/过期/uid 不匹配
+{ "error": 5001, "message": "Token expired or uid mismatch" }
+
+// 400 MD5 校验失败
+{ "error": 5004, "message": "File md5 mismatch" }
+
+// 400 文件超过大小限制
+{ "error": 5006, "message": "File size exceeds limit (50MB)" }
+
+// 400 文件名格式非法
+{ "error": 5005, "message": "Invalid file name" }
+```
+
+**与旧 TCP 协议的关键差异：**
+
+| 维度 | 旧 TCP 分片 | 新 HTTP multipart |
+|------|-------------|-------------------|
+| 传输层 | 自定义 TCP | HTTP/1.1 |
+| 数据编码 | base64（膨胀 ~33%） | 原始二进制（无膨胀） |
+| 分片逻辑 | 客户端手动分片（seq/total_size/trans_size） | HTTP 层自动处理，单请求完成 |
+| 消息头 | 4 字节二进制头（msgId + bodySize） | 标准 HTTP 请求头 |
+| 并发模型 | 单连接独占写入 | HTTP 天然并发，每请求独立 |
+| 客户端复杂度 | 需实现分片/重传逻辑 | 标准 HTTP 库原生支持 |
 
 ### 4.2 预检接口（HTTP，秒传）
 
@@ -256,35 +297,19 @@ ETag: "res_a1b2c3d4_d41d8cd98f00b204e9800998ecf8427e"
 { "error": 5003, "message": "Resource not found" }
 ```
 
-### 4.4 gRPC proto 定义
+### 4.4 鉴权通信（gRPC 调用 StatusServer）
 
-> 本期不定义新的 gRPC 服务。Token 校验直接调用已有的 `StatusService`，ChatServer 与 ResourceServer 零交互。以下为预留接口（二期扩展时启用）：
+ResourceServer 不对外暴露 gRPC 服务。Token 校验通过调用已有的 `StatusService.VerifyToken` 完成：
 
-```protobuf
-// resource.proto (预留)
-syntax = "proto3";
-
-package resource;
-
-service ResourceService {
-    rpc RegisterResource(RegisterResourceReq) returns (RegisterResourceRsp);
-}
-
-message RegisterResourceReq {
-    string resource_id    = 1;
-    string conv_id        = 2;
-    int32  uploader_uid   = 3;
-    string file_name      = 4;
-    string file_path      = 5;
-    string thumb_path     = 6;
-    int64  file_size      = 7;
-    int32  resource_type  = 8;   // 1:图片 2:文件 3:语音 4:视频 5:其他
-}
-
-message RegisterResourceRsp {
-    int32 error = 1;
-}
 ```
+ResourceServer ── gRPC ──► StatusServer
+               VerifyTokenReq { uid, token }
+               VerifyTokenRsp { error, uid }
+```
+
+**gRPC 连接池：** 复用 `ServiceConnPool<StatusService>`（定义于 `src/proto/ServiceConnPool.h`），通过 `StatusGrpcClient` 单例（`src/proto/StatusGrpcClient.h`）调用。
+
+> 二期如需 ResourceServer 主动通知 ChatServer（如资源删除），再考虑定义 `resource.proto`。
 
 ---
 
@@ -298,7 +323,7 @@ message RegisterResourceRsp {
 3. 服务端查询 Redis 缓存（`resource_md5:{md5}`），命中则直接返回已有资源 URL（毫秒级响应）
 4. 未命中则查 MySQL `resource_meta` 表（`idx_md5` 索引）
 5. 找到 → 缓存到 Redis 并返回秒传结果；未找到 → 返回 `found:false`
-6. 客户端根据 `found` 决定是否发起 TCP 实际上传
+6. 客户端根据 `found` 决定是否发起 HTTP 实际上传
 
 ### 5.2 去重存储策略
 
@@ -475,9 +500,7 @@ struct ResourceMeta {
 [ResourceServer]
 Name = ResourceServer
 Host = 127.0.0.1
-Port = 50057              ; TCP 上传端口
-HttpPort = 50058          ; HTTP 下载端口
-RPCPort = 50059           ; gRPC 服务端口（供内部回调，可选）
+Port = 50058              ; HTTP 端口（统一：上传/下载/预检共用）
 Path = resources          ; 文件存储根目录
 UploadTimeout = 30        ; 上传超时(分钟)
 
@@ -535,16 +558,17 @@ private:
 ### 7.5 上传时序（含图片处理）
 
 ```
-客户端              ResourceServer (主线程)        线程池
+客户端              ResourceServer (HTTP 线程)     线程池
   │                       │                         │
-  │── TCP 分片 ──────────►│                         │
-  │   (写临时文件)         │                         │
-  │                       │                         │
-  │── 最后一片 ──────────►│                         │
-  │                       │── MD5 校验               │
+  │── POST /r/upload ───►│                         │
+  │   multipart/form-data │                         │
+  │   (完整文件二进制)     │                         │
+  │                       │── 解析 multipart         │
+  │                       │── 写入临时文件           │
+  │                       │── MD5 校验              │
   │                       │── rename 临时→正式       │
   │                       │── 提交图片处理 ──────────►│
-  │◄── ACK resource_id   │                         │── 压缩
+  │◄── 200 resource_id ──│                         │── 压缩
   │   (客户端可立即发消息) │                         │── 缩略图
   │                       │◄── 回调 ────────────────│
   │                       │── 更新 meta + cache     │
@@ -663,120 +687,198 @@ public:
 
 ```
 ResourceServer (main.cpp)
-├── ResourceUploadService      (TCP 上传服务)
-│   ├── UploadSession         (单个 TCP 连接会话)
-│   └── ResourceLogicSystem   (消息分发)
-│       └── fileUploadHandler (分片接收 + 写入文件)
-├── ResourceDownloadService   (HTTP 下载服务)
-│   ├── DownloadConnection    (HTTP 连接)
-│   └── AuthMiddleware        (三重校验)
+├── ResourceHttpService       (HTTP 服务，统一入口)
+│   ├── HttpConnection        (单个 HTTP 连接，Boost.Beast)
+│   └── ResourceLogicSystem   (URL 路由分发)
+├── AuthMiddleware            (三重校验)
+├── UploadHandler            (multipart 解析 + 文件写入)
+├── DownloadHandler          (文件流输出 + Range)
 ├── ImageProcessor            (图片处理，线程池异步)
 ├── ResourceMetaMgr           (元数据管理)
 │   ├── ResourceMetaDao       (MySQL)
 │   └── ResourceMetaCache     (Redis)
 ├── OrphanScanner            (异步扫描清理)
-├── GrpcClientPool           (gRPC 调用 StatusServer)
-└── ResourceConfig           (复用 ConfigMgr + Singleton)
+└── StatusGrpcClient         (gRPC 调用 StatusServer 鉴权)
 ```
 
 ### 9.2 类关系
 
 ```
-                    ┌─────────────────┐
-                    │  ResourceServer  │
-                    └────────┬────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          │                  │                  │
-          ▼                  ▼                  ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
-│UploadService    │ │DownloadService  │ │OrphanScanner    │
-│ _acceptor       │ │ _acceptor       │ │ _scanThread     │
-│ _sessions       │ │ _authMiddleware │ │ _interval       │
-└────────┬────────┘ └────────┬────────┘ └────────┬────────┘
-         │                   │                   │
-    ┌────┴────┐         ┌────┴────┐              │
-    ▼         ▼         ▼         ▼              ▼
-┌────────┐ ┌────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
-│Upload  │ │LogicSys│ │DnldConn  │ │AuthMdlwr │ │ResourceMetaMg│
-│Session │ │        │ │          │ │          │ │              │
-│ _state │ │_handler│ │          │ │ _grpcClnt│ │ _dao + _cache│
-└────────┘ └───┬────┘ └──────────┘ └──────────┘ └──────────────┘
-               │
-        ┌──────┴──────┐
-        ▼             ▼
-  ┌───────────┐ ┌──────────┐
-  │ImageProc  │ │ThreadPool│
-  └───────────┘ └──────────┘
+                    ┌─────────────────────┐
+                    │  ResourceHttpService │
+                    │  _acceptor           │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │   HttpConnection     │
+                    │   request_/response_ │
+                    └──────────┬──────────┘
+                               │
+                    ┌──────────┴──────────┐
+                    │ ResourceLogicSystem  │
+                    │  _getHandlers        │
+                    │  _postHandlers       │
+                    └──┬───────┬───────┬──┘
+                       │       │       │
+              ┌────────┘       │       └────────┐
+              ▼                ▼                ▼
+        ┌───────────┐  ┌────────────┐  ┌──────────────┐
+        │Upload     │  │PreCheck    │  │Download      │
+        │Handler    │  │Handler     │  │Handler       │
+        └─────┬─────┘  └────────────┘  └──────┬───────┘
+              │                               │
+    ┌─────────┴──────────┐           ┌────────┴────────┐
+    ▼                    ▼           ▼                 ▼
+┌──────────┐  ┌──────────────┐  ┌──────────┐  ┌──────────────┐
+│ImageProc │  │ResourceMetaMg│  │AuthMdlwr │  │ResourceMetaMg│
+│(线程池)   │  │              │  │(gRPC)    │  │              │
+└──────────┘  └──────────────┘  └──────────┘  └──────────────┘
 ```
 
 ### 9.3 核心类定义
 
 ```cpp
-// ResourceUploadService.h
-class ResourceUploadService {
+// ResourceHttpService.h — HTTP 服务入口
+class ResourceHttpService : public std::enable_shared_from_this<ResourceHttpService> {
 public:
-    ResourceUploadService(net::io_context& ioc, uint16_t port);
+    ResourceHttpService(net::io_context& ioc, uint16_t port);
     void start();
 private:
     void acceptLoop();
     tcp::acceptor acceptor_;
-    std::unordered_map<int, std::shared_ptr<UploadSession>> sessions_;
-    ResourceLogicSystem logicSystem_;
+    net::io_context& ioCtx_;
 };
 
-// UploadSession.h
-class UploadSession : public std::enable_shared_from_this<UploadSession> {
+// HttpConnection.h — 单个 HTTP 连接（复用 GateServer 模式）
+class HttpConnection : public std::enable_shared_from_this<HttpConnection> {
 public:
-    explicit UploadSession(tcp::socket socket);
+    typedef std::unordered_map<std::string, std::string> UrlParams;
+    friend class ResourceLogicSystem;
+
+    explicit HttpConnection(net::io_context& io_context);
     void start();
-    void asyncSend(const std::string& data, uint16_t msgId);
-    
-    struct UploadState {
-        std::string convId;
-        std::string fileName;
-        std::string fileMd5;
-        int64_t totalSize = 0;
-        int64_t recvSize = 0;
-        int nextSeq = 1;
-        std::ofstream fileStream;
-    } state_;
-    
+    tcp::socket& getSocket() { return socket_; }
+
+    class UrlParser {
+    public:
+        void parse(const std::string& url);
+        const std::string& getPath() const;
+        const UrlParams& getParams() const;
+        bool hasParam(const std::string& key) const;
+        std::string getParam(const std::string& key, const std::string& defaultValue = "") const;
+    private:
+        std::string path_;
+        UrlParams params_;
+        static std::string urlDecode(const std::string& encoded);
+    };
+
 private:
-    void readHeader();
-    void readBody(uint16_t msgId, uint16_t bodySize);
+    void checkDeadline();
+    void writeResponse();
+    void handleRequest();
+
     tcp::socket socket_;
-    std::array<uint8_t, HEAD_TOTAL_LEN> headerBuf_;
+    beast::flat_buffer buffer_{8192};
+    http::request<http::dynamic_body> request_;
+    http::response<http::dynamic_body> response_;
+    net::steady_timer deadline_{socket_.get_executor(), std::chrono::seconds(60)};
+    UrlParser urlParser_;
 };
 
-// ResourceDownloadService.h
-class ResourceDownloadService {
+// ResourceLogicSystem.h — URL 路由分发（复用 GateServer 模式）
+class ResourceLogicSystem : public Singleton<ResourceLogicSystem> {
 public:
-    ResourceDownloadService(net::io_context& ioc, uint16_t port);
-    void start();
+    ~ResourceLogicSystem();
+    bool handleGet(const std::string& path, std::shared_ptr<HttpConnection> conn);
+    bool handlePost(const std::string& path, std::shared_ptr<HttpConnection> conn);
+    void registerGet(const std::string& path, HttpRequestCallback cb);
+    void registerPost(const std::string& path, HttpRequestCallback cb);
 private:
-    void acceptLoop();
-    void handleRequest(tcp::socket socket);
-    tcp::acceptor acceptor_;
-    std::shared_ptr<AuthMiddleware> authMiddleware_;
+    friend class Singleton<ResourceLogicSystem>;
+    LogicSystem();
+    std::unordered_map<std::string, HttpRequestCallback> postHandlers_;
+    std::unordered_map<std::string, HttpRequestCallback> getHandlers_;
 };
 
-// ResourceMetaMgr.h
+// AuthMiddleware.h — 三重校验
+class AuthMiddleware {
+public:
+    struct AuthResult {
+        int error = 0;
+        int uid = -1;
+        std::string convId;
+    };
+    AuthResult authenticate(const HttpConnection& conn);
+};
+
+// UploadHandler.h — multipart 上传处理
+class UploadHandler {
+public:
+    void handle(std::shared_ptr<HttpConnection> conn);
+private:
+    bool parseMultipart(const http::request<http::dynamic_body>& req,
+                        std::string& fileName, std::string& convId,
+                        std::string& fileMd5, std::vector<uint8_t>& fileData);
+    bool saveToDisk(const std::vector<uint8_t>& data, const std::string& path);
+    std::string computeMd5(const std::vector<uint8_t>& data);
+    std::string generateResourceId();
+};
+
+// DownloadHandler.h — 文件下载
+class DownloadHandler {
+public:
+    void handle(std::shared_ptr<HttpConnection> conn);
+private:
+    void serveFull(std::shared_ptr<HttpConnection> conn, const std::string& path,
+                   const ResourceMeta& meta);
+    void serveRange(std::shared_ptr<HttpConnection> conn, const std::string& path,
+                    const http::request<http::dynamic_body>& req);
+    bool checkPermission(int uid, const std::string& convId, const ResourceMeta& meta);
+};
+
+// ResourceMetaMgr.h — 元数据管理（保持不变）
 class ResourceMetaMgr {
 public:
     static ResourceMetaMgr& getInstance();
-    std::optional<ResourceMeta> preCheck(const std::string& md5);
+    bool preCheck(const std::string& md5, ResourceMeta& meta);
     bool registerResource(const ResourceMeta& meta);
-    std::optional<ResourceMeta> getResource(const std::string& resourceId);
+    bool getResource(const std::string& resourceId, ResourceMeta& meta);
     bool acquire(const std::string& resourceId);
     bool release(const std::string& resourceId);
+    bool updateThumbPath(const std::string& resourceId, const std::string& thumbPath);
 private:
+    ResourceMetaMgr() = default;
     ResourceMetaDao dao_;
     ResourceMetaCache cache_;
 };
 ```
 
-### 9.4 与 ChatServer 的交互
+### 9.4 HTTP 路由注册
+
+```cpp
+// ResourceLogicSystem.cpp 构造函数中注册路由
+ResourceLogicSystem::ResourceLogicSystem() {
+    // 上传
+    registerPost("/r/upload", [](std::shared_ptr<HttpConnection> conn) {
+        UploadHandler handler;
+        handler.handle(conn);
+    });
+
+    // 秒传预检
+    registerPost("/r/check", [](std::shared_ptr<HttpConnection> conn) {
+        PreCheckHandler handler;
+        handler.handle(conn);
+    });
+
+    // 下载（含缩略图）
+    registerGet("/r/", [](std::shared_ptr<HttpConnection> conn) {
+        DownloadHandler handler;
+        handler.handle(conn);
+    });
+}
+```
+
+### 9.5 与 ChatServer 的交互
 
 **设计决策：零交互。**
 
@@ -784,6 +886,8 @@ private:
 - ChatServer 不解析 content，URL 等同于纯文本
 - 消息删除时无需通知 ResourceServer
 - 资源清理由 Orphan Scanner 异步兜底
+
+> 注：全 HTTP 后，ChatServer 不再需要 `fileUploadHandler`（原 TCP 分片上传逻辑），客户端改为直接 HTTP 请求 ResourceServer。
 
 ---
 
@@ -805,12 +909,14 @@ ChatServer 的聊天消息处理完全不需要改动。消息 content 中出现
 
 ```
 发送流程:                          接收流程:
-1. TCP 上传文件到 ResourceServer    1. 收到聊天消息，解析 content
-2. 拿到 resource_id + url           2. 识别出 /r/ 前缀的 URL
-3. 构造聊天消息:                    3. HTTP GET 下载资源
-   content = url                    4. 渲染到聊天界面
+1. HTTP POST /r/upload              1. 收到聊天消息，解析 content
+   multipart/form-data              2. 识别出 /r/ 前缀的 URL
+   上传文件到 ResourceServer         3. HTTP GET 下载资源
+2. 拿到 resource_id + url           4. 渲染到聊天界面
+3. 构造聊天消息:
+   content = url
    content_type = 2 (图片/文件)
-4. 通过 ChatServer 发送
+4. 通过 ChatServer 发送 (TCP)
 ```
 
 ### 10.3 OrphanScanner 设计
@@ -900,9 +1006,10 @@ void OrphanScanner::cleanup(const ScanResult& targets) {
 ```
 发送方               ChatServer           ResourceServer          接收方
    │                     │                     │                    │
-   │── TCP 上传文件 ─────────────────────────►│                    │
-   │   (分片 base64)                          │                    │
-   │◄── resource_id ──────────────────────────│                    │
+   │── HTTP POST /r/upload ──────────────────►│                    │
+   │   multipart/form-data                    │                    │
+   │   (file + conv_id + file_md5)            │                    │
+   │◄── 200 resource_id ──────────────────────│                    │
    │   url=/r/res_abc                         │                    │
    │                     │                     │                    │
    │── TCP 聊天消息 ─────►│                     │                    │
@@ -925,7 +1032,7 @@ void OrphanScanner::cleanup(const ScanResult& targets) {
 
 | 维度 | 策略 |
 |------|------|
-| **上传** | 分片传输，单连接独占写入，避免锁竞争 |
+| **上传** | HTTP multipart/form-data，单请求完成，无需手动分片 |
 | **下载** | HTTP Range 支持断点续传；热点资源 Redis 缓存元数据 |
 | **图片处理** | 独立线程池异步处理，不阻塞上传主流程 |
 | **秒传** | MD5 → Redis 缓存命中时 0 磁盘 IO，直接返回 |
@@ -977,34 +1084,48 @@ void OrphanScanner::cleanup(const ScanResult& targets) {
 
 | 文件 | 说明 |
 |------|------|
-| `src/ResourceServer/CMakeLists.txt` | 子项目构建 |
-| `src/ResourceServer/main.cpp` | 入口 |
-| `src/ResourceServer/ResourceServer.h/.cpp` | 进程管理 |
-| `src/ResourceServer/UploadService.h/.cpp` | TCP 上传服务 |
-| `src/ResourceServer/UploadSession.h/.cpp` | 上传会话 |
-| `src/ResourceServer/DownloadService.h/.cpp` | HTTP 下载服务 |
-| `src/ResourceServer/DownloadConnection.h/.cpp` | HTTP 连接 |
-| `src/ResourceServer/AuthMiddleware.h/.cpp` | 鉴权中间件 |
-| `src/ResourceServer/ImageProcessor.h/.cpp` | 图片处理 |
-| `src/ResourceServer/ResourceMetaMgr.h/.cpp` | 元数据管理 |
-| `src/ResourceServer/ResourceMetaDao.h/.cpp` | MySQL DAO |
-| `src/ResourceServer/ResourceMetaCache.h/.cpp` | Redis 缓存 |
-| `src/ResourceServer/OrphanScanner.h/.cpp` | 孤儿资源扫描 |
-| `src/ResourceServer/ResourceLogicSystem.h/.cpp` | 消息分发 |
-| `proto/resource.proto` | gRPC proto 定义（预留） |
+| `src/ResourceServer/net/ResourceHttpService.h/.cpp` | HTTP 服务入口（替代 TCP ResourceServer） |
+| `src/ResourceServer/net/HttpConnection.h/.cpp` | HTTP 连接（复用 GateServer 模式） |
+| `src/ResourceServer/net/ResourceLogicSystem.h/.cpp` | URL 路由分发 |
+| `src/ResourceServer/service/UploadHandler.h/.cpp` | multipart 上传处理 |
+| `src/ResourceServer/service/DownloadHandler.h/.cpp` | 文件下载 |
+| `src/ResourceServer/service/PreCheckHandler.h/.cpp` | 秒传预检 |
+| `src/ResourceServer/service/AuthMiddleware.h/.cpp` | 鉴权中间件 |
+| `src/ResourceServer/service/ImageProcessor.h/.cpp` | 图片处理 |
+| `src/ResourceServer/service/OrphanScanner.h/.cpp` | 孤儿资源扫描 |
 | `scripts/resource.sql` | 表结构 |
 
-### 13.2 修改文件
+### 13.2 删除/废弃文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/ResourceServer/net/ResourceServer.h/.cpp` | TCP acceptor，替换为 ResourceHttpService |
+| `src/ResourceServer/net/Session.h/.cpp` | TCP 会话，不再需要 |
+| `src/ResourceServer/net/MsgNode.h/.cpp` | TCP 消息节点，不再需要 |
+
+### 13.3 修改文件
 
 | 文件 | 变更内容 |
 |------|----------|
-| `src/base/const.h` | 新增错误码 5001-5007 |
-| `src/ChatServer/core/LogicWorker.cpp` | 移除 `fileUploadHandle`（移植到 ResourceServer） |
-| `src/ChatServer/core/ChatLogicSystem.cpp` | 移除 `uploadFileHandle` 转发 |
-| `config.ini` | 新增 `[ResourceServer]` 和 `[ImageProcess]` 配置段 |
-| `CMakeLists.txt` (根) | 添加 ResourceServer 子项目 |
+| `src/ResourceServer/main.cpp` | 启动 HTTP 服务而非 TCP |
+| `src/ResourceServer/CMakeLists.txt` | 更新源文件列表（移除 TCP 文件，新增 HTTP 文件） |
+| `config.ini` | `[ResourceServer]` 统一为单一 `Port = 50058`，移除 `RPCPort` |
+| `src/base/const.h` | 新增错误码 5001-5007（已存在）；移除 `ID_CHAT_UPLOAD_FILE_REQ/RSP`（确认 ChatServer 不再引用后） |
+| `src/ChatServer/core/LogicWorker.cpp` | 移除 `fileUploadHandler`（客户端改为 HTTP 上传） |
+| `src/ChatServer/core/ChatLogicSystem.cpp` | 移除 `ID_CHAT_UPLOAD_FILE_REQ` 的消息转发 |
 
-### 13.3 依赖引入
+### 13.4 保留不变的文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/ResourceServer/core/ResourceMetaMgr.h/.cpp` | 元数据管理 |
+| `src/ResourceServer/common/model/ResourceMeta.h` | 数据模型 |
+| `src/ResourceServer/common/ResourceConfig.h` | 配置常量 |
+| `src/ResourceServer/db/mysql/dao/ResourceMetaDao.h/.cpp` | MySQL DAO |
+| `src/ResourceServer/db/mysql/MysqlMgr.h/.cpp` | MySQL 管理器 |
+| `src/ResourceServer/db/redis/ResourceMetaCache.h/.cpp` | Redis 缓存 |
+
+### 13.5 依赖引入
 
 | 依赖 | 用途 | 引入方式 |
 |------|------|----------|
@@ -1042,7 +1163,7 @@ SELECT * FROM resource_meta WHERE md5 = 'd41d8cd98f00b204e9800998ecf8427e';
 | 步骤 | 操作 | 验证点 |
 |------|------|--------|
 | 1 | 客户端 POST /r/check (md5 不存在) | 返回 `found:false` |
-| 2 | 客户端 TCP 分片上传文件 | 服务端写入磁盘，返回 resource_id |
+| 2 | 客户端 HTTP POST /r/upload (multipart) | 服务端写入磁盘，返回 resource_id |
 | 3 | 客户端 POST /r/check (md5 已存在) | 返回 `found:true` + URL（秒传） |
 | 4 | 客户端发送聊天消息 content=url | ChatServer 正常存储转发 |
 | 5 | 接收方 HTTP GET 下载 | 三重校验通过，返回文件流 |
