@@ -1,5 +1,6 @@
 #include "stability_runner.h"
 #include "chat_test_client.h"
+#include "perf_user_setup.h"
 #include <thread>
 #include <vector>
 #include <atomic>
@@ -68,6 +69,11 @@ static void messageStormClient(int idx, const StabilityConfig& cfg,
     ChatTestClient client;
     if (!client.connect(cfg.chatHost, cfg.chatPort)) {
         std::cerr << "[storm] client " << idx << " connect failed\n";
+        return;
+    }
+    // 注册测试用户 → 获取真实 token → 登录后才能发消息
+    if (!loginWithRealToken(client, 5000 + idx, "storm")) {
+        std::cerr << "[storm] client " << idx << " login failed\n";
         return;
     }
 

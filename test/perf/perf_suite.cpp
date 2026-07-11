@@ -1,5 +1,6 @@
 #include "perf_suite.h"
 #include "chat_test_client.h"
+#include "perf_user_setup.h"
 #include <thread>
 #include <vector>
 #include <atomic>
@@ -17,8 +18,11 @@ static void mixedClient(int idx, const PerfSuite::Config& cfg,
     if (!client.connect(cfg.chatHost, cfg.chatPort)) {
         return;
     }
-    // 先登录（uid 用 idx 避免冲突）
-    client.chatLogin(5000 + idx, "perf_token");
+    // 注册测试用户 → 从 StatusServer 获取真实 token → 登录
+    if (!loginWithRealToken(client, 5000 + idx, "perf")) {
+        std::cerr << "[perf] mixed client " << idx << " login failed\n";
+        return;
+    }
 
     int seq = 0;
     while (!stop.load()) {
@@ -51,7 +55,11 @@ static void messageClient(int idx, const PerfSuite::Config& cfg,
     if (!client.connect(cfg.chatHost, cfg.chatPort)) {
         return;
     }
-    client.chatLogin(5000 + idx, "perf_token");
+    // 注册测试用户 → 获取真实 token → 登录
+    if (!loginWithRealToken(client, 5000 + idx, "perf")) {
+        std::cerr << "[perf] message client " << idx << " login failed\n";
+        return;
+    }
 
     while (!stop.load()) {
         auto start = std::chrono::steady_clock::now();
