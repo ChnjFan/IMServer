@@ -36,6 +36,7 @@ add_library(test_framework STATIC
     framework/http_test_client.cpp
     framework/chat_test_client.cpp
     framework/metrics.cpp
+    framework/report.cpp
 )
 target_include_directories(test_framework
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
