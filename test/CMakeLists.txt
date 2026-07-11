@@ -26,6 +26,7 @@ target_link_libraries(test_framework
     PUBLIC base
     PUBLIC jsoncpp_deps
     PUBLIC Boost::filesystem
+    PUBLIC grpc_deps
 )
 
 # IMTest — single executable hosting all gtest cases
