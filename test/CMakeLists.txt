@@ -23,10 +23,9 @@ target_include_directories(test_framework
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/framework
 )
 target_link_libraries(test_framework
-    PUBLIC base
+    PUBLIC proto
     PUBLIC jsoncpp_deps
     PUBLIC Boost::filesystem
-    PUBLIC grpc_deps
 )
 
 # IMTest — single executable hosting all gtest cases
