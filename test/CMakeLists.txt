@@ -1,16 +1,33 @@
-include(FetchContent)
+# Prefer a system-installed gtest; fall back to FetchContent if not found.
+#   brew install gtest   -> uses system version (no download)
+#   otherwise            -> downloads via FetchContent
+find_package(GTest QUIET)
 
-# gtest via FetchContent — no system install needed
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG        v1.14.0
-)
-# For Windows: prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+if(NOT GTest_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.15.2
+    )
+    # For Windows: prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
 
 enable_testing()
+
+# Normalize target names across find_package vs FetchContent sources.
+# find_package (cmake-config) may expose GTest::gtest; older FindGTest
+# exposes GTest::GTest / GTest::Main. FetchContent uses GTest::gtest(_main).
+if(NOT TARGET GTest::gtest)
+    add_library(GTest::gtest INTERFACE IMPORTED)
+    target_link_libraries(GTest::gtest INTERFACE GTest::GTest)
+endif()
+if(NOT TARGET GTest::gtest_main)
+    add_library(GTest::gtest_main INTERFACE IMPORTED)
+    target_link_libraries(GTest::gtest_main INTERFACE GTest::Main GTest::gtest)
+endif()
 
 # test_framework — shared test utilities (built once, linked by all tests)
 add_library(test_framework STATIC
