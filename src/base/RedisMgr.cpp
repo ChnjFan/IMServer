@@ -36,6 +36,7 @@ RedisPool::~RedisPool() {
     std::lock_guard<std::mutex> guard(mutex_);
     std::cout << "Destroying RedisPool ... ";
     while (!connections_.empty()) {
+        redisFree(connections_.front());
         connections_.pop();
     }
     std::cout << "OK" << std::endl;
@@ -61,17 +62,22 @@ redisContext * RedisPool::getConnection() {
     }
     const auto conn = connections_.front();
     connections_.pop();
+    std::cout << "RedisPool::getConnection() OK, size = " << connections_.size() << std::endl;
     return conn;
 }
 
 void RedisPool::returnConnection(redisContext *c) {
     std::lock_guard<std::mutex> guard(mutex_);
+    if (!c) {
+        std::cout << "returnConnection ... null";
+    }
     if (stop_.load()) {
         redisFree(c);// 停止后还回来的连接要释放
         return;
     }
     connections_.push(c);
     cond_.notify_one();// 通知阻塞线程
+    std::cout << "RedisPool::returnConnection() OK, size = " << connections_.size() << std::endl;
 }
 
 void RedisPool::close() {
@@ -135,6 +141,8 @@ void RedisPool::checkConnection() {
                 connections_.push(conn);
                 continue;
             }
+
+            std::cout << "RedisPool::checkConnection() PING failed, recreating connection" << std::endl;
 
             freeReplyObject(reply);
             redisFree(conn);

@@ -67,6 +67,10 @@ void ChatServer::timerJob() {
     timer_.async_wait([self, this](const boost::system::error_code& error) {
         if (error) {
             std::cout << "[ChatServer] Server timer Error: " << error.message() << std::endl;
+            // 即使出错也重新装填定时器，避免心跳检测永久停止
+            if (error != boost::asio::error::operation_aborted) {
+                timerJob();
+            }
             return;
         }
 
