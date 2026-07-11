@@ -79,6 +79,7 @@ TestAccount AccountManager::acquire(const std::string& tag) {
     TestAccount acct = registerAccount(email);
     heldUids_.insert(acct.uid);
     uidToEmail_[acct.uid] = acct.email;
+    recordTestEmail(acct.email);  // 记录到 set，供兜底清理
     return acct;
 }
 
@@ -125,7 +126,7 @@ void AccountManager::release(int uid) noexcept {
     }
 }
 
-void AccountManager::releaseAll() {
+void AccountManager::releaseAll() noexcept {
     // release() erases from heldUids_, so iterate a copy to avoid
     // iterator invalidation.
     auto uids = heldUids_;
@@ -133,4 +134,6 @@ void AccountManager::releaseAll() {
         release(uid);
     }
     heldUids_.clear();
+    // 兜底：清理异常路径中 heldUids_ 遗漏的残留 key（幂等）
+    cleanupOrphanedTestKeys();
 }

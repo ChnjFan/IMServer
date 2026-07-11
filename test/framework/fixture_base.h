@@ -2,7 +2,9 @@
 #define IMSERVER_FIXTURE_BASE_H
 
 #include <gtest/gtest.h>
+#include <iostream>
 #include "account_manager.h"
+#include "redis_cleanup.h"
 #include "ConfigMgr.h"
 #include "RedisMgr.h"
 
@@ -41,9 +43,20 @@ protected:
     }
 
     void TearDown() override {
-        if (accountMgr_) {
-            accountMgr_->releaseAll();
+        try {
+            if (accountMgr_) {
+                accountMgr_->releaseAll();
+            }
+        } catch (const std::exception& e) {
+            // 清理失败不抛，避免 cascade；输出日志供排查
+            std::cerr << "[IntegrationTestBase] TearDown cleanup error: "
+                      << e.what() << std::endl;
+        } catch (...) {
+            std::cerr << "[IntegrationTestBase] TearDown unknown cleanup error"
+                      << std::endl;
         }
+        // 最后兜底：即使 accountMgr_ 析构前异常，也扫描残留 test key
+        cleanupOrphanedTestKeys();
     }
 
     static inline bool gSkip = false;

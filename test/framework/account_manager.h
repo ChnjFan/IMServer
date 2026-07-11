@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include "MysqlPool.h"
+#include "redis_cleanup.h"
 
 struct TestAccount {
     int uid;
@@ -27,8 +28,8 @@ public:
     // Release a specific account (never throws)
     void release(int uid) noexcept;
 
-    // Release all acquired accounts
-    void releaseAll();
+    // Release all acquired accounts (never throws)
+    void releaseAll() noexcept;
 
 private:
     std::set<int> heldUids_;
