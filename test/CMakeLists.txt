@@ -34,6 +34,7 @@ add_library(test_framework STATIC
     framework/protocol.cpp
     framework/account_manager.cpp
     framework/http_test_client.cpp
+    framework/chat_test_client.cpp
 )
 target_include_directories(test_framework
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -50,6 +51,7 @@ add_executable(IMTest
     framework/protocol_test.cpp
     gate/gate_integration_test.cpp
     status/status_integration_test.cpp
+    chat/chat_client_test.cpp
 )
 target_link_libraries(IMTest
     PRIVATE test_framework
