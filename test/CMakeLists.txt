@@ -30,6 +30,7 @@ target_link_libraries(test_framework
 
 # IMTest — single executable hosting all gtest cases
 add_executable(IMTest
+    framework/protocol_test.cpp
     gate/gate_integration_test.cpp
     status/status_integration_test.cpp
 )
