@@ -32,6 +32,7 @@ public:
 
 private:
     std::set<int> heldUids_;
+    std::map<int, std::string> uidToEmail_;  // track emails for Redis cleanup
     int seq_ = 0;
     std::string gateHost_;
     uint16_t gatePort_;

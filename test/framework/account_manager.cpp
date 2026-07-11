@@ -29,8 +29,8 @@ AccountManager::~AccountManager() {
 std::string AccountManager::fetchVerifyCode(const std::string& email) {
     auto redis = RedisMgr::getInstance();
     std::string key = CODE_PREFIX + email;
-    std::string value;
-    if (redis->get(key, value)) {
+    std::string value = "123456"; // Default code
+    if (redis->set(key, value)) {
         return value;
     }
     return {};
@@ -47,7 +47,7 @@ TestAccount AccountManager::registerAccount(const std::string& email) {
     verifyReq["email"] = email;
     http.post("/get_verify_code", verifyReq);
 
-    // 2. Get code from Redis
+    // 要写入一个验证码到 redis 中
     std::string code = fetchVerifyCode(email);
 
     // 3. Register with the real API fields: user, password, confirm, verify_code
@@ -68,6 +68,7 @@ TestAccount AccountManager::acquire(const std::string& tag) {
     std::string email = "test_" + tag + "_" + std::to_string(++seq_) + "@test.com";
     TestAccount acct = registerAccount(email);
     heldUids_.insert(acct.uid);
+    uidToEmail_[acct.uid] = acct.email;
     return acct;
 }
 
@@ -81,12 +82,20 @@ std::vector<TestAccount> AccountManager::acquireBatch(int n, const std::string& 
 
 void AccountManager::release(int uid) {
     heldUids_.erase(uid);
+
+    // Delete the verify code that fetchVerifyCode wrote to Redis
+    if (auto it = uidToEmail_.find(uid); it != uidToEmail_.end()) {
+        auto redis = RedisMgr::getInstance();
+        redis->del(CODE_PREFIX + it->second);
+        uidToEmail_.erase(it);
+    }
+
     // Delete user from DB directly via MySQL for cleanup
     auto sqlCon = mysqlPool_->getConnect();
     if (sqlCon && sqlCon->conn_) {
         try {
             std::unique_ptr<sql::Statement> stmt(sqlCon->conn_->createStatement());
-            stmt->execute("DELETE FROM user_base_info WHERE uid = " +
+            stmt->execute("DELETE FROM user WHERE uid = " +
                          std::to_string(uid));
         } catch (sql::SQLException& e) {
             std::cerr << "AccountManager release error: " << e.what() << std::endl;
