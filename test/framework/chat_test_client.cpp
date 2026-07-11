@@ -120,6 +120,7 @@ bool ChatTestClient::sendChatMsg(int toUid, const std::string& content) {
 
 bool ChatTestClient::heartbeat() {
     Json::Value body;
+    body["uid"] = 1;
     auto rsp = sendAndWait(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ), body,
         [](uint16_t id, const Json::Value&) {
             return id == static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP);

@@ -28,6 +28,8 @@ option(BUILD_STATUS_SERVER "Build StatusServer" ON)
 option(BUILD_RESOURCE_SERVER "Build ResourceServer" ON)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
+option(BUILD_TEST "Build test executables" ON)
+
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
@@ -119,6 +121,10 @@ endif()
 
 if(BUILD_RESOURCE_SERVER)
     add_subdirectory(src/ResourceServer)
+endif()
+
+if(BUILD_TEST)
+    add_subdirectory(test/)
 endif()
 
 add_custom_target(copy_config ALL

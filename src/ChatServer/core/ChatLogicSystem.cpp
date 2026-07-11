@@ -961,6 +961,7 @@ void ChatLogicSystem::heartbeatHandle(const std::shared_ptr<Session> &session, u
         session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP));
     });
 
+    session->updateLstActiveTime();
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
 }
 

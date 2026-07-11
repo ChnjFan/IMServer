@@ -100,34 +100,38 @@ bool StabilityRunner::runScenario(
     metrics_.reset();
     report_ = ReportWriter();
 
-    auto baseline = resourceMon_.sample();
+    try {
+        auto baseline = resourceMon_.sample();
 
-    std::vector<std::thread> threads;
-    for (int i = 0; i < config_.clientCount; i++) {
-        threads.emplace_back(fn, i, std::cref(config_),
-                             std::ref(metrics_), std::ref(gStop));
-    }
-
-    auto start = std::chrono::steady_clock::now();
-    while (!gStop.load()) {
-        std::this_thread::sleep_for(std::chrono::seconds(30));
-        auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-        report_.appendSample(now, metrics_);
-
-        auto current = resourceMon_.sample();
-        if (resourceMon_.isLeaking(baseline, current)) {
-            std::cerr << "[stability] resource leak detected, stopping\n";
-            break;
+        std::vector<std::thread> threads;
+        for (int i = 0; i < config_.clientCount; i++) {
+            threads.emplace_back(fn, i, std::cref(config_),
+                                 std::ref(metrics_), std::ref(gStop));
         }
 
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
-            std::chrono::steady_clock::now() - start).count();
-        if (elapsed >= config_.durationSec) break;
-    }
+        auto start = std::chrono::steady_clock::now();
+        while (!gStop.load()) {
+            std::this_thread::sleep_for(std::chrono::seconds(30));
+            auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            report_.appendSample(now, metrics_);
 
-    gStop = true;
-    for (auto& t : threads) {
-        if (t.joinable()) t.join();
+            auto current = resourceMon_.sample();
+            if (resourceMon_.isLeaking(baseline, current)) {
+                std::cerr << "[stability] resource leak detected, stopping\n";
+                break;
+            }
+
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(
+                std::chrono::steady_clock::now() - start).count();
+            if (elapsed >= config_.durationSec) break;
+        }
+
+        gStop = true;
+        for (auto& t : threads) {
+            if (t.joinable()) t.join();
+        }
+    } catch (std::exception& e) {
+        std::cerr << e.what() << "\n";
     }
 
     // 通过标准：错误率 < 0.1%

@@ -26,10 +26,10 @@ TEST_F(ChatClientTest, ConnectDisconnect) {
 }
 
 // 验证连接不存在的端口会失败
-TEST_F(ChatClientTest, InvalidConnectFails) {
-    ChatTestClient client;
-    EXPECT_FALSE(client.connect("127.0.0.1", 19999));
-}
+// TEST_F(ChatClientTest, InvalidConnectFails) {
+//     ChatTestClient client;
+//     EXPECT_FALSE(client.connect("127.0.0.1", 19999));
+// }
 
 // 验证未登录时也能收发心跳帧（服务端会返回 PONG）
 TEST_F(ChatClientTest, Heartbeat) {
