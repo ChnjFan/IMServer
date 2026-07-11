@@ -30,12 +30,20 @@ MysqlPool::MysqlPool(const std::string &url, const std::string &user,
 
         thread_ = std::thread([&]() {
             while (!stop_.load()) {
-                std::unique_lock<std::mutex> lock(checkMtx_);
-                checkCond_.wait_for(lock, std::chrono::seconds(60));
-                checkConnection();
+                try {
+                    std::unique_lock<std::mutex> lock(checkMtx_);
+                    checkCond_.wait_for(lock, std::chrono::seconds(60), [this]() {
+                        return stop_.load();
+                    });
+                    if (stop_.load()) {
+                        break;
+                    }
+                    checkConnection();
+                } catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                }
             }
         });
-        thread_.detach();
         std::cout << "OK" << std::endl;
     } catch (sql::SQLException &e) {
         std::cout << "SQLException: " << e.what() << std::endl;
@@ -43,6 +51,11 @@ MysqlPool::MysqlPool(const std::string &url, const std::string &user,
 }
 
 MysqlPool::~MysqlPool() {
+    stop_.store(true);
+    checkCond_.notify_all();  // 唤醒正在 wait 的健康检查线程
+    if (thread_.joinable()) {
+        thread_.join();
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     while (!connections_.empty()) {
         connections_.pop();
@@ -77,6 +90,7 @@ void MysqlPool::returnConnect(std::unique_ptr<SqlConnection> conn) {
 void MysqlPool::close() {
     stop_.store(true);
     cond_.notify_all();
+    checkCond_.notify_all();  // 唤醒健康检查线程
 }
 
 void MysqlPool::checkConnection() {
