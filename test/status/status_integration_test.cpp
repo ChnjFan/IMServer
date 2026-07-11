@@ -25,7 +25,7 @@ protected:
     std::unique_ptr<GrpcTestClient<StatusService>> grpc_;
 };
 
-// Verify GetChatServer returns a valid host, port, and token.
+// 验证 GetChatServer 返回有效 host、port 和 token。
 TEST_F(StatusIntegrationTest, GetChatServerReturnsHostAndToken) {
     GetChatServerReq req;
     req.set_uid(4001);
@@ -39,9 +39,9 @@ TEST_F(StatusIntegrationTest, GetChatServerReturnsHostAndToken) {
     EXPECT_EQ(rsp.error(), 0);
 }
 
-// Verify Login with a valid token succeeds.
+// 验证使用有效 token 的 Login 能成功。
 TEST_F(StatusIntegrationTest, LoginWithValidToken) {
-    // First obtain a token via GetChatServer
+    // 先通过 GetChatServer 获取 token
     GetChatServerReq gsReq;
     gsReq.set_uid(4002);
     GetChatServerRsp gsRsp;
@@ -59,7 +59,7 @@ TEST_F(StatusIntegrationTest, LoginWithValidToken) {
     EXPECT_EQ(loginRsp.uid(), 4002);
 }
 
-// Verify VerifyToken succeeds for a logged-in user.
+// 验证已登录用户的 VerifyToken 能成功。
 TEST_F(StatusIntegrationTest, VerifyTokenValid) {
     GetChatServerReq gsReq;
     gsReq.set_uid(4003);
