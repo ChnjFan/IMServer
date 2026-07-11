@@ -1,0 +1,91 @@
+name: C++ Testing Framework
+
+on:
+  pull_request:
+    branches: [main, master, "beta/*"]
+  push:
+    branches: [main, master]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # 单元测试 — 快速，无外部依赖，PR + push 都跑
+  # ─────────────────────────────────────────────
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev libjsoncpp-dev libgrpc-dev \
+            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build
+
+      - name: Configure
+        run: cmake -B build -G Ninja -DBUILD_TEST=ON
+
+      - name: Build tests
+        run: cmake --build build --target IMTest
+
+      - name: Run unit tests
+        run: ./build/bin/IMTest --gtest_filter="ProtocolTest.*" --gtest_output=xml:unit_result.xml
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: unit_result.xml
+
+  # ─────────────────────────────────────────────
+  # 集成测试 + 短稳定性验证 — 需要完整服务栈
+  # ─────────────────────────────────────────────
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    services:
+      redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+      mysql:
+        image: mysql:8
+        ports: ["3306:3306"]
+        env:
+          MYSQL_ROOT_PASSWORD: 123456
+          MYSQL_DATABASE: IMServer
+          MYSQL_USER: admin
+          MYSQL_PASSWORD: 123456
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-all-dev libjsoncpp-dev libgrpc-dev \
+            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build
+
+      - name: Configure & Build
+        run: |
+          cmake -B build -G Ninja -DBUILD_TEST=ON
+          cmake --build build --target IMTest
+
+      - name: Run integration tests
+        run: ./build/bin/IMTest --gtest_filter="*[Ii]ntegration*" --gtest_output=xml:integration_result.xml
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: integration_result.xml

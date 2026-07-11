@@ -38,6 +38,7 @@ add_library(test_framework STATIC
     framework/metrics.cpp
     framework/report.cpp
     framework/stability_runner.cpp
+    perf/perf_suite.cpp
 )
 target_include_directories(test_framework
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -57,6 +58,7 @@ add_executable(IMTest
     chat/chat_client_test.cpp
     chat/chat_integration_test.cpp
     integration/stability_test.cpp
+    perf/chat_perf_test.cpp
 )
 target_link_libraries(IMTest
     PRIVATE test_framework
