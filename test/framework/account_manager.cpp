@@ -104,7 +104,10 @@ void AccountManager::release(int uid) {
 }
 
 void AccountManager::releaseAll() {
-    for (int uid : heldUids_) {
+    // release() erases from heldUids_, so iterate a copy to avoid
+    // iterator invalidation.
+    auto uids = heldUids_;
+    for (const auto uid : uids) {
         release(uid);
     }
     heldUids_.clear();
