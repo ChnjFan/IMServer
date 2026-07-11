@@ -12,6 +12,7 @@
 class LatencyHistogram {
 public:
     void record(int64_t us);
+    void reset() { samples_.clear(); count_ = 0; min_ = INT64_MAX; max_ = 0; sum_ = 0; }
     int64_t percentile(double p) const;
     int64_t min() const;
     int64_t max() const;
@@ -29,6 +30,7 @@ private:
 class ThroughputCounter {
 public:
     void tick();
+    void reset() { total_ = 0; }
     uint64_t total() const { return total_; }
 private:
     std::atomic<uint64_t> total_{0};
@@ -38,6 +40,7 @@ class ErrorCounter {
 public:
     void addFailed();
     void addSuccess();
+    void reset() { failed_ = 0; success_ = 0; }
     uint64_t failed() const { return failed_; }
     uint64_t success() const { return success_; }
     double errorRate() const;
@@ -52,6 +55,14 @@ struct Metrics {
     ThroughputCounter throughput;
     ErrorCounter errors;
     std::chrono::steady_clock::time_point startTime = std::chrono::steady_clock::now();
+
+    // NOTE: Metrics is not assignable (atomics); use reset() to clear
+    void reset() {
+        latency.reset();
+        throughput.reset();
+        errors.reset();
+        startTime = std::chrono::steady_clock::now();
+    }
 
     std::string summary() const;
     Json::Value toJson() const;

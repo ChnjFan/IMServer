@@ -37,6 +37,7 @@ add_library(test_framework STATIC
     framework/chat_test_client.cpp
     framework/metrics.cpp
     framework/report.cpp
+    framework/stability_runner.cpp
 )
 target_include_directories(test_framework
     PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
@@ -55,6 +56,7 @@ add_executable(IMTest
     status/status_integration_test.cpp
     chat/chat_client_test.cpp
     chat/chat_integration_test.cpp
+    integration/stability_test.cpp
 )
 target_link_libraries(IMTest
     PRIVATE test_framework
