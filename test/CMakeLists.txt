@@ -52,6 +52,7 @@ add_executable(IMTest
     gate/gate_integration_test.cpp
     status/status_integration_test.cpp
     chat/chat_client_test.cpp
+    chat/chat_integration_test.cpp
 )
 target_link_libraries(IMTest
     PRIVATE test_framework
