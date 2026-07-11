@@ -25,6 +25,7 @@ protected:
                 std::cerr << "[IntegrationTestBase] Redis unreachable, skipping"
                           << std::endl;
             }
+            redis->del("__test_ping__");  // clean up the probe key
         } catch (const std::exception& e) {
             gSkip = true;
             std::cerr << "[IntegrationTestBase] Dependency check failed: "
