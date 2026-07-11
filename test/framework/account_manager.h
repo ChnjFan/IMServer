@@ -24,8 +24,8 @@ public:
     // Batch acquire for multi-user scenarios
     std::vector<TestAccount> acquireBatch(int n, const std::string& tag);
 
-    // Release a specific account
-    void release(int uid);
+    // Release a specific account (never throws)
+    void release(int uid) noexcept;
 
     // Release all acquired accounts
     void releaseAll();

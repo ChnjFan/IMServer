@@ -7,6 +7,16 @@
 #include <iostream>
 #include <memory>
 
+// RAII guard：析构时自动把连接归还池，即使发生异常也不会泄露
+struct SqlConnGuard {
+    MysqlPool* pool;
+    std::unique_ptr<SqlConnection> conn;
+    SqlConnGuard(MysqlPool* p) : pool(p), conn(p ? p->getConnect() : nullptr) {}
+    ~SqlConnGuard() { if (pool && conn) pool->returnConnect(std::move(conn)); }
+    SqlConnection* operator->() const { return conn.get(); }
+    explicit operator bool() const { return conn && conn->conn_; }
+};
+
 AccountManager::AccountManager() {
     auto& config = ConfigMgr::getInstance();
     gateHost_ = "127.0.0.1";
@@ -80,26 +90,38 @@ std::vector<TestAccount> AccountManager::acquireBatch(int n, const std::string& 
     return accounts;
 }
 
-void AccountManager::release(int uid) {
+void AccountManager::release(int uid) noexcept {
     heldUids_.erase(uid);
 
-    // Delete the verify code that fetchVerifyCode wrote to Redis
-    if (auto it = uidToEmail_.find(uid); it != uidToEmail_.end()) {
-        auto redis = RedisMgr::getInstance();
-        redis->del(CODE_PREFIX + it->second);
-        uidToEmail_.erase(it);
-    }
+    try {
+        // 删除 fetchVerifyCode 写入 Redis 的验证码
+        if (auto it = uidToEmail_.find(uid); it != uidToEmail_.end()) {
+            try {
+                auto redis = RedisMgr::getInstance();
+                redis->del(CODE_PREFIX + it->second);
+            } catch (const std::exception& e) {
+                std::cerr << "[AccountManager] Redis del failed for uid="
+                          << uid << ": " << e.what() << std::endl;
+            }
+            uidToEmail_.erase(it);
+        }
 
-    // Delete user from DB directly via MySQL for cleanup
-    auto sqlCon = mysqlPool_->getConnect();
-    if (sqlCon && sqlCon->conn_) {
-        try {
-            std::unique_ptr<sql::Statement> stmt(sqlCon->conn_->createStatement());
+        // 通过 MySQL 删除用户记录（RAII guard 保证连接必归还）
+        SqlConnGuard guard(mysqlPool_.get());
+        if (guard) {
+            std::unique_ptr<sql::Statement> stmt(guard->conn_->createStatement());
             stmt->execute("DELETE FROM user WHERE uid = " +
                          std::to_string(uid));
-        } catch (sql::SQLException& e) {
-            std::cerr << "AccountManager release error: " << e.what() << std::endl;
         }
+    } catch (sql::SQLException& e) {
+        std::cerr << "[AccountManager] release uid=" << uid
+                  << " SQL error: " << e.what() << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "[AccountManager] release uid=" << uid
+                  << " error: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "[AccountManager] release uid=" << uid
+                  << " unknown error" << std::endl;
     }
 }
 
