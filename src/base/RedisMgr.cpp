@@ -53,16 +53,12 @@ redisContext * RedisPool::getConnection() {
     if (stop_.load()) {
         return nullptr;
     }
-    if (start_.load()) {
-        createPool();
-    }
 
     if (connections_.empty()) {
         return nullptr;
     }
     const auto conn = connections_.front();
     connections_.pop();
-    std::cout << "RedisPool::getConnection() OK, size = " << connections_.size() << std::endl;
     return conn;
 }
 
