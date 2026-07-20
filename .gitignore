@@ -9,14 +9,10 @@ lib/
 *.dylib
 *.log
 .DS_Store
-.vscode/
-.idea/
-.claude/
-.agents/
-.codex/
 *.swp
 *.swo
 *~
+.*/*
 node_modules/
 package-lock.json
 

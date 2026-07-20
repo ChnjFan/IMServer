@@ -4,7 +4,7 @@
 
 #include <iostream>
 
-#include "ResourceServer.h"
+#include "ChatServer.h"
 
 #include "AsioIOServicePool.h"
 #include "UserMgr.h"
@@ -15,7 +15,7 @@
 ChatServer::ChatServer(net::io_context &io_context, const unsigned short port)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), port))
     , ioContext_(io_context)
-    , timer_(ioContext_) {
+    , timer_(io_context) {
 }
 
 void ChatServer::start() {
@@ -64,20 +64,24 @@ void ChatServer::clearSession(const std::string &sessionId) {
 void ChatServer::timerJob() {
     auto self = shared_from_this();
     timer_.expires_after(std::chrono::seconds(CHAT_SERVER_TIMER_DEFAULT_EXPIRE));
-    timer_.async_wait([self, this](const boost::system::error_code& error) {
-        if (error) {
-            std::cout << "[ChatServer] Server timer Error: " << error.message() << std::endl;
-            // 即使出错也重新装填定时器，避免心跳检测永久停止
-            if (error != boost::asio::error::operation_aborted) {
-                timerJob();
+    timer_.async_wait([self](const boost::system::error_code& error) {
+        try {
+            if (error) {
+                std::cout << "[ChatServer] Server timer Error: " << error.message() << std::endl;
+                // 即使出错也重新装填定时器，避免心跳检测永久停止
+                if (error != boost::asio::error::operation_aborted) {
+                    self->timerJob();
+                }
+                return;
             }
-            return;
+
+            self->checkSessionHeartbeat();
+            self->updateServerCount();
+            self->timerJob();
+        } catch (std::exception& e) {
+            std::cout << "[ChatServer] Server timer error << " << e.what() << std::endl;
+            self->timerJob();
         }
-
-        checkSessionHeartbeat();
-        updateServerCount();
-
-        timerJob();
     });
 }
 

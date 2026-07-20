@@ -3,6 +3,7 @@
 #include "ConfigMgr.h"
 #include "RedisMgr.h"
 #include "MysqlPool.h"
+#include "mysql_dao.h"
 
 #include <iostream>
 #include <memory>
@@ -20,16 +21,7 @@ struct SqlConnGuard {
 AccountManager::AccountManager() {
     auto& config = ConfigMgr::getInstance();
     gateHost_ = "127.0.0.1";
-    gatePort_ = static_cast<uint16_t>(
-        std::stoi(config["GateServer"]["Port"]));
-
-    // Own a MySQL connection pool for test data cleanup
-    std::string host = config["Mysql"]["Host"];
-    std::string port = config["Mysql"]["Port"];
-    std::string user = config["Mysql"]["User"];
-    std::string pwd = config["Mysql"]["Password"];
-    std::string schema = config["Mysql"]["Schema"];
-    mysqlPool_ = std::make_unique<MysqlPool>(host + ":" + port, user, pwd, schema, 2);
+    gatePort_ = static_cast<uint16_t>(std::stoi(config["GateServer"]["Port"]));
 }
 
 AccountManager::~AccountManager() {
@@ -52,15 +44,9 @@ TestAccount AccountManager::registerAccount(const std::string& email) {
 
     HttpTestClient http(gateHost_, gatePort_);
 
-    // 1. Request verify code (GateServer sends it via VerifyServer -> Redis)
-    Json::Value verifyReq;
-    verifyReq["email"] = email;
-    http.post("/get_verify_code", verifyReq);
-
     // 要写入一个验证码到 redis 中
     std::string code = fetchVerifyCode(email);
 
-    // 3. Register with the real API fields: user, password, confirm, verify_code
     std::string username = email.substr(0, email.find('@'));
     Json::Value regReq;
     regReq["email"] = email;
@@ -75,7 +61,7 @@ TestAccount AccountManager::registerAccount(const std::string& email) {
 }
 
 TestAccount AccountManager::acquire(const std::string& tag) {
-    std::string email = "test_" + tag + "_" + std::to_string(++seq_) + "@test.com";
+    std::string email = "test_" + tag + "_" + std::to_string(++userCount) + "@test.com";
     TestAccount acct = registerAccount(email);
     heldUids_.insert(acct.uid);
     uidToEmail_[acct.uid] = acct.email;
@@ -89,6 +75,21 @@ std::vector<TestAccount> AccountManager::acquireBatch(int n, const std::string& 
         accounts.push_back(acquire(tag + "_" + std::to_string(i)));
     }
     return accounts;
+}
+
+void AccountManager::login(TestAccount &acct) {
+    HttpTestClient http(gateHost_, gatePort_);
+
+    Json::Value loginReq;
+    loginReq["email"] = acct.email;
+    loginReq["password"] = "Test123456";
+    auto loginRsp = http.post("/user_login", loginReq);
+    if (loginRsp.body["port"].asString().empty()) {
+        return; // 登录失败，可能是 GateServer 未启动
+    }
+    acct.token = loginRsp.body["token"].asString();
+    acct.host = loginRsp.body["host"].asString();
+    acct.port = std::stoi(loginRsp.body["port"].asString());
 }
 
 void AccountManager::release(int uid) noexcept {
@@ -108,7 +109,7 @@ void AccountManager::release(int uid) noexcept {
         }
 
         // 通过 MySQL 删除用户记录（RAII guard 保证连接必归还）
-        SqlConnGuard guard(mysqlPool_.get());
+        SqlConnGuard guard(TestMysqlDao::getInstance()->get());
         if (guard) {
             std::unique_ptr<sql::Statement> stmt(guard->conn_->createStatement());
             stmt->execute("DELETE FROM user WHERE uid = " +

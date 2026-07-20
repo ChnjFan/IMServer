@@ -6,7 +6,6 @@
 
 bool FriendCache::isFriend(const int uid, const int friendId) {
     if (uid < 0 || friendId < 0) {
-        std::cout << "[isFriend] Input invalid param" << std::endl;
         return false;
     }
 
@@ -16,7 +15,6 @@ bool FriendCache::isFriend(const int uid, const int friendId) {
 
 bool FriendCache::updateFriendSet(const int uid, const int friendId) {
     if (uid < 0 || friendId < 0) {
-        std::cout << "[isFriend] Input invalid param" << std::endl;
         return false;
     }
 
@@ -25,7 +23,6 @@ bool FriendCache::updateFriendSet(const int uid, const int friendId) {
 
 bool FriendCache::deleteFriendSet(const int uid, const int friendId) {
     if (uid < 0 || friendId < 0) {
-        std::cout << "[isFriend] Input invalid param" << std::endl;
         return false;
     }
 
@@ -64,7 +61,6 @@ bool FriendCache::getFriendApplyCount(const int uid, int &count) {
 
 bool FriendCache::updateFriendApplyCount(const int uid, const int count) {
     if (uid < 0 || count < 0) {
-        std::cout << "[updateFriend] Input invalid param" << std::endl;
         return false;
     }
 

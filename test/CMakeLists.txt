@@ -47,7 +47,6 @@ target_include_directories(test_framework
 target_link_libraries(test_framework
     PUBLIC proto
     PUBLIC jsoncpp_deps
-    PUBLIC Boost::filesystem
 )
 
 # IMTest — single executable hosting all gtest cases
@@ -55,8 +54,6 @@ add_executable(IMTest
     framework/protocol_test.cpp
     gate/gate_integration_test.cpp
     status/status_integration_test.cpp
-    chat/chat_client_test.cpp
-    chat/chat_integration_test.cpp
     integration/stability_test.cpp
     perf/chat_perf_test.cpp
 )

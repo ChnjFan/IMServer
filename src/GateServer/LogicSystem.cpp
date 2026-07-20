@@ -58,7 +58,6 @@ LogicSystem::LogicSystem() {
     // 获取验证码
     registerPost("/get_verify_code", [](std::shared_ptr<HttpConnection> connection) {
         auto bodyString = boost::beast::buffers_to_string(connection->request_.body().data());
-        std::cout << "receive body: " << bodyString << std::endl;
 
         connection->response_.set(http::field::content_type, "application/json");
         Json::Value root;
@@ -80,7 +79,6 @@ LogicSystem::LogicSystem() {
         }
 
         auto email = srcRoot["email"].asString();
-        std::cout << "email is: " << email << std::endl;
 
         // 给验证服务发送验证码请求
         GetVerifyRsp response = VerifyGrpcClient::getInstance()->GetVerifyCode(email);
@@ -89,14 +87,12 @@ LogicSystem::LogicSystem() {
         root["email"] = email;
 
         const std::string jsonStr = root.toStyledString();
-        std::cout << "Response: " << jsonStr << std::endl;
         boost::beast::ostream(connection->response_.body()) << jsonStr;
     });
 
     // 注册请求
     registerPost("/user_register", [](std::shared_ptr<HttpConnection> connection) {
         auto bodyString = boost::beast::buffers_to_string(connection->request_.body().data());
-        std::cout << "receive body: " << bodyString << std::endl;
 
         connection->response_.set(http::field::content_type, "application/json");
         Json::Value root;
@@ -160,14 +156,12 @@ LogicSystem::LogicSystem() {
         root["verify_code"] = verifyCode;
 
         const std::string jsonStr = root.toStyledString();
-        std::cout << "Response: " << jsonStr << std::endl;
         boost::beast::ostream(connection->response_.body()) << jsonStr;
     });
 
     // 重置密码
     registerPost("/reset_passwd", [](std::shared_ptr<HttpConnection> connection) {
         auto bodyString = boost::beast::buffers_to_string(connection->request_.body().data());
-        std::cout << "receive body: " << bodyString << std::endl;
 
         connection->response_.set(http::field::content_type, "application/json");
         Json::Value root;
@@ -226,21 +220,18 @@ LogicSystem::LogicSystem() {
         root["verify_code"] = verifyCode;
 
         const std::string jsonStr = root.toStyledString();
-        std::cout << "Response: " << jsonStr << std::endl;
         boost::beast::ostream(connection->response_.body()) << jsonStr;
     });
 
     // 登录请求
     registerPost("/user_login", [](std::shared_ptr<HttpConnection> connection) {
         auto bodyString = boost::beast::buffers_to_string(connection->request_.body().data());
-        std::cout << "receive body: " << bodyString << std::endl;
 
         connection->response_.set(http::field::content_type, "application/json");
         Json::Value root;
         Json::Value srcRoot;
         Defer defer([&root, &connection] {
             const std::string jsonStr = root.toStyledString();
-            std::cout << "Response: " << jsonStr << std::endl;
             boost::beast::ostream(connection->response_.body()) << jsonStr;
         });
         if (Json::Reader reader; !reader.parse(bodyString, srcRoot)) {

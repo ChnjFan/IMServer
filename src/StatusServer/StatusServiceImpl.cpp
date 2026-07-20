@@ -171,6 +171,5 @@ bool StatusServiceImpl::checkToken(const int uid, const std::string &token) {
         std::cout << "Check [uid: " << uid << "] not found" << std::endl;
         return false;
     }
-    std::cout << "Check [uid: " << uid << ", token: " << token << "]" << std::endl;
     return expect == token;
 }

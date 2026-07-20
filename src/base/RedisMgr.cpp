@@ -73,7 +73,6 @@ void RedisPool::returnConnection(redisContext *c) {
     }
     connections_.push(c);
     cond_.notify_one();// 通知阻塞线程
-    std::cout << "RedisPool::returnConnection() OK, size = " << connections_.size() << std::endl;
 }
 
 void RedisPool::close() {
@@ -138,8 +137,6 @@ void RedisPool::checkConnection() {
                 continue;
             }
 
-            std::cout << "RedisPool::checkConnection() PING failed, recreating connection" << std::endl;
-
             freeReplyObject(reply);
             redisFree(conn);
             conn = redisConnect(host_.c_str(), port_);
@@ -168,7 +165,6 @@ bool RedisMgr::get(const std::string &key, std::string &value) {
     
     auto reply = static_cast<redisReply *>(redisCommand(conn, "GET %s", key.c_str()));
     if (nullptr == reply || reply->type != REDIS_REPLY_STRING) {
-        std::cout << "RedisMgr::get: RedisCommand() GET ["<< key <<"] failed!" << std::endl;
         freeReplyObject(reply);
         reply = nullptr;
         return false;
@@ -177,8 +173,6 @@ bool RedisMgr::get(const std::string &key, std::string &value) {
     value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-
-    std::cout << "RedisMgr::get: RedisCommand() GET [" << key << "] OK!" << std::endl;
 
     return true;
 }
@@ -209,7 +203,6 @@ bool RedisMgr::set(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::set: RedisCommand() SET [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -239,7 +232,6 @@ bool RedisMgr::lPush(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::lPush: RedisCommand() LPUSH [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -263,7 +255,6 @@ bool RedisMgr::lPop(const std::string &key, std::string &value) {
     value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::lPop: RedisCommand() LPOP [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -293,7 +284,6 @@ bool RedisMgr::rPush(const std::string &key, const std::string &value) {
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::rPush: RedisCommand() RPUSH [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -317,7 +307,6 @@ bool RedisMgr::rPop(const std::string &key, std::string &value) {
     value = reply->str;
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::rPop: RedisCommand() RPOP [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -428,7 +417,6 @@ bool RedisMgr::hSet(const std::string &key, const std::string &hKey, const std::
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::hSet: RedisCommand() HSET [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -466,7 +454,6 @@ bool RedisMgr::hSet(const std::string &key, const std::unordered_map<std::string
     }
 
     freeReplyObject(reply);
-    std::cout << "RedisMgr::hSet: RedisCommandArgv() OK!" << std::endl;
     return true;
 }
 
@@ -500,7 +487,6 @@ bool RedisMgr::hSet(const char *key, const char *hKey, const char *hValue, size_
 
     freeReplyObject(reply);
     reply = nullptr;
-    std::cout << "RedisMgr::hSet: RedisCommandArgv() OK!" << std::endl;
     return true;
 }
 
@@ -525,7 +511,6 @@ bool RedisMgr::hDel(const std::string &key, const std::string &hKey) {
     }
 
     freeReplyObject(reply);
-    std::cout << "RedisMgr::del: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -549,16 +534,12 @@ std::string RedisMgr::hGet(const std::string &key, const std::string &hKey) {
 
     auto reply = static_cast<redisReply *>(redisCommandArgv(conn, 3, argv, argv_size));
     if (nullptr == reply || reply->type == REDIS_REPLY_NIL) {
-        std::cout << "RedisMgr::hGet: RedisCommandArgv() failed!" << std::endl;
         freeReplyObject(reply);
-        reply = nullptr;
         return "";
     }
 
     std::string value = reply->str;
     freeReplyObject(reply);
-    reply = nullptr;
-    std::cout << "RedisMgr::hGet: RedisCommandArgv() [" << key << ", " << hKey << " = " << value << "] OK!" << std::endl;
     return value;
 }
 
@@ -606,8 +587,6 @@ bool RedisMgr::zSet(const std::string &key, long long score, const std::string &
     }
 
     freeReplyObject(reply);
-    reply = nullptr;
-    std::cout << "RedisMgr::zSet: RedisCommand() HSET [" << key << " : " << value << "] OK!" << std::endl;
     return true;
 }
 
@@ -633,8 +612,6 @@ bool RedisMgr::zRevrange(const std::string &key, std::vector<std::string> &value
     }
 
     freeReplyObject(reply);
-    reply = nullptr;
-    std::cout << "RedisMgr::zSet: RedisCommand() ZREVRANGE [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -656,8 +633,6 @@ bool RedisMgr::zRem(const std::string &key, const std::string &value) {
     }
 
     freeReplyObject(reply);
-    reply = nullptr;
-    std::cout << "RedisMgr::zRem: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -679,8 +654,6 @@ bool RedisMgr::del(const std::string &key) const {
     }
 
     freeReplyObject(reply);
-    reply = nullptr;
-    std::cout << "RedisMgr::del: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -701,7 +674,6 @@ bool RedisMgr::existsKey(const std::string &key) const {
     }
 
     freeReplyObject(reply);
-    std::cout << "RedisMgr::existsKey: RedisCommand() [" << key << "] OK!" << std::endl;
     return true;
 }
 
@@ -722,7 +694,6 @@ bool RedisMgr::setExpire(const std::string &key, const int expire) const {
     }
 
     freeReplyObject(reply);
-    std::cout << "RedisMgr::setExpire: RedisCommand() [" << key << "expire: " << expire <<"] OK!" << std::endl;
     return true;
 }
 
@@ -743,7 +714,6 @@ bool RedisMgr::clearExpire(const std::string &key) const {
     }
 
     freeReplyObject(reply);
-    std::cout << "RedisMgr::clearExpire: RedisCommand() [" << key <<"] OK!" << std::endl;
     return true;
 }
 
@@ -772,7 +742,6 @@ std::string RedisMgr::acquireLock(const std::string& name, const int timeout, co
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
-    std::cout << "AcquireLock: RedisCommand() [" << name << "] error" << std::endl;
     return "";
 }
 

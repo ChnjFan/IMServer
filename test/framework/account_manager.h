@@ -12,6 +12,8 @@ struct TestAccount {
     int uid;
     std::string email;
     std::string token;
+    std::string host;
+    int port;
 };
 
 class AccountManager {
@@ -25,6 +27,8 @@ public:
     // Batch acquire for multi-user scenarios
     std::vector<TestAccount> acquireBatch(int n, const std::string& tag);
 
+    void login(TestAccount& acct);
+
     // Release a specific account (never throws)
     void release(int uid) noexcept;
 
@@ -32,9 +36,10 @@ public:
     void releaseAll() noexcept;
 
 private:
+    inline static std::atomic<int> userCount{0};
+
     std::set<int> heldUids_;
     std::map<int, std::string> uidToEmail_;  // track emails for Redis cleanup
-    int seq_ = 0;
     std::string gateHost_;
     uint16_t gatePort_;
     std::unique_ptr<MysqlPool> mysqlPool_;
@@ -45,5 +50,6 @@ private:
     // Register via GateServer HTTP API
     TestAccount registerAccount(const std::string& email);
 };
+
 
 #endif

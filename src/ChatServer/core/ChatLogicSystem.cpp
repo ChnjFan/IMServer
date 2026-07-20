@@ -26,7 +26,11 @@
 ChatLogicSystem::~ChatLogicSystem() {
     close();
     cond_.notify_all();
-    worker_.join();
+    for (auto& worker : workers_) {
+        if (worker.joinable()) {
+            worker.join();
+        }
+    }
 }
 
 void ChatLogicSystem::close() {
@@ -68,7 +72,9 @@ void ChatLogicSystem::notifyOnlineUserMsg(const int uid, const std::string &msg,
 
 ChatLogicSystem::ChatLogicSystem() : stop_(false), workerPool_() {
     initHandlers();
-    worker_ = std::thread(&ChatLogicSystem::dealMsg, this);
+    for (int i = 0; i < 4; ++i) {
+        workers_.emplace_back(&ChatLogicSystem::dealMsg, this);
+    }
     workerPool_.start();
 }
 
@@ -153,32 +159,34 @@ void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler)
 }
 
 void ChatLogicSystem::dealMsg() {
+    std::shared_ptr<LogicNode> msgNode;
     while (true) {
-        std::unique_lock<std::mutex> lock(mutex_);
-        cond_.wait(lock, [this]() {
+        {
+            std::unique_lock<std::mutex> lock(mutex_);
+            cond_.wait(lock, [this]() {
+                if (stop_.load()) {
+                    return true;
+                }
+                return !msgQueue_.empty();
+            });
             if (stop_.load()) {
-                return true;
+                // 服务器关闭前将已经收到的消息处理完
+                while (!msgQueue_.empty()) {
+                    msgNode = msgQueue_.front();
+                    handleMsgNode(msgNode);
+                    msgQueue_.pop();
+                }
+                break;
             }
-            return !msgQueue_.empty();
-        });
-        if (stop_.load()) {
-            // 服务器关闭前将已经收到的消息处理完
-            while (!msgQueue_.empty()) {
-                auto msgNode = msgQueue_.front();
-                handleMsgNode(msgNode);
-                msgQueue_.pop();
-            }
-            break;
-        }
 
-        auto msgNode = msgQueue_.front();
+            msgNode = msgQueue_.front();
+            msgQueue_.pop();
+        }
         handleMsgNode(msgNode);
-        msgQueue_.pop();
     }
 }
 
 void ChatLogicSystem::handleMsgNode(const std::shared_ptr<LogicNode> &node) {
-    std::cout << "Handle msg id is " << node->node_->msgId_ << std::endl;
     node->session_->updateLstActiveTime();
 
     if (handlers_.find(node->node_->msgId_) == handlers_.end()) {
@@ -230,7 +238,6 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session> &session, const
     root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
     const auto uid = srcRoot["uid"].asString();
     const int userid = std::stoi(uid);
-    std::cout << "user login uid is " << uid << std::endl;
     const auto reply = StatusGrpcClient::getInstance()->Login(userid, srcRoot["token"].asString());
     if (reply.error() != static_cast<int32_t>(ErrorCodes::SUCCESS)
         || reply.token() != srcRoot["token"].asString()) {
@@ -445,9 +452,6 @@ bool ChatLogicSystem::searchUserBaseInfo(UserBaseInfo& userInfo) {
     }
     // 缓存没有映射关系，只能去数据库查询
     if (!MysqlMgr::getInstance()->selectUserBaseInfo(userInfo) || userInfo.uid < 0) {
-        std::cout << "Not found user [uid: " << userInfo.uid
-            << " email: " << userInfo.email.value()
-            << " name: " << userInfo.name.value() << "]" << std::endl;
         return false;
     }
     // 更新缓存

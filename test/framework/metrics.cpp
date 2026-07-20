@@ -3,8 +3,12 @@
 #include <iomanip>
 
 void LatencyHistogram::record(int64_t us) {
-    samples_.push_back(us);
-    count_++;
+    {
+        std::lock_guard<std::mutex> lock(mtx_);
+        samples_.push_back(us);
+        count_++;
+    }
+
     min_ = std::min(min_, us);
     max_ = std::max(max_, us);
     sum_ += us;

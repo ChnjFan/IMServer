@@ -7,8 +7,8 @@ set(CHAT_SERVER_SOURCES
     common/model/FriendInfo.h
 
     # net 目录 - 网络层
-    net/ResourceServer.cpp
-    net/ResourceServer.h
+    net/ChatServer.cpp
+    net/ChatServer.h
     net/Session.cpp
     net/Session.h
     net/MsgNode.cpp

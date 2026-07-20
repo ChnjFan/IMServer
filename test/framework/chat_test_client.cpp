@@ -3,170 +3,158 @@
 #include "const.h"
 #include <iostream>
 
-ChatTestClient::ChatTestClient() = default;
+#define MAX_SEND_QUEUE 1024
 
 ChatTestClient::~ChatTestClient() {
-    disconnect();
+    close();
 }
 
-bool ChatTestClient::connect(const std::string& host, uint16_t port, int timeoutMs) {
-    try {
-        tcp::resolver resolver(ioc_);
-        auto endpoints = resolver.resolve(host, std::to_string(port));
-        socket_ = std::make_unique<tcp::socket>(ioc_);
-
-        boost::system::error_code ec;
-        boost::asio::connect(*socket_, endpoints, ec);
-        if (ec) {
-            errors_++;
-            return false;
+void ChatTestClient::start() {
+    auto self = shared_from_this();
+    // 异步连接服务端
+    const boost::asio::ip::address addr = boost::asio::ip::make_address(host_);
+    socket_.async_connect(
+        tcp::endpoint(addr, port_),
+        [self](boost::system::error_code ec) {
+            if (!ec) {
+                self->login(); // 连接成功，发登录消息
+            } else {
+                std::cerr << "connect fail: " << ec.message() << std::endl;
+            }
         }
-
-        connected_ = true;
-        stop_ = false;
-        recvThread_ = std::make_unique<std::thread>(&ChatTestClient::recvLoop, this);
-        return true;
-    } catch (const std::exception& e) {
-        errors_++;
-        return false;
-    }
+    );
 }
 
-void ChatTestClient::disconnect() {
-    stop_ = true;
-    connected_ = false;
-    if (socket_ && socket_->is_open()) {
-        boost::system::error_code ec;
-        socket_->close(ec);
-    }
-    if (recvThread_ && recvThread_->joinable()) {
-        recvThread_->join();
-    }
-}
-
-bool ChatTestClient::isConnected() const {
-    return connected_;
-}
-
-bool ChatTestClient::send(uint16_t msgId, const Json::Value& body) {
-    if (!connected_) return false;
-    std::string frame = encode(msgId, body);
-    boost::system::error_code ec;
-    boost::asio::write(*socket_, boost::asio::buffer(frame), ec);
-    if (ec) {
-        errors_++;
-        connected_ = false;
-        return false;
-    }
-    sent_++;
-    return true;
-}
-
-std::optional<Json::Value> ChatTestClient::sendAndWait(
-    uint16_t msgId, const Json::Value& body,
-    std::function<bool(uint16_t, const Json::Value&)> match,
-    int timeoutMs) {
-
-    auto pending = std::make_shared<PendingResponse>();
-    pending->matcher = match;
-    auto future = pending->promise.get_future();
-
-    {
-        std::lock_guard<std::mutex> lock(pendingMtx_);
-        pending_.push(pending);
-    }
-
-    if (!send(msgId, body)) {
-        std::lock_guard<std::mutex> lock(pendingMtx_);
-        pending_.pop();
-        return std::nullopt;
-    }
-
-    if (future.wait_for(std::chrono::milliseconds(timeoutMs)) == std::future_status::timeout) {
-        errors_++;
-        return std::nullopt;
-    }
-    return future.get();
-}
-
-void ChatTestClient::onMessage(uint16_t msgId, MessageHandler handler) {
-    std::lock_guard<std::mutex> lock(handlerMtx_);
-    handlers_[msgId] = handler;
-}
-
-bool ChatTestClient::chatLogin(int uid, const std::string& token) {
-    Json::Value body;
-    // 服务端对 uid 调用 asString() + stoi，序列化为字符串更稳妥
-    body["uid"] = std::to_string(uid);
-    body["token"] = token;
-    auto rsp = sendAndWait(static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN), body,
-        [](uint16_t id, const Json::Value&) {
-            return id == static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN_RSP);
-        });
-    return rsp.has_value() && rsp->isMember("error") && (*rsp)["error"].asInt() == 0;
+void ChatTestClient::close() {
+    socket_.close();
 }
 
 bool ChatTestClient::sendChatMsg(int toUid, const std::string& content) {
     Json::Value body;
-    body["touid"] = toUid;
-    body["msg"] = content;
-    body["msgid"] = 1; // 文本消息
-    auto rsp = sendAndWait(static_cast<uint16_t>(MessageID::ID_CHAT_MSG_REQ), body,
-        [](uint16_t id, const Json::Value&) {
-            return id == static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP);
-        });
-    return rsp.has_value() && (*rsp)["error"].asInt() == 0;
+    const std::string convId = "c2c_" + std::to_string(std::min(uid_, toUid)) + "_" + std::to_string(std::max(uid_, toUid));
+    body["from_uid"] = uid_;
+    body["to_uid"] = toUid;
+    body["conv_id"] = convId;
+    body["content"] = content;
+    body["content_type"] = 1; // 文本消息
+    body["status"] = 0; // 已发送
+    body["msg_id"] = sent_ + 1; // 消息序号
+    asyncSend(static_cast<uint16_t>(MessageID::ID_CHAT_MSG_REQ), body);
+    return true;
 }
 
 bool ChatTestClient::heartbeat() {
     Json::Value body;
     body["uid"] = 1;
-    auto rsp = sendAndWait(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ), body,
-        [](uint16_t id, const Json::Value&) {
-            return id == static_cast<uint16_t>(MessageID::ID_HEART_BEAT_RSP);
-        });
-    return rsp.has_value();
+    asyncSend(static_cast<uint16_t>(MessageID::ID_HEART_BEAT_REQ), body);
+    return true;
 }
 
-void ChatTestClient::recvLoop() {
-    char buf[4096];
-    while (!stop_) {
-        boost::system::error_code ec;
-        size_t n = socket_->read_some(boost::asio::buffer(buf, sizeof(buf)), ec);
-        if (ec) {
-            connected_ = false;
-            errors_++;
-            break;
-        }
-        auto frames = decode(buf, n);
-        for (auto& f : frames) {
-            handleFrame(f.msgId, f.body);
-        }
-    }
+void ChatTestClient::login() {
+    Json::Value body;
+    // 服务端对 uid 调用 asString() + stoi，序列化为字符串更稳妥
+    body["uid"] = std::to_string(uid_);
+    body["token"] = token_;
+    asyncSend(static_cast<uint16_t>(MessageID::ID_CHAT_LOGIN), body);
 }
 
-void ChatTestClient::handleFrame(uint16_t msgId, const Json::Value& body) {
-    recv_++;
-
-    // 优先分发给匹配的待响应请求
-    {
-        std::lock_guard<std::mutex> lock(pendingMtx_);
-        if (!pending_.empty()) {
-            auto& front = pending_.front();
-            if (front->matcher(msgId, body)) {
-                front->promise.set_value(body);
-                pending_.pop();
+void ChatTestClient::asyncSend() {
+    const auto& node = sendNodeQueue_.front();
+    auto self = shared_from_this();
+    boost::asio::async_write(socket_, boost::asio::buffer(node->buffer_, node->used_),
+        [self, this](const boost::system::error_code& error, size_t bytes_transfer) {
+            if (error) {
+                errors_++;
+                close();
                 return;
             }
-        }
+
+            sent_++;
+            sendNodeQueue_.pop();
+            if (!sendNodeQueue_.empty()) {
+                asyncSend();
+            }
+        });
+}
+
+void ChatTestClient::asyncSend(uint16_t msgId, const Json::Value &body)
+{
+    std::lock_guard<std::mutex> lock(sendMtx_);
+    const size_t sendSize = sendNodeQueue_.size();
+    if (sendSize > MAX_SEND_QUEUE) {   // 发送抑制
+        return;
     }
 
-    // 否则分发给已注册的异步回调
-    {
-        std::lock_guard<std::mutex> lock(handlerMtx_);
-        auto it = handlers_.find(msgId);
-        if (it != handlers_.end()) {
-            it->second(msgId, body);
-        }
+    std::string msg = body.toStyledString();
+    sendNodeQueue_.push(std::make_shared<SendNode>(msg.c_str(), msg.size(), msgId));
+    if (sendSize > 0) {
+        return; // 已经有线程在发送数据，不需要重复调用发送
     }
+    asyncSend();
+    asyncRecv();    // 发完消息后等待接收
+}
+
+void ChatTestClient::asyncRecv() {
+    auto self = shared_from_this();
+    asyncReadFull(HEAD_TOTAL_LEN, [self, this](const boost::system::error_code& ec, const uint16_t bytes_transfer) {
+        try {
+            if (ec || bytes_transfer != HEAD_TOTAL_LEN) {
+                errors_++;
+                close();
+                return;
+            }
+
+            char node[HEAD_TOTAL_LEN+1] = {0};
+
+            memcpy(node, buffer_, HEAD_TOTAL_LEN);
+            // 获取头部数据
+            uint16_t msgId = 0;
+            memcpy(&msgId, node, HEAD_MSG_ID_LEN);
+            msgId = net::detail::socket_ops::network_to_host_short(msgId);
+
+            uint16_t msgLen = 0;
+            memcpy(&msgLen, node + HEAD_MSG_ID_LEN, HEAD_MSG_SIZE_LEN);
+            msgLen = net::detail::socket_ops::network_to_host_short(msgLen);
+
+            asyncReadBody(msgLen);
+        } catch (std::exception& e) {
+            std::cout << e.what() << std::endl;
+        }
+    });
+}
+
+void ChatTestClient::asyncReadBody(uint16_t size) {
+    auto self = shared_from_this();
+    asyncReadFull(size, [self, this, size](const boost::system::error_code& ec, const uint16_t bytes_transfer) {
+        if (ec || bytes_transfer < size) {
+            errors_++;
+            close();
+            return;
+        }
+        
+        recv_++;
+        readCallback_(shared_from_this());
+    });
+}
+
+void ChatTestClient::asyncReadFull(std::uint16_t totalLen, 
+                    const std::function<void(const boost::system::error_code &, std::uint16_t)> &callback)
+{
+    memset(buffer_, 0, sizeof(buffer_));
+    asyncReadSome(0, totalLen, callback);
+}
+
+void ChatTestClient::asyncReadSome(std::uint16_t readLen, std::uint16_t totalLen,
+                    const std::function<void(const boost::system::error_code &, std::uint16_t)> &callback)
+{
+    auto self = shared_from_this();
+    socket_.async_read_some(boost::asio::buffer(buffer_ + readLen, totalLen - readLen),
+        [self, readLen, totalLen, callback](const boost::system::error_code &ec, const std::uint16_t bytes_transfer) {
+            if (ec || readLen + bytes_transfer >= totalLen) {   // 读出错或者已经读到想要的长度后返回
+                callback(ec, readLen + bytes_transfer); // 返回 buffer 中已经读取的内容长度
+                return;
+            }
+            // 没有读完继续读
+            self->asyncReadSome(readLen + bytes_transfer, totalLen, callback);
+    });
 }

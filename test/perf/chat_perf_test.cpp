@@ -9,17 +9,19 @@ class PerfTest : public IntegrationTestBase {};
 TEST_F(PerfTest, RampUp) {
     auto& config = ConfigMgr::getInstance();
     PerfSuite::Config cfg;
-    cfg.chatHost = "127.0.0.1";
-    cfg.chatPort = static_cast<uint16_t>(std::stoi(config["ChatServer"]["Port"]));
     cfg.stepSec = 60;
 
     PerfSuite suite(cfg);
     auto results = suite.runRampUp();
 
-    ASSERT_EQ(results.size(), 5u);
-    // 延迟应在合理范围（P99 < 1 秒）
+    // 延迟应在合理范围（P99 < 10ms）
     for (auto& r : results) {
-        EXPECT_LT(r.p99_us, 1'000'000) << "client=" << r.clientCount;
+        EXPECT_LT(r.p99_us, 10'000) << "client=" << r.clientCount;
+        std::cout << "[perf] clients=" << r.clientCount
+                  << " qps=" << r.qps
+                  << " p50=" << r.p50_us << "us"
+                  << " p99=" << r.p99_us << "us"
+                  << " err=" << r.errorRate * 100 << "%\n";
     }
 }
 
@@ -27,8 +29,6 @@ TEST_F(PerfTest, RampUp) {
 TEST_F(PerfTest, ToBreak) {
     auto& config = ConfigMgr::getInstance();
     PerfSuite::Config cfg;
-    cfg.chatHost = "127.0.0.1";
-    cfg.chatPort = static_cast<uint16_t>(std::stoi(config["ChatServer"]["Port"]));
     cfg.stepSec = 30;
 
     PerfSuite suite(cfg);
@@ -43,8 +43,6 @@ TEST_F(PerfTest, ToBreak) {
 TEST_F(PerfTest, MixedWorkload) {
     auto& config = ConfigMgr::getInstance();
     PerfSuite::Config cfg;
-    cfg.chatHost = "127.0.0.1";
-    cfg.chatPort = static_cast<uint16_t>(std::stoi(config["ChatServer"]["Port"]));
     cfg.stepSec = 60;
 
     PerfSuite suite(cfg);

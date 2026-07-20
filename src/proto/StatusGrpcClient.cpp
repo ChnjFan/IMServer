@@ -45,7 +45,6 @@ std::unique_ptr<StatusService::Stub> StatusConnPool::getConnection() {
     }
     auto conn = std::move(connections_.front());
     connections_.pop();
-    std::cout << "Get RPC connection success" << std::endl;
     return conn;
 }
 
@@ -55,7 +54,6 @@ void StatusConnPool::returnConnection(std::unique_ptr<StatusService::Stub> stub)
         return;
     }
     connections_.push(std::move(stub));
-    std::cout << "Returning RPC connection success" << std::endl;
 }
 
 GetChatServerRsp StatusGrpcClient::GetChatServer(const int uid) const {
@@ -74,7 +72,6 @@ GetChatServerRsp StatusGrpcClient::GetChatServer(const int uid) const {
     });
     request.set_uid(uid);
     if (const auto status = stub->GetChatServer(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
         return reply;
     }
 
@@ -98,8 +95,6 @@ GetResourceServerRsp StatusGrpcClient::GetResourceServer(const int uid) const {
 
     request.set_uid(uid);
     if (const auto status = stub->GetResourceServer(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
-        std::cout << "Get RPC connection success" << std::endl;
         return reply;
     }
     reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
@@ -123,7 +118,6 @@ LoginRsp StatusGrpcClient::Login(const int uid, const std::string &token) const 
     request.set_uid(uid);
     request.set_token(token);
     if (const auto status = stub->Login(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
         return reply;
     }
 
@@ -148,7 +142,6 @@ VerifyTokenRsp StatusGrpcClient::VerifyToken(const int uid, const std::string &t
     request.set_uid(uid);
     request.set_token(token);
     if (const auto status = stub->VerifyToken(&context, request, &reply); status.ok()) {
-        std::cout << "Get RPC connection success" << std::endl;
         return reply;
     }
 
@@ -165,5 +158,4 @@ StatusGrpcClient::StatusGrpcClient() {
     std::string host = config["StatusServer"]["Host"];
     std::string port = config["StatusServer"]["Port"];
     pool_ = std::make_unique<ServiceConnPool<StatusService>>(size, host, port);
-    std::cout << "Connect RPC to " << host << ":" << port << std::endl;
 }

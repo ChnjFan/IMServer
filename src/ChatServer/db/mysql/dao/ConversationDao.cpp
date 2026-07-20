@@ -82,7 +82,6 @@ bool ConversationDao::createMessage(const MessageInfo &info, int& result) const 
         if (const std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
                 res->next()) {
             result = res->getInt("result");
-            std::cout << "Result: " << result << std::endl;
             return true;
         }
         return false;

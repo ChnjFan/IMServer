@@ -3,7 +3,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include "ResourceServer.h"
+#include "ChatServer.h"
 #include "ConfigMgr.h"
 #include "AsioIOServicePool.h"
 #include "ChatLogicSystem.h"

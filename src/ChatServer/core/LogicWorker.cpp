@@ -19,7 +19,6 @@ LogicWorker::LogicWorker(std::shared_ptr<Session> session, uint16_t msgId, const
 
 void LogicWorker::exec() {
     if (handlers_.find(msgId_) == handlers_.end()) {
-        std::cout << "Msg id [" << msgId_ << "] handler not found" << std::endl;
         return;
     }
     handlers_[msgId_]();

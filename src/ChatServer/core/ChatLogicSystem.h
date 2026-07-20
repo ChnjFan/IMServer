@@ -105,7 +105,7 @@ private:
     void uploadFileHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
 
     std::atomic<bool> stop_;
-    std::thread worker_;
+    std::vector<std::thread> workers_;
 
     std::string selfServerName_;
 

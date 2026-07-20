@@ -40,7 +40,7 @@ int MysqlDao::registerUser(const std::string &user, const std::string &email, co
         if (const std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
                 res->next()) {
             const int result = res->getInt("result");
-            std::cout << "Result: " << result << std::endl;
+            std::cout << "Register " << user << " Result: " << result << std::endl;
             return result;
         }
         return -1;
@@ -92,7 +92,6 @@ bool MysqlDao::updatePasswd(const std::string &email, const std::string &passwd)
         stmt->setString(1, passwd);
         stmt->setString(2, email);
         const auto res = (stmt->executeUpdate());
-        std::cout << "Update rows: " << res << std::endl;
         return true;
     } catch (sql::SQLException &e) {
         std::cout << "check email SQLException: " << e.what() << std::endl;
@@ -116,11 +115,10 @@ bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, 
         std::string originPassword;
         while (res->next()) {
             originPassword = res->getString("pwd");
-            std::cout << "Get passwd: " << originPassword << std::endl;
             break;
         }
         if (originPassword != passwd) {
-            std::cout << "Input passwd: " << passwd << std::endl;
+            std::cout << "Input passwd error." << std::endl;
             return false;
         }
 

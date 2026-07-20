@@ -24,7 +24,7 @@ bool DistLock::unlock() const {
 DistLockGuard::DistLockGuard(const std::string &name, const int timeout, const int acquireTimeout)
     : name_(name), lock_(name, timeout, acquireTimeout) {
     if (!lock_.lock()) {
-        throw std::logic_error("Distribute lock" + name +" failed");
+        std::cerr << "Distribute lock " + name +" failed" << std::endl;
     }
 }
 

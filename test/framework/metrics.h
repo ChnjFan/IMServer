@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <numeric>
 #include <string>
+#include <mutex>
 #include <json/json.h>
 
 class LatencyHistogram {
@@ -21,6 +22,7 @@ public:
 
 private:
     std::vector<int64_t> samples_;
+    std::mutex mtx_;
     uint64_t count_ = 0;
     int64_t min_ = INT64_MAX;
     int64_t max_ = 0;

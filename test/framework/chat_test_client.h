@@ -1,19 +1,18 @@
 #ifndef IMSERVER_CHAT_TEST_CLIENT_H
 #define IMSERVER_CHAT_TEST_CLIENT_H
 
-#include <cstdint>
 #include <functional>
 #include <future>
 #include <mutex>
 #include <optional>
 #include <queue>
 #include <string>
-#include <thread>
-#include <unordered_map>
 #include <atomic>
 #include <memory>
-#include <boost/asio.hpp>
 #include <json/json.h>
+
+#include "const.h"
+#include "account_manager.h"
 
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
@@ -23,26 +22,51 @@ struct PendingResponse {
     std::promise<std::optional<Json::Value>> promise;
 };
 
-class ChatTestClient {
+class SendNode {
+public:
+    uint16_t msgId_;
+    uint16_t used_;
+    uint16_t capacity_;
+    char *buffer_;
+
+    SendNode(const char* msg, uint16_t size, uint16_t msgId) 
+        : msgId_(msgId), used_(0), capacity_(size + HEAD_TOTAL_LEN + 1), buffer_(new char[capacity_]) {
+        const uint16_t msgIdHost = net::detail::socket_ops::host_to_network_short(msgId);
+        memcpy(buffer_, &msgIdHost, HEAD_MSG_ID_LEN);
+        const uint16_t msgSizeHost = net::detail::socket_ops::host_to_network_short(size);
+        memcpy(buffer_ + HEAD_MSG_ID_LEN, &msgSizeHost, HEAD_MSG_SIZE_LEN);
+        if (msg) {
+            memcpy(buffer_ + HEAD_TOTAL_LEN, msg, size);
+        }
+        used_ = size + HEAD_TOTAL_LEN;
+    }
+
+    ~SendNode() {
+        delete[] buffer_;
+    }
+};
+
+class ChatTestClient : public std::enable_shared_from_this<ChatTestClient> {
 public:
     using MessageHandler = std::function<void(uint16_t msgId, const Json::Value& body)>;
 
-    ChatTestClient();
     ~ChatTestClient();
 
-    bool connect(const std::string& host, uint16_t port, int timeoutMs = 5000);
-    void disconnect();
-    bool isConnected() const;
+    ChatTestClient(boost::asio::io_context& io_context,
+        const std::function<void(std::shared_ptr<ChatTestClient>)> &readCallback)
+        : port_(0), buffer_{0}, readCallback_(readCallback), socket_(io_context) {
+    };
 
-    std::optional<Json::Value> sendAndWait(
-        uint16_t msgId, const Json::Value& body,
-        std::function<bool(uint16_t, const Json::Value&)> match,
-        int timeoutMs = 5000);
+    void start();
+    void close();
 
-    bool send(uint16_t msgId, const Json::Value& body);
-    void onMessage(uint16_t msgId, MessageHandler handler);
+    void setAccount(const TestAccount& acct) {
+        uid_ = acct.uid;
+        token_ = acct.token;
+        host_ = acct.host;
+        port_ = acct.port;
+    }
 
-    bool chatLogin(int uid, const std::string& token);
     bool sendChatMsg(int toUid, const std::string& content);
     bool heartbeat();
 
@@ -51,21 +75,33 @@ public:
     uint64_t errors() const { return errors_; }
 
 private:
-    void recvLoop();
-    void handleFrame(uint16_t msgId, const Json::Value& body);
+    void login();
 
-    std::atomic<bool> connected_{false};
-    std::atomic<bool> stop_{false};
-    net::io_context ioc_;
-    std::unique_ptr<tcp::socket> socket_;
-    std::unique_ptr<std::thread> recvThread_;
-    std::string recvBuffer_;
+    void asyncSend();
+    void asyncSend(uint16_t msgId, const Json::Value& body);
 
-    std::mutex pendingMtx_;
-    std::queue<std::shared_ptr<PendingResponse>> pending_;
+    void asyncRecv();
+    void asyncReadBody(uint16_t size);
+    void asyncReadFull(std::uint16_t totalLen,
+        const std::function<void(const boost::system::error_code&, std::uint16_t)>& callback);
+    void asyncReadSome(std::uint16_t readLen, std::uint16_t totalLen,
+        const std::function<void(const boost::system::error_code &, std::uint16_t)>& callback);
 
-    std::mutex handlerMtx_;
-    std::unordered_map<uint16_t, MessageHandler> handlers_;
+    std::string host_;
+    uint16_t port_;
+
+    std::mutex sendMtx_;
+    std::queue<std::shared_ptr<SendNode>> sendNodeQueue_;
+
+    char buffer_[MAX_BUFFER_SIZE];
+
+    int uid_ = 0;
+    std::string email_;
+    std::string token_;
+
+    std::function<void(std::shared_ptr<ChatTestClient>)> readCallback_;
+
+    tcp::socket socket_;
 
     std::atomic<uint64_t> sent_{0};
     std::atomic<uint64_t> recv_{0};

@@ -10,7 +10,7 @@
 #include "Session.h"
 
 #include "ChatLogicSystem.h"
-#include "ResourceServer.h"
+#include "ChatServer.h"
 #include "DistLock.h"
 #include "RedisMgr.h"
 #include "ConfigMgr.h"
@@ -124,7 +124,6 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
     asyncReadFull(totalLen, [self, this](const boost::system::error_code& ec, const uint16_t bytes_transfer) {
         try {
             if (ec || bytes_transfer != HEAD_TOTAL_LEN) {
-                std::cout << "Chat server read failed, read " << bytes_transfer << ", error: " << ec.what() << std::endl;
                 close();
                 chatServer_->clearSession(sessionId_);
                 updateState(SessionState::OFFLINE);
@@ -153,7 +152,6 @@ void Session::asyncReadHead(const std::uint16_t totalLen) {
                 return;
             }
 
-            std::cout << "Recv msg head id: " << msgId << " len: " << msgLen << std::endl;
             recvNode_ = std::make_shared<RecvNode>(msgLen, msgId);
             asyncReadBody(msgLen);
         } catch (std::exception& e) {
@@ -176,7 +174,6 @@ void Session::asyncReadBody(std::uint16_t size) {
         memcpy(recvNode_->buffer_, buffer_, bytes_transfer);
         recvNode_->used_ += bytes_transfer;
         recvNode_->buffer_[recvNode_->capacity_] = '\0';
-        std::cout << "Recv msg body: " << recvNode_->buffer_ << std::endl;
 
         // 处理接收数据
         const auto logicNode = std::make_shared<LogicNode>(self, recvNode_);
@@ -210,7 +207,6 @@ void Session::asyncReadSome(std::uint16_t readLen, std::uint16_t totalLen,
 void Session::asyncSend() {
     const auto& node = sendNodeQueue_.front();
     auto self = shared_from_this();
-    std::cout << "async_write: " << node->used_ << " body: " << node->buffer_ + HEAD_TOTAL_LEN << std::endl;
     boost::asio::async_write(socket_, boost::asio::buffer(node->buffer_, node->used_),
         [self, this](const boost::system::error_code& error, size_t bytes_transfer) {
             if (error) {

@@ -25,7 +25,7 @@ public:
 
     explicit PerfSuite(Config config);
 
-    // 阶梯施压：10 → 50 → 100 → 200 → 500，记录每级稳态 QPS/延迟
+    // 阶梯施压：10 → 50 → 100 → 200 → 500 → 1000 → 5000 → 10000，记录每级稳态 QPS/延迟
     std::vector<PerfLevel> runRampUp();
 
     // 极限施压：clientCount ×2 直到错误率 > 5%，返回崩溃点
