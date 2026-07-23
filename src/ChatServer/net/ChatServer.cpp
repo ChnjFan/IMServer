@@ -109,7 +109,7 @@ void ChatServer::checkSessionHeartbeat() {
 void ChatServer::updateServerCount() const {
     const int count = static_cast<int>(sessions_.size());
     const auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
-    DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+    // DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
     // 更新登录数量
     RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, std::to_string(count));
 }

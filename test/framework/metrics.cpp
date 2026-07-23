@@ -3,18 +3,16 @@
 #include <iomanip>
 
 void LatencyHistogram::record(int64_t us) {
-    {
-        std::lock_guard<std::mutex> lock(mtx_);
-        samples_.push_back(us);
-        count_++;
-    }
-
+    std::lock_guard<std::mutex> lock(mtx_);
+    samples_.push_back(us);
+    count_++;
     min_ = std::min(min_, us);
     max_ = std::max(max_, us);
     sum_ += us;
 }
 
 int64_t LatencyHistogram::percentile(double p) const {
+    std::lock_guard<std::mutex> lock(mtx_);
     if (samples_.empty()) return 0;
     auto sorted = samples_;
     std::sort(sorted.begin(), sorted.end());
@@ -23,9 +21,20 @@ int64_t LatencyHistogram::percentile(double p) const {
     return sorted[idx];
 }
 
-int64_t LatencyHistogram::min() const { return samples_.empty() ? 0 : min_; }
-int64_t LatencyHistogram::max() const { return samples_.empty() ? 0 : max_; }
-int64_t LatencyHistogram::avg() const { return count_ ? sum_ / count_ : 0; }
+int64_t LatencyHistogram::min() const {
+    std::lock_guard<std::mutex> lock(mtx_);
+    return samples_.empty() ? 0 : min_;
+}
+
+int64_t LatencyHistogram::max() const {
+    std::lock_guard<std::mutex> lock(mtx_);
+    return samples_.empty() ? 0 : max_;
+}
+
+int64_t LatencyHistogram::avg() const {
+    std::lock_guard<std::mutex> lock(mtx_);
+    return count_ ? sum_ / count_ : 0;
+}
 
 void ThroughputCounter::tick() { total_++; }
 

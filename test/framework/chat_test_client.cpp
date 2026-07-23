@@ -29,6 +29,24 @@ void ChatTestClient::close() {
     socket_.close();
 }
 
+void ChatTestClient::recordMetrics()
+{
+    auto end = std::chrono::steady_clock::now();
+    metrics_->throughput.tick();
+    auto rtt_us = std::chrono::duration_cast<std::chrono::microseconds>(end - beginTime_).count();
+    metrics_->latency.record(rtt_us);
+    metrics_->errors.addSuccess();
+
+    // 测量序列化+入队的开销（asyncSend 入口到 async_write 发起）
+    if (serialize_end_time_.time_since_epoch().count() > 0) {
+        auto serialize_us = std::chrono::duration_cast<std::chrono::microseconds>(
+            serialize_end_time_ - serialize_start_time_).count();
+        if (serialize_us > 500) {
+            std::cout << "[slow] serialize+queue=" << serialize_us << "us rtt=" << rtt_us << "us\n";
+        }
+    }
+}
+
 bool ChatTestClient::sendChatMsg(int toUid, const std::string& content) {
     Json::Value body;
     const std::string convId = "c2c_" + std::to_string(std::min(uid_, toUid)) + "_" + std::to_string(std::max(uid_, toUid));
@@ -61,6 +79,9 @@ void ChatTestClient::login() {
 void ChatTestClient::asyncSend() {
     const auto& node = sendNodeQueue_.front();
     auto self = shared_from_this();
+    serialize_end_time_ = std::chrono::steady_clock::now();
+    beginTime_ = serialize_end_time_;
+
     boost::asio::async_write(socket_, boost::asio::buffer(node->buffer_, node->used_),
         [self, this](const boost::system::error_code& error, size_t bytes_transfer) {
             if (error) {
@@ -71,14 +92,12 @@ void ChatTestClient::asyncSend() {
 
             sent_++;
             sendNodeQueue_.pop();
-            if (!sendNodeQueue_.empty()) {
-                asyncSend();
-            }
         });
 }
 
 void ChatTestClient::asyncSend(uint16_t msgId, const Json::Value &body)
 {
+    serialize_start_time_ = std::chrono::steady_clock::now();
     std::lock_guard<std::mutex> lock(sendMtx_);
     const size_t sendSize = sendNodeQueue_.size();
     if (sendSize > MAX_SEND_QUEUE) {   // 发送抑制

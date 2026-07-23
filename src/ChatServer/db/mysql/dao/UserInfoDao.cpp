@@ -48,6 +48,7 @@ std::vector<UserBaseInfo> UserInfoDao::selectUserListInfo(const UserBaseInfo &se
         }
 
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             result.push_back(UserBaseInfo::fromResult(res));
         }
@@ -77,13 +78,16 @@ bool UserInfoDao::selectUserBaseInfo(UserBaseInfo &info) const {
             stmt->setString(1, value);
         }
         else {
+            
             return false;
         }
 
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             info.fromSqlResult(res);
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user info SQLException: " << e.what() << std::endl;
@@ -118,8 +122,10 @@ bool UserInfoDao::updateUserBaseInfo(const UserBaseInfo &info) const {
         }
         stmt->setInt(2, info.uid);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;
@@ -145,13 +151,16 @@ bool UserInfoDao::getUserPassword(UserBaseInfo &info) const {
             stmt->setInt(1, uid);
         }
         else {
+            
             return false;
         }
 
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             info.fromSqlResult(res);
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user info SQLException: " << e.what() << std::endl;
@@ -179,9 +188,11 @@ bool UserInfoDao::selectUserProfileInfo(const int uid, UserProfile &info) const 
         stmt->setInt(1, uid);
 
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             info.fromSqlResult(res);
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user info SQLException: " << e.what() << std::endl;
@@ -221,8 +232,10 @@ bool UserInfoDao::updateUserProfileInfo(const UserProfile &profile) const {
         }
         stmt->setInt(2, profile.uid);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;

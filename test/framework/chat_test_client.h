@@ -1,6 +1,7 @@
 #ifndef IMSERVER_CHAT_TEST_CLIENT_H
 #define IMSERVER_CHAT_TEST_CLIENT_H
 
+#include <chrono>
 #include <functional>
 #include <future>
 #include <mutex>
@@ -12,6 +13,7 @@
 #include <json/json.h>
 
 #include "const.h"
+#include "metrics.h"
 #include "account_manager.h"
 
 namespace net = boost::asio;
@@ -52,13 +54,15 @@ public:
 
     ~ChatTestClient();
 
-    ChatTestClient(boost::asio::io_context& io_context,
+    ChatTestClient(std::shared_ptr<Metrics> metrics, boost::asio::io_context& io_context,
         const std::function<void(std::shared_ptr<ChatTestClient>)> &readCallback)
-        : port_(0), buffer_{0}, readCallback_(readCallback), socket_(io_context) {
+        : port_(0), buffer_{0}, readCallback_(readCallback), socket_(io_context), metrics_(metrics) {
     };
 
     void start();
     void close();
+
+    void recordMetrics();
 
     void setAccount(const TestAccount& acct) {
         uid_ = acct.uid;
@@ -92,6 +96,11 @@ private:
 
     std::mutex sendMtx_;
     std::queue<std::shared_ptr<SendNode>> sendNodeQueue_;
+
+    std::shared_ptr<Metrics> metrics_;
+    std::chrono::steady_clock::time_point beginTime_ = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point serialize_start_time_;
+    std::chrono::steady_clock::time_point serialize_end_time_;
 
     char buffer_[MAX_BUFFER_SIZE];
 

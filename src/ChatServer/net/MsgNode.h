@@ -8,6 +8,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <chrono>
 
 class MsgNode {
 public:
@@ -40,6 +41,10 @@ public:
     LogicNode(const std::shared_ptr<Session> &session, const std::shared_ptr<RecvNode> &node);
     std::shared_ptr<Session> session_;
     std::shared_ptr<RecvNode> node_;
+    // 消息接收完成的时间戳（在 Session::asyncReadBody 中设置）
+    std::chrono::steady_clock::time_point recv_time;
+    // 开始处理的时间戳（在 dealMsg 中设置）
+    std::chrono::steady_clock::time_point handle_start_time;
 };
 
 

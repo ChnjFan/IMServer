@@ -51,6 +51,7 @@ std::vector<FriendInfo> FriendInfoDao::selectFriendList(const int uid, const std
         stmt->setString(2, sinceTime);
         stmt->setInt(3, 200);
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             result.push_back(FriendInfo::fromFriendListSearch(res));
         }
@@ -79,9 +80,11 @@ bool FriendInfoDao::selectFriendStatus(const int uid, const int friendId, int& s
         stmt->setInt(1, uid);
         stmt->setInt(2, friendId);
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             status = res->getInt("status");
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;
@@ -116,6 +119,7 @@ std::vector<FriendApply> FriendInfoDao::selectFriendApplyList(const int uid, con
         stmt->setString(4, sinceTime);
         stmt->setInt(5, 20);
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             result.push_back(FriendApply::fromFriendApplySearch(res));
         }
@@ -150,8 +154,10 @@ bool FriendInfoDao::checkFriendApplyExist(const int uid, const int friendId) con
         stmt->setInt(1, uid);
         stmt->setInt(2, friendId);
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;
@@ -182,8 +188,10 @@ bool FriendInfoDao::updateFriendApply(const int uid, const int friendId, const i
         stmt->setString(7, msg);
         stmt->setInt(8, 7); // 重设申请过期时间
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;
@@ -206,9 +214,11 @@ bool FriendInfoDao::getFriendApplyCount(const int uid, int& count) {
             "WHERE friend_id = ? AND status = 0 AND expire_time > NOW()"));
         stmt->setInt(1, uid);
         if (const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             count = res->getInt("unread_count");
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;
@@ -234,22 +244,27 @@ bool FriendInfoDao::createFriendRelation(const FriendApply &applyInfo) {
         stmt_apply->setInt(1, applyInfo.uid);
         stmt_apply->setInt(2, applyInfo.friendId);
         if (const int rowAffected = stmt_apply->executeUpdate(); rowAffected < 0) {
+            stmt_apply->close();
             return false;
         }
+        stmt_apply->close();
 
         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
             "INSERT INTO friend_relation (uid, friend_id) values (?,?)"));
         stmt->setInt(1, applyInfo.uid);
         stmt->setInt(2, applyInfo.friendId);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
 
         stmt->setInt(1, applyInfo.friendId);
         stmt->setInt(2, applyInfo.uid);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         conn->conn_->commit();
         return true;
     } catch (sql::SQLException &e) {
@@ -283,8 +298,10 @@ bool FriendInfoDao::updateFriendRelation(const int uid, const FriendInfo &friend
         stmt->setInt(2, uid);
         stmt->setInt(3, friendInfo.friendId);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cout << "get user SQLException: " << e.what() << std::endl;

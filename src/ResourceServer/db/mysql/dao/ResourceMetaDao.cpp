@@ -77,8 +77,10 @@ bool ResourceMetaDao::insert(const ResourceMeta& meta) const {
         }
 
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in insert: " << e.what() << std::endl;
@@ -101,9 +103,11 @@ bool ResourceMetaDao::selectByResourceId(const std::string &resourceId, Resource
         stmt->setString(1, resourceId);
 
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             meta.fromResultSet(res);
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in selectByResourceId: " << e.what() << std::endl;
@@ -126,9 +130,11 @@ bool ResourceMetaDao::selectByMd5(const std::string &md5, ResourceMeta &meta) co
         stmt->setString(1, md5);
 
         if (const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery()); res->next()) {
+            
             meta.fromResultSet(res);
             return true;
         }
+        
         return false;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in selectByMd5: " << e.what() << std::endl;
@@ -157,6 +163,7 @@ std::vector<ResourceMeta> ResourceMetaDao::selectByConvId(const std::string& con
         stmt->setInt(3, offset);
 
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             results.push_back(ResourceMeta::fromResultListSet(res));
         }
@@ -182,7 +189,9 @@ bool ResourceMetaDao::updateRefCount(const std::string& resourceId, const int de
             "WHERE resource_id = ?"));
         stmt->setInt(1, delta);
         stmt->setString(2, resourceId);
-        return stmt->executeUpdate() > 0;
+        const auto res = stmt->executeUpdate();
+        
+        return res > 0;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in updateRefCount: " << e.what() << std::endl;
         return false;
@@ -204,7 +213,9 @@ bool ResourceMetaDao::updateThumbPath(const std::string& resourceId,
             "UPDATE resource_meta SET thumb_path = ? WHERE resource_id = ?"));
         stmt->setString(1, thumbPath);
         stmt->setString(2, resourceId);
-        return stmt->executeUpdate() > 0;
+        const auto res = stmt->executeUpdate();
+        
+        return res > 0;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in updateThumbPath: " << e.what() << std::endl;
         return false;
@@ -225,7 +236,9 @@ bool ResourceMetaDao::updateStatus(const std::string& resourceId, ResourceStatus
             "UPDATE resource_meta SET status = ? WHERE resource_id = ?"));
         stmt->setInt(1, static_cast<int>(status));
         stmt->setString(2, resourceId);
-        return stmt->executeUpdate() > 0;
+        const auto res = stmt->executeUpdate();
+        
+        return res > 0;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in updateStatus: " << e.what() << std::endl;
         return false;
@@ -245,7 +258,9 @@ bool ResourceMetaDao::remove(const std::string& resourceId) const {
         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
             "DELETE FROM resource_meta WHERE resource_id = ?"));
         stmt->setString(1, resourceId);
-        return stmt->executeUpdate() > 0;
+        const auto res = stmt->executeUpdate();
+        
+        return res > 0;
     } catch (sql::SQLException& e) {
         std::cerr << "SQL error in remove: " << e.what() << std::endl;
         return false;
@@ -266,6 +281,7 @@ std::vector<ResourceMeta> ResourceMetaDao::selectZeroRefDeleted() const {
         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
             "SELECT * FROM resource_meta WHERE reference_count = 0 AND status = 2"));
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             results.push_back(ResourceMeta::fromResultListSet(res));
         }
@@ -291,6 +307,7 @@ std::vector<ResourceMeta> ResourceMetaDao::selectPotentiallyOrphan() const {
         const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(
             "SELECT * FROM resource_meta WHERE reference_count > 0 AND status = 0"));
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             results.push_back(ResourceMeta::fromResultListSet(res));
         }
@@ -318,6 +335,7 @@ std::vector<ResourceMeta> ResourceMetaDao::selectStaleUploading(const int minute
             "AND create_time < DATE_SUB(NOW(), INTERVAL ? MINUTE)"));
         stmt->setInt(1, minutes);
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             results.push_back(ResourceMeta::fromResultListSet(res));
         }

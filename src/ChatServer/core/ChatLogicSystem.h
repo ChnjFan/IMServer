@@ -9,7 +9,8 @@
 #include <atomic>
 #include <functional>
 #include <string>
-#include <queue>
+#include <chrono>
+#include <boost/lockfree/queue.hpp>
 
 #include <json/json.h>
 
@@ -109,9 +110,20 @@ private:
 
     std::string selfServerName_;
 
-    std::queue<std::shared_ptr<LogicNode>> msgQueue_;
+    // 无锁队列：IO 线程 push、worker 线程 pop 都不需要抢锁
+    // 存储堆分配的 shared_ptr 的原始指针（原始指针 trivially destructible）
+    // 堆分配的 shared_ptr 保证对象在队列中始终存活
+    boost::lockfree::queue<std::shared_ptr<LogicNode>*> msgQueue_;
+    // mutex + cond_ 仅用于 worker 线程在无消息时休眠（避免空转 CPU）
     std::mutex mutex_;
     std::condition_variable cond_;
+
+    // 性能统计
+    mutable std::mutex stats_mutex_;
+    uint64_t total_queue_wait_us_ = 0;   // 消息在队列中等待的总时间
+    uint64_t total_process_us_ = 0;      // 业务处理的总时间
+    uint64_t total_messages_ = 0;        // 处理的消息总数
+    std::chrono::steady_clock::time_point last_report_time_;
 
     ThreadPool workerPool_;
 

@@ -126,7 +126,7 @@ ServerInfo StatusServiceImpl::getChatServerInfo() {
     // 同时对在线服务计数读写需要加分布式锁
     auto minServer = chatServers_.begin()->second;
     {
-        DistLockGuard lockServer(DIST_LOCK_PREFIX + minServer.name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+        // DistLockGuard lockServer(DIST_LOCK_PREFIX + minServer.name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
         if (const auto countStr = RedisMgr::getInstance()->hGet(LOGIN_COUNT, minServer.name); countStr.empty()) {
             // 没有找到服务器可能没有开
             minServer.connCount = INT_MAX;
@@ -141,7 +141,7 @@ ServerInfo StatusServiceImpl::getChatServerInfo() {
             continue;
         }
 
-        DistLockGuard lockServer(DIST_LOCK_PREFIX + name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+        // DistLockGuard lockServer(DIST_LOCK_PREFIX + name, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
         if (const auto count = RedisMgr::getInstance()->hGet(LOGIN_COUNT, name); count.empty()) {
             server.connCount = INT_MAX;
         }

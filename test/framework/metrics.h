@@ -22,7 +22,7 @@ public:
 
 private:
     std::vector<int64_t> samples_;
-    std::mutex mtx_;
+    mutable std::mutex mtx_;
     uint64_t count_ = 0;
     int64_t min_ = INT64_MAX;
     int64_t max_ = 0;

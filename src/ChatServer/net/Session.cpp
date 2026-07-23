@@ -79,8 +79,8 @@ void Session::asyncSend(const char *msg, std::uint16_t size, std::uint16_t msgId
 void Session::updateState(const SessionState state) const {
     const auto serverName = ConfigMgr::getInstance().getValue("ChatServer", "Name");
     // 多个服务器可能同时修改在线状态和服务在线计数，需要加分布式锁
-    DistLockGuard lockUser(DIST_LOCK_PREFIX + std::to_string(uid_), DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
-    DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+    // DistLockGuard lockUser(DIST_LOCK_PREFIX + std::to_string(uid_), DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+    // DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
 
     if (state == SessionState::ONLINE) {
         // 设置用户登录地址服务名，注意要提前设置好 uid，session 在客户端 TCP 建链后才收到 uid
@@ -177,6 +177,7 @@ void Session::asyncReadBody(std::uint16_t size) {
 
         // 处理接收数据
         const auto logicNode = std::make_shared<LogicNode>(self, recvNode_);
+        logicNode->recv_time = std::chrono::steady_clock::now();
         ChatLogicSystem::getInstance()->insertMsgNode(logicNode);
 
         // 继续接收头部数据

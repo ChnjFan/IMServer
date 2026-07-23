@@ -56,7 +56,20 @@ add_executable(IMTest
     status/status_integration_test.cpp
     integration/stability_test.cpp
     perf/chat_perf_test.cpp
+    # stress tests
+    stress/stress_test_client.cpp
+    stress/stress_connection_pool.cpp
+    stress/stress_metrics.cpp
+    stress/stress_fixture.cpp
+    stress/scenario_burst.cpp
+    stress/scenario_ramp.cpp
+    stress/scenario_sustained.cpp
+    stress/scenario_mixed.cpp
+    stress/scenario_throughput.cpp
+    stress/scenario_mixed_throughput.cpp
+    stress/report_output.cpp
 )
+target_include_directories(IMTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stress)
 target_link_libraries(IMTest
     PRIVATE test_framework
     PRIVATE GTest::gtest_main

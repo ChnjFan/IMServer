@@ -95,10 +95,10 @@ void MysqlPool::close() {
 
 void MysqlPool::checkConnection() {
     std::lock_guard<std::mutex> guard(mutex_);
-    auto poolSize = connections_.size();
+    const auto poolSize = connections_.size();
     const auto curTime = std::chrono::system_clock::now().time_since_epoch();
     const long long timeStamp = std::chrono::duration_cast<std::chrono::seconds>(curTime).count();
-    for (int i = 0; i < poolSize_; i++) {
+    for (int i = 0; i < poolSize; i++) {
         auto conn = std::move(connections_.front());
         connections_.pop();
         Defer defer([this, &conn]() {

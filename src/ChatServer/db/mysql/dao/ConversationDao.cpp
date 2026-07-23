@@ -43,6 +43,7 @@ bool ConversationDao::createConversation(const ConversationInfo &info, std::stri
         stmt->setInt(3, info.friendId);
 
         stmt->execute();
+        
 
         const std::unique_ptr<sql::Statement> stmtResult(conn->conn_->createStatement());
         if (const std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
@@ -77,13 +78,15 @@ bool ConversationDao::createMessage(const MessageInfo &info, int& result) const 
         stmt->setString(7, info.content.value());
 
         stmt->execute();
-
+        
         const std::unique_ptr<sql::Statement> stmtResult(conn->conn_->createStatement());
         if (const std::unique_ptr<sql::ResultSet> res(stmtResult->executeQuery("SELECT @result AS result"));
                 res->next()) {
             result = res->getInt("result");
+            stmtResult->close();
             return true;
         }
+        stmtResult->close();
         return false;
     } catch (sql::SQLException &e) {
         std::cout << "createMessage SQLException: " << e.what() << std::endl;
@@ -106,8 +109,10 @@ bool ConversationDao::updateMessageStatus(const int id, const MessageStatus stat
         stmt->setInt(1, static_cast<int>(status));
         stmt->setInt(2, id);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
+            
             return false;
         }
+        
         return true;
     } catch (sql::SQLException& e) {
         std::cout << "updateMessageStatus SQLException: " << e.what() << std::endl;
@@ -137,6 +142,7 @@ std::vector<ConversationInfo> ConversationDao::selectConversationList(const int 
         stmt->setString(2, sinceTime);
         stmt->setInt(3, 50);
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             result.push_back(ConversationInfo::fromConversationListSearch(res));
         }
@@ -148,7 +154,7 @@ std::vector<ConversationInfo> ConversationDao::selectConversationList(const int 
 }
 
 std::vector<MessageInfo> ConversationDao::selectMessageList(const std::string &convId, const int since_msg_id,
-                                                            const int limit) {
+                                                            const int limit) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return {};
@@ -168,6 +174,7 @@ std::vector<MessageInfo> ConversationDao::selectMessageList(const std::string &c
         stmt->setInt(2, since_msg_id);
         stmt->setInt(3, limit);
         const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+        
         while (res->next()) {
             result.push_back(MessageInfo::fromMessageListSearch(res));
         }
@@ -178,7 +185,7 @@ std::vector<MessageInfo> ConversationDao::selectMessageList(const std::string &c
     }
 }
 
-bool ConversationDao::updateConvMessagesStatus(const MessageStatusInfo &info) {
+bool ConversationDao::updateConvMessagesStatus(const MessageStatusInfo &info) const {
     auto conn = pool_->getConnect();
     if (!conn) {
         return false;
@@ -202,8 +209,10 @@ bool ConversationDao::updateConvMessagesStatus(const MessageStatusInfo &info) {
         stmt->setInt(4, senderUid);
         stmt->setInt(5, info.count);
         if (const int rowAffected = stmt->executeUpdate(); rowAffected < 0) {
-            throw sql::SQLException("update status failed");
+            
+            return false;
         }
+        
 
         // 获取未读计数
         const std::unique_ptr<sql::PreparedStatement> stmt_select(conn->conn_->prepareStatement(
@@ -215,6 +224,7 @@ bool ConversationDao::updateConvMessagesStatus(const MessageStatusInfo &info) {
         if (const std::unique_ptr<sql::ResultSet> res(stmt_select->executeQuery()); res->next()) {
             unread = res->getInt("unread_count");
         }
+        stmt_select->close();
 
         unread = (unread - info.count > 0) ? unread : 0;
         // 更新自己会话的未读计数
@@ -227,6 +237,7 @@ bool ConversationDao::updateConvMessagesStatus(const MessageStatusInfo &info) {
         if (const int rowAffected = stmt_update->executeUpdate(); rowAffected < 0) {
             throw sql::SQLException("update status failed");
         }
+        stmt_update->close();
 
         conn->conn_->commit();
         return true;

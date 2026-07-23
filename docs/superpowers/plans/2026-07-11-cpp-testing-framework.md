@@ -546,7 +546,7 @@ public:
 
 private:
     std::set<int> heldUids_;
-    int seq_ = 0;
+    int userCount = 0;
     std::string gateHost_;
     uint16_t gatePort_;
 
@@ -636,7 +636,7 @@ TestAccount AccountManager::registerAccount(const std::string& email) {
 }
 
 TestAccount AccountManager::acquire(const std::string& tag) {
-    std::string email = "test_" + tag + "_" + std::to_string(++seq_) + "@test.com";
+    std::string email = "test_" + tag + "_" + std::to_string(++userCount) + "@test.com";
     TestAccount acct = registerAccount(email);
     heldUids_.insert(acct.uid);
     return acct;

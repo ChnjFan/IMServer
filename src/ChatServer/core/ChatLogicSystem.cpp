@@ -42,13 +42,15 @@ void ChatLogicSystem::setServerName(const std::string &name) {
 }
 
 void ChatLogicSystem::insertMsgNode(const std::shared_ptr<LogicNode> &msg) {
-    std::unique_lock<std::mutex> lock(mutex_);
-    msgQueue_.push(msg);
-    if (1 == msgQueue_.size()) {
-        // 空队列阻塞后通知开始处理，直到队列处理完所有消息
-        lock.unlock(); // 通知前解锁，确保其他线程能获取锁取消息
-        cond_.notify_one();
+    // 将 shared_ptr 拷贝到堆上，保证对象在队列中始终存活
+    auto* heapPtr = new std::shared_ptr<LogicNode>(msg);
+    // 无锁 push：IO 线程之间不会互相阻塞
+    while (!msgQueue_.push(heapPtr)) {
+        // 队列满（极少发生），自旋重试
+        std::this_thread::yield();
     }
+    // 唤醒一个休眠的 worker 来处理新消息
+    cond_.notify_one();
 }
 
 void ChatLogicSystem::notifyOnlineUserMsg(const int uid, const std::string &msg, MessageID msgId,
@@ -70,12 +72,14 @@ void ChatLogicSystem::notifyOnlineUserMsg(const int uid, const std::string &msg,
     return callback(toServiceName);
 }
 
-ChatLogicSystem::ChatLogicSystem() : stop_(false), workerPool_() {
+ChatLogicSystem::ChatLogicSystem()
+    : stop_(false), workerPool_(), msgQueue_(2048) {
     initHandlers();
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
         workers_.emplace_back(&ChatLogicSystem::dealMsg, this);
     }
     workerPool_.start();
+    last_report_time_ = std::chrono::steady_clock::now();
 }
 
 void ChatLogicSystem::initHandlers() {
@@ -159,30 +163,98 @@ void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler)
 }
 
 void ChatLogicSystem::dealMsg() {
-    std::shared_ptr<LogicNode> msgNode;
     while (true) {
+        std::shared_ptr<LogicNode>* heapPtr = nullptr;
+
+        // 快速路径：无锁 pop，不经过 mutex
+        if (msgQueue_.pop(heapPtr)) {
+            // 取出 shared_ptr 并释放堆包装
+            std::shared_ptr<LogicNode> msgNode = *heapPtr;
+            delete heapPtr;
+
+            msgNode->handle_start_time = std::chrono::steady_clock::now();
+
+            auto process_start = std::chrono::steady_clock::now();
+            handleMsgNode(msgNode);
+            auto process_end = std::chrono::steady_clock::now();
+
+            // 计算排队时间和处理时间
+            auto queue_wait_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                msgNode->handle_start_time - msgNode->recv_time).count();
+            auto process_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                process_end - process_start).count();
+
+            // 慢请求日志
+            if (queue_wait_us > 1000) {
+                std::cout << "[slow] queue_wait=" << queue_wait_us << "us"
+                          << " process=" << process_us << "us\n";
+            }
+
+            // 累加聚合统计
+            {
+                std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+                total_queue_wait_us_ += static_cast<uint64_t>(std::max(0LL, queue_wait_us));
+                total_process_us_ += static_cast<uint64_t>(std::max(0LL, process_us));
+                total_messages_++;
+
+                // 每 1 秒或每 10000 条打印一次聚合统计
+                auto now = std::chrono::steady_clock::now();
+                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_report_time_).count();
+                if (elapsed >= 1 || total_messages_ % 10000 == 0) {
+                    double avg_queue = total_messages_ > 0 ? static_cast<double>(total_queue_wait_us_) / total_messages_ : 0;
+                    double avg_process = total_messages_ > 0 ? static_cast<double>(total_process_us_) / total_messages_ : 0;
+                    std::cout << "[perf] server total_msg=" << total_messages_
+                              << " avg_queue_wait=" << avg_queue << "us"
+                              << " avg_process=" << avg_process << "us"
+                              << " ratio(queue:process)="
+                              << (avg_process > 0 ? avg_queue / avg_process : 0) << ":1"
+                              << std::endl;
+                    last_report_time_ = now;
+                }
+            }
+            continue;
+        }
+
+        // 慢速路径：队列空，worker 休眠等待（避免空转 CPU）
         {
             std::unique_lock<std::mutex> lock(mutex_);
-            cond_.wait(lock, [this]() {
-                if (stop_.load()) {
-                    return true;
+            // 再次检查（防止 push 在 pop 和 wait 之间到达）
+            if (msgQueue_.pop(heapPtr)) {
+                lock.unlock();
+                // 取出 shared_ptr 并释放堆包装
+                std::shared_ptr<LogicNode> msgNode = *heapPtr;
+                delete heapPtr;
+
+                msgNode->handle_start_time = std::chrono::steady_clock::now();
+                auto process_start = std::chrono::steady_clock::now();
+                handleMsgNode(msgNode);
+                auto process_end = std::chrono::steady_clock::now();
+                auto queue_wait_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                    msgNode->handle_start_time - msgNode->recv_time).count();
+                auto process_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                    process_end - process_start).count();
+                {
+                    std::lock_guard<std::mutex> stats_lock(stats_mutex_);
+                    total_queue_wait_us_ += static_cast<uint64_t>(std::max(0LL, queue_wait_us));
+                    total_process_us_ += static_cast<uint64_t>(std::max(0LL, process_us));
+                    total_messages_++;
                 }
-                return !msgQueue_.empty();
-            });
+                continue;
+            }
             if (stop_.load()) {
-                // 服务器关闭前将已经收到的消息处理完
-                while (!msgQueue_.empty()) {
-                    msgNode = msgQueue_.front();
+                // 关闭前处理剩余消息
+                while (msgQueue_.pop(heapPtr)) {
+                    std::shared_ptr<LogicNode> msgNode = *heapPtr;
+                    delete heapPtr;
                     handleMsgNode(msgNode);
-                    msgQueue_.pop();
                 }
                 break;
             }
-
-            msgNode = msgQueue_.front();
-            msgQueue_.pop();
+            // 真正空闲，休眠等待唤醒
+            cond_.wait_for(lock, std::chrono::milliseconds(1), [this]() {
+                return stop_.load();
+            });
         }
-        handleMsgNode(msgNode);
     }
 }
 

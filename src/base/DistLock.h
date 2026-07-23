@@ -19,14 +19,14 @@ private:
     std::string identifier_;
 };
 
-class DistLockGuard {
-public:
-    DistLockGuard(const std::string& name, int timeout, int acquireTimeout);
-    ~DistLockGuard();
-private:
-    std::string name_;
-    DistLock lock_;
-};
+// class DistLockGuard {
+// public:
+//     DistLockGuard(const std::string& name, int timeout, int acquireTimeout);
+//     ~DistLockGuard();
+// private:
+//     std::string name_;
+//     DistLock lock_;
+// };
 
 
 #endif //IMSERVER_DISTLOCK_H

@@ -51,8 +51,8 @@ std::atomic<bool> gStop{false};
 void startMixClients(std::shared_ptr<Metrics> metrics, int clientCount) {
     for (int i = 0; i < clientCount; ++i) {
         auto& io_context = AsioIOServicePool::getInstance()->getIOService();
-        auto client = std::make_shared<ChatTestClient>(io_context, [metrics](std::shared_ptr<ChatTestClient> client) {
-            auto start = std::chrono::steady_clock::now();
+        auto client = std::make_shared<ChatTestClient>(metrics, io_context, [](std::shared_ptr<ChatTestClient> client) {
+            client->recordMetrics();
             int action = client->messagesSent() % 10;
             if (action < 7) {
                 client->sendChatMsg(0, "perf msg");       // 70% 消息
@@ -63,41 +63,35 @@ void startMixClients(std::shared_ptr<Metrics> metrics, int clientCount) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(50));
                 loginWithRealToken(client, "perf");
             }
-            auto end = std::chrono::steady_clock::now();
-            metrics->throughput.tick();
-            metrics->latency.record(
-                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
-            metrics->errors.addSuccess();
         });
         loginWithRealToken(client, "perf");
     }
 }
 
-void startMessageClients(std::shared_ptr<Metrics> metrics, int clientCount) {
+void startMessageClients(std::vector<std::shared_ptr<ChatTestClient>>& clients,
+                        std::shared_ptr<Metrics> metrics, int clientCount) {
     for (int i = 0; i < clientCount; ++i) {
         auto& io_context = AsioIOServicePool::getInstance()->getIOService();
-        auto client = std::make_shared<ChatTestClient>(io_context, [metrics](std::shared_ptr<ChatTestClient> client) {
-            auto start = std::chrono::steady_clock::now();
+        auto client = std::make_shared<ChatTestClient>(metrics, io_context,
+             [](std::shared_ptr<ChatTestClient> client) {
+            client->recordMetrics();
             client->sendChatMsg(0, "perf");
-            auto end = std::chrono::steady_clock::now();
-            metrics->throughput.tick();
-            metrics->latency.record(
-                std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
-            metrics->errors.addSuccess();
         });
         loginWithRealToken(client, "perf");
+        clients.push_back(client);
     }
 }
 
 // 运行指定数量客户端持续 stepSec 秒，返回测量结果
-static PerfLevel runLevel(int clientCount, int stepSec, bool mixed) {
+static PerfLevel runLevel(std::vector<std::shared_ptr<ChatTestClient>>& clients, 
+                            int clientCount, int stepSec, bool mixed) {
     std::shared_ptr<Metrics> metrics = std::make_shared<Metrics>();
 
     if (mixed) {
         startMixClients(metrics, clientCount);
     }
     else {
-        startMessageClients(metrics, clientCount);
+        startMessageClients(clients, metrics, clientCount);
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(stepSec));
@@ -132,9 +126,11 @@ std::vector<PerfLevel> PerfSuite::runRampUp() {
         pool->stop();
     });
 
-    for (int n : {10, 50, 100, 200, 500, 700, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000}) {
+    std::vector<std::shared_ptr<ChatTestClient>> clients;
+
+    for (int n : {1, 10, 50, 100, 200, 300}) {
         std::cout << "[perf] ramp-up: " << n << " clients...\n";
-        results.push_back(runLevel(n, config_.stepSec, false));
+        results.push_back(runLevel(clients, n, config_.stepSec, false));
     }
 
     return results;
@@ -142,9 +138,10 @@ std::vector<PerfLevel> PerfSuite::runRampUp() {
 
 int PerfSuite::runToBreak() {
     int n = 10;
+    std::vector<std::shared_ptr<ChatTestClient>> clients;
     while (n <= 2000) {
         std::cout << "[perf] to-break: " << n << " clients...\n";
-        auto lvl = runLevel(n, config_.stepSec, false);
+        auto lvl = runLevel(clients, n, config_.stepSec, false);
         if (lvl.errorRate > 0.05) {
             return n;  // 崩溃点
         }
@@ -155,5 +152,6 @@ int PerfSuite::runToBreak() {
 
 PerfLevel PerfSuite::runMixedWorkload(int clientCount) {
     std::cout << "[perf] mixed workload: " << clientCount << " clients...\n";
-    return runLevel(clientCount, config_.stepSec, true);
+    std::vector<std::shared_ptr<ChatTestClient>> clients;
+    return runLevel(clients, clientCount, config_.stepSec, true);
 }

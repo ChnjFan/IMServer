@@ -56,13 +56,13 @@ int main()
         const std::string serverName = config["ChatServer"]["Name"];
         ChatLogicSystem::getInstance()->setServerName(serverName);
         {
-            DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+            // DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
             RedisMgr::getInstance()->hSet(LOGIN_COUNT, serverName, "0");
         }
         io_context.run();
 
         {
-            DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
+            // DistLockGuard lockServer(DIST_LOCK_PREFIX + serverName, DIST_LOCK_TIMEOUT, DIST_ACQUIRE_TIMEOUT);
             RedisMgr::getInstance()->hDel(LOGIN_COUNT, serverName);
         }
         RedisMgr::getInstance()->close();

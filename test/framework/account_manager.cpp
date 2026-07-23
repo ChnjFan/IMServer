@@ -109,12 +109,14 @@ void AccountManager::release(int uid) noexcept {
         }
 
         // 通过 MySQL 删除用户记录（RAII guard 保证连接必归还）
-        SqlConnGuard guard(TestMysqlDao::getInstance()->get());
-        if (guard) {
-            std::unique_ptr<sql::Statement> stmt(guard->conn_->createStatement());
-            stmt->execute("DELETE FROM user WHERE uid = " +
-                         std::to_string(uid));
-        }
+        // SqlConnGuard guard(TestMysqlDao::getInstance()->get());
+        // if (guard) {
+        //     std::unique_ptr<sql::Statement> stmt(guard->conn_->createStatement());
+        //     stmt->execute("DELETE FROM user");
+        //     stmt->execute("DELETE FROM user_profile");
+        //     stmt->execute("DELETE FROM user_conversation");
+        //     stmt->execute("DELETE FROM message");
+        // }
     } catch (sql::SQLException& e) {
         std::cerr << "[AccountManager] release uid=" << uid
                   << " SQL error: " << e.what() << std::endl;
