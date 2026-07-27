@@ -31,6 +31,10 @@ bool MysqlMgr::updateUserProfileInfo(const UserProfile &profile) const {
     return userDao_.updateUserProfileInfo(profile);
 }
 
+bool MysqlMgr::selectFriend(const int uid, const int friendId, FriendInfo &info) const {
+    return friendDao_.selectFriend(uid, friendId, info);
+}
+
 std::vector<FriendInfo> MysqlMgr::selectFriendList(const int uid, const std::string& sinceTime) const {
     return friendDao_.selectFriendList(uid, sinceTime);
 }
@@ -94,3 +98,8 @@ bool MysqlMgr::updateConvMessagesStatus(const MessageStatusInfo &info) {
 
 
 
+
+bool MysqlMgr::batchCreateMessages(const std::vector<std::shared_ptr<ChatMsgNode>>& nodes,
+                                   std::unordered_map<int64_t, int>& id_mapping) {
+    return convDao_.batchCreateMessages(nodes, id_mapping);
+}

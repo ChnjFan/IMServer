@@ -12,6 +12,8 @@
 #include "DistLock.h"
 #include "RedisMgr.h"
 
+#include "db/cache/FriendCache.h"
+
 ChatServer::ChatServer(net::io_context &io_context, const unsigned short port)
     : acceptor_(io_context, tcp::endpoint(tcp::v4(), port))
     , ioContext_(io_context)
@@ -77,6 +79,7 @@ void ChatServer::timerJob() {
 
             self->checkSessionHeartbeat();
             self->updateServerCount();
+
             self->timerJob();
         } catch (std::exception& e) {
             std::cout << "[ChatServer] Server timer error << " << e.what() << std::endl;

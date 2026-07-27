@@ -36,15 +36,6 @@ void ChatTestClient::recordMetrics()
     auto rtt_us = std::chrono::duration_cast<std::chrono::microseconds>(end - beginTime_).count();
     metrics_->latency.record(rtt_us);
     metrics_->errors.addSuccess();
-
-    // 测量序列化+入队的开销（asyncSend 入口到 async_write 发起）
-    if (serialize_end_time_.time_since_epoch().count() > 0) {
-        auto serialize_us = std::chrono::duration_cast<std::chrono::microseconds>(
-            serialize_end_time_ - serialize_start_time_).count();
-        if (serialize_us > 500) {
-            std::cout << "[slow] serialize+queue=" << serialize_us << "us rtt=" << rtt_us << "us\n";
-        }
-    }
 }
 
 bool ChatTestClient::sendChatMsg(int toUid, const std::string& content) {

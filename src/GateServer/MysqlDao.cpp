@@ -139,3 +139,30 @@ bool MysqlDao::checkPasswd(const std::string &email, const std::string &passwd, 
         return false;
     }
 }
+
+int MysqlDao::getUid(const std::string &email) const {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return -1;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+    try {
+        const std::unique_ptr<sql::PreparedStatement> stmt(
+            conn->conn_->prepareStatement("SELECT uid FROM user WHERE email = ?"));
+        stmt->setString(1, email);
+        const std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+        int uid = -1;
+        while (res->next()) {
+            uid = res->getInt("uid");
+            break;
+        }
+        return uid;
+    } catch (sql::SQLException &e) {
+        std::cout << "check passwd SQLException: " << e.what() << std::endl;
+        std::cout << "SQL error code: " << e.getErrorCode() << std::endl;
+        std::cout << "SQL state: " << e.getSQLState() << std::endl;
+        return -1;
+    }
+}

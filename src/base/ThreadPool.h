@@ -8,6 +8,7 @@
 #include <memory>
 #include <queue>
 #include <thread>
+#include <mutex>
 
 class Task {
 public:

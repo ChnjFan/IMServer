@@ -30,6 +30,36 @@ FriendInfoDao::~FriendInfoDao() {
     pool_->close();
 }
 
+bool FriendInfoDao::selectFriend(const int uid, const int friendId, FriendInfo &info) const {
+    auto conn = pool_->getConnect();
+    if (!conn) {
+        return false;
+    }
+    Defer defer([this, &conn]() {
+        pool_->returnConnect(std::move(conn));
+    });
+
+    try {
+        std::vector<FriendInfo> result;
+        const std::string sql = "SELECT " + std::string(FRIEND_LIST_INFO_PARTS)
+                                + "FROM friend_relation JOIN user ON friend_relation.friend_id = user.uid "
+                                "WHERE friend_relation.uid = ? AND friend_relation.friend_id = ?";
+        const std::unique_ptr<sql::PreparedStatement> stmt(conn->conn_->prepareStatement(sql));
+        stmt->setInt(1, uid);
+        stmt->setInt(2, friendId);
+        const std::shared_ptr<sql::ResultSet> res(stmt->executeQuery());
+
+        while (res->next()) {
+            info.fromFriendSearch(res);
+            return true;
+        }
+        return false;
+    } catch (sql::SQLException& e) {
+        std::cout << "get user SQLException: " << e.what() << std::endl;
+        return false;
+    }
+}
+
 std::vector<FriendInfo> FriendInfoDao::selectFriendList(const int uid, const std::string& sinceTime) const {
     auto conn = pool_->getConnect();
     if (!conn) {

@@ -20,6 +20,8 @@
 #include "db/mysql/dao/FriendInfoDao.h"
 #include "db/mysql/dao/ConversationDao.h"
 
+struct ChatMsgNode;
+
 class MysqlMgr : public Singleton<MysqlMgr> {
 public:
     ~MysqlMgr() = default;
@@ -35,6 +37,7 @@ public:
     bool updateUserProfileInfo(const UserProfile& profile) const;
 
     // 好友信息接口
+    bool selectFriend(int uid, int friendId, FriendInfo& info) const;
     [[nodiscard]] std::vector<FriendInfo> selectFriendList(int uid, const std::string& sinceTime) const;
     bool isFriendExist(int uid, int friendId);
     // 创建好友关系
@@ -59,6 +62,10 @@ public:
     std::vector<MessageInfo> selectMessageList(const std::string& convId, int sinceMsgId, int limit);
 
     bool updateConvMessagesStatus(const MessageStatusInfo & info);
+
+    // 批量异步入库 (聊天消息)
+    bool batchCreateMessages(const std::vector<std::shared_ptr<ChatMsgNode>>& nodes,
+                             std::unordered_map<int64_t, int>& id_mapping);
 
 private:
     friend class Singleton<MysqlMgr>;

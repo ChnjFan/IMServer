@@ -8,6 +8,7 @@
 #include "MysqlPool.h"
 #include "common/model/ConversationInfo.h"
 #include "common/model/MessageInfo.h"
+#include "core/ChatMsgNode.h"
 
 class ConversationDao {
 public:
@@ -25,6 +26,14 @@ public:
     std::vector<MessageInfo> selectMessageList(const std::string & convId, int since_msg_id, int limit) const;
 
     bool updateConvMessagesStatus(const MessageStatusInfo & info) const;
+
+
+    // ── 批量异步入库 ─────────────────────────────────────
+    /**
+     * @brief 批量插入聊天消息 + 更新会话元数据 + 更新用户会话未读计数。
+     */
+    bool batchCreateMessages(const std::vector<std::shared_ptr<ChatMsgNode>>& nodes,
+                             std::unordered_map<int64_t, int>& id_mapping);
 
 private:
     std::unique_ptr<MysqlPool> pool_;

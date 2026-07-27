@@ -35,6 +35,7 @@ struct FriendInfo {
     "is_star", "is_hide", "alias", "create_time", "update_time"};
 
     static FriendInfo fromFriendListSearch(const std::shared_ptr<sql::ResultSet>& result);
+    void fromFriendSearch(const std::shared_ptr<sql::ResultSet>& result);
 
     void fromJson(Json::Value& value);
     void toJson(Json::Value& value) const;
@@ -59,6 +60,18 @@ inline FriendInfo FriendInfo::fromFriendListSearch(const std::shared_ptr<sql::Re
     info.createTime = result->getString("create_time");
     info.updateTime = result->getString("update_time");
     return info;
+}
+
+inline void FriendInfo::fromFriendSearch(const std::shared_ptr<sql::ResultSet> &result) {
+    friendId = std::stoi(result->getString("friend_id"));
+    status = static_cast<int8_t>(result->getInt("status"));
+    isStar = static_cast<int8_t>(result->getInt("is_star"));
+    alias = result->getString("alias");
+    name = result->getString("name");
+    email = result->getString("email");
+    avatarUrl = result->getString("avatar_url");
+    createTime = result->getString("create_time");
+    updateTime = result->getString("update_time");
 }
 
 inline void FriendInfo::fromJson(Json::Value &value) {

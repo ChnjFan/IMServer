@@ -112,6 +112,7 @@ enum class MessageID : uint16_t {
     ID_CHAT_UPLOAD_FILE_RSP = 3005, // 上传文件响应
     ID_CHAT_DOWNLOAD_FILE_REQ = 3006, // 下载文件请求
     ID_CHAT_DOWNLOAD_FILE_RSP = 3007, // 下载文件响应
+    ID_NOTIFY_MSG_RESULT = 3008, // 异步写入成功后 serverId 映射推送
 
     ID_CHAT_CONVERSATION_REQ = 4001, // 会话创建请求
     ID_CHAT_CONVERSATION_RSP = 4002, // 会话创建响应

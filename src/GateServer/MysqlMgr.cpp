@@ -23,3 +23,7 @@ bool MysqlMgr::checkPasswd(const std::string &email, const std::string &passwd, 
     return db_.checkPasswd(email, passwd, userInfo);
 }
 
+int MysqlMgr::getUid(const std::string &email) {
+    return db_.getUid(email);
+}
+

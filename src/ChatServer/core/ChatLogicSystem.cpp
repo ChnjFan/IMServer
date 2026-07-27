@@ -12,20 +12,117 @@
 #include "StatusGrpcClient.h"
 #include "Session.h"
 #include "RedisMgr.h"
-#include "ConfigMgr.h"
 #include "UserMgr.h"
 #include "ChatGrpcClient.h"
-#include "FriendCache.h"
 #include "LogicWorker.h"
+#include "BatchWriter.h"
 
 #include "db/mysql/MysqlMgr.h"
-#include "db/redis/UserInfoCache.h"
+#include "db/cache/UserInfoCache.h"
+#include "db/cache/FriendCache.h"
 #include "common/model/ConversationInfo.h"
 #include "common/model/MessageInfo.h"
 
+// ──────────────────────────────────────────────────────────────
+// PerfStats
+// ──────────────────────────────────────────────────────────────
+
+void PerfStats::recordMessage(const uint64_t queue_wait_us, const uint64_t process_us, const uint16_t msgId) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    total_queue_wait_us_ += queue_wait_us;
+    total_process_us_ += process_us;
+    total_messages_++;
+    handler_process_us_[msgId] += process_us;
+    handler_count_[msgId]++;
+}
+
+void PerfStats::recordIdle(const uint64_t idle_us) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    total_idle_us_ += idle_us;
+    total_idle_count_++;
+}
+
+double PerfStats::printStats(const std::chrono::steady_clock::time_point& now) {
+    // 快照数据，尽快释放锁，避免阻塞 worker
+    uint64_t total_messages, total_queue_wait, total_process, total_idle, total_idle_count;
+    std::unordered_map<uint16_t, uint64_t> handler_process_us, handler_count;
+    double elapsed_sec;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        total_messages = total_messages_;
+        total_queue_wait = total_queue_wait_us_;
+        total_process = total_process_us_;
+        total_idle = total_idle_us_;
+        total_idle_count = total_idle_count_;
+        handler_process_us = handler_process_us_;
+        handler_count = handler_count_;
+
+        elapsed_sec = std::chrono::duration<double>(now - last_report_time_).count();
+        last_report_time_ = now;
+
+        // 重置周期值
+        handler_process_us_.clear();
+        handler_count_.clear();
+        total_idle_count_ = 0;
+    }
+
+    double avg_queue = total_messages > 0 ? static_cast<double>(total_queue_wait) / total_messages : 0;
+    double avg_process = total_messages > 0 ? static_cast<double>(total_process) / total_messages : 0;
+    double avg_idle = total_messages > 0 ? static_cast<double>(total_idle) / total_messages : 0;
+    double idle_ratio = total_messages > 0 ? static_cast<double>(total_idle_count) / total_messages * 100.0 : 0;
+
+    // worker 利用率 = process / (process + idle)
+    double utilization = (total_process + total_idle) > 0
+        ? static_cast<double>(total_process) / (total_process + total_idle) * 100.0 : 0;
+
+    std::cout << "[perf] total_msg=" << total_messages
+              << " avg_queue_wait=" << avg_queue << "us"
+              << " avg_process=" << avg_process << "us"
+              << " avg_idle=" << avg_idle << "us"
+              << " util=" << std::fixed << std::setprecision(1) << utilization << "%"
+              << " idle_ratio=" << std::setprecision(1) << idle_ratio << "%"
+              << " ratio(queue:process)="
+              << (avg_process > 0 ? avg_queue / avg_process : 0) << ":1"
+              << std::endl;
+
+    // per-handler  breakdown (按总耗时降序)
+    std::vector<std::pair<uint16_t, uint64_t>> handler_vec(handler_process_us.begin(), handler_process_us.end());
+    std::sort(handler_vec.begin(), handler_vec.end(),
+              [](const auto& a, const auto& b) { return a.second > b.second; });
+
+    std::cout << "[perf_detail] ";
+    for (const auto& [msgId, total_us] : handler_vec) {
+        uint64_t count = handler_count[msgId];
+        double avg_us = count > 0 ? static_cast<double>(total_us) / count : 0;
+        std::cout << "msgId=" << msgId
+                  << "{count=" << count
+                  << " avg=" << std::fixed << std::setprecision(0) << avg_us << "us"
+                  << " total=" << total_us / 1000 << "ms} ";
+    }
+    std::cout << std::endl;
+
+    return elapsed_sec;
+}
+
+uint64_t PerfStats::totalMessages() const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return total_messages_;
+}
+
+double PerfStats::elapsedSinceReport(const std::chrono::steady_clock::time_point& now) const {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return std::chrono::duration<double>(now - last_report_time_).count();
+}
+
+// ──────────────────────────────────────────────────────────────
+// ChatLogicSystem
+// ──────────────────────────────────────────────────────────────
+
 ChatLogicSystem::~ChatLogicSystem() {
     close();
-    cond_.notify_all();
+    for (auto& shard : shards_) {
+        shard->cond.notify_all();
+    }
     for (auto& worker : workers_) {
         if (worker.joinable()) {
             worker.join();
@@ -35,6 +132,9 @@ ChatLogicSystem::~ChatLogicSystem() {
 
 void ChatLogicSystem::close() {
     stop_.store(true);
+    if (batch_writer_) {
+        batch_writer_->stop();
+    }
 }
 
 void ChatLogicSystem::setServerName(const std::string &name) {
@@ -42,15 +142,24 @@ void ChatLogicSystem::setServerName(const std::string &name) {
 }
 
 void ChatLogicSystem::insertMsgNode(const std::shared_ptr<LogicNode> &msg) {
+    // 根据 Session ID 哈希选择目标 shard，保证同一 Session 的消息有序
+    size_t idx = getShardIndex(msg);
+    auto& shard = *shards_[idx];
+
     // 将 shared_ptr 拷贝到堆上，保证对象在队列中始终存活
     auto* heapPtr = new std::shared_ptr<LogicNode>(msg);
-    // 无锁 push：IO 线程之间不会互相阻塞
-    while (!msgQueue_.push(heapPtr)) {
+    // 无锁 push：IO 线程分散到不同 shard，大幅减少 CAS 争用
+    while (!shard.queue.push(heapPtr)) {
         // 队列满（极少发生），自旋重试
         std::this_thread::yield();
     }
-    // 唤醒一个休眠的 worker 来处理新消息
-    cond_.notify_one();
+    // 唤醒目标 shard 的 worker 来处理新消息
+    shard.cond.notify_one();
+}
+
+size_t ChatLogicSystem::getShardIndex(const std::shared_ptr<LogicNode> &msg) const {
+    size_t hash = std::hash<std::string>{}(msg->session_->getSessionId());
+    return hash % shards_.size();
 }
 
 void ChatLogicSystem::notifyOnlineUserMsg(const int uid, const std::string &msg, MessageID msgId,
@@ -73,13 +182,38 @@ void ChatLogicSystem::notifyOnlineUserMsg(const int uid, const std::string &msg,
 }
 
 ChatLogicSystem::ChatLogicSystem()
-    : stop_(false), workerPool_(), msgQueue_(2048) {
+    : stop_(false), workerPool_() {
     initHandlers();
-    for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
-        workers_.emplace_back(&ChatLogicSystem::dealMsg, this);
+    // 创建 N 个 shard，每个 shard 拥有独立的 lockfree 队列和 condvar
+    int numWorkers = getIoWorkerNum();
+    shards_.reserve(numWorkers);
+    for (int i = 0; i < numWorkers; ++i) {
+        shards_.push_back(std::make_unique<WorkerShard>());
+    }
+    // 每个 worker 线程绑定一个 shard，消除多 worker 争用单一队列的 CAS 瓶颈
+    for (int i = 0; i < numWorkers; ++i) {
+        workers_.emplace_back(&ChatLogicSystem::dealMsg, this, i);
     }
     workerPool_.start();
-    last_report_time_ = std::chrono::steady_clock::now();
+
+    // 初始化批量写入管理器
+    {
+        size_t numShards = shards_.size();
+        size_t numWriters = std::max<size_t>(1, numShards / 4);
+        batch_writer_ = std::make_unique<BatchWriter>(numShards, numWriters);
+        batch_writer_->start();
+    }
+
+    // 触发一次打印以初始化 stats_ 的内部时间戳（避免首条消息 elapsed 极大）
+    stats_.printStats(std::chrono::steady_clock::now());
+}
+
+int ChatLogicSystem::getIoWorkerNum() {
+    constexpr int MIN_WORKERS = 4;
+    constexpr int MAX_WORKERS = 256;
+    const auto core = std::thread::hardware_concurrency();
+    const int num = core * 3 / 2;
+    return num < MIN_WORKERS ? MIN_WORKERS : (num > MAX_WORKERS ? MAX_WORKERS : num);
 }
 
 void ChatLogicSystem::initHandlers() {
@@ -162,12 +296,14 @@ void ChatLogicSystem::registerHandler(uint16_t msgId, const msgHandler& handler)
     handlers_.insert({msgId, handler});
 }
 
-void ChatLogicSystem::dealMsg() {
+void ChatLogicSystem::dealMsg(size_t shard_idx) {
+    auto& shard = *shards_[shard_idx];
+
     while (true) {
         std::shared_ptr<LogicNode>* heapPtr = nullptr;
 
-        // 快速路径：无锁 pop，不经过 mutex
-        if (msgQueue_.pop(heapPtr)) {
+        // 快速路径：无锁 pop，只操作本 shard 的队列
+        if (shard.queue.pop(heapPtr)) {
             // 取出 shared_ptr 并释放堆包装
             std::shared_ptr<LogicNode> msgNode = *heapPtr;
             delete heapPtr;
@@ -184,42 +320,26 @@ void ChatLogicSystem::dealMsg() {
             auto process_us = std::chrono::duration_cast<std::chrono::microseconds>(
                 process_end - process_start).count();
 
-            // 慢请求日志
-            if (queue_wait_us > 1000) {
-                std::cout << "[slow] queue_wait=" << queue_wait_us << "us"
-                          << " process=" << process_us << "us\n";
-            }
-
             // 累加聚合统计
-            {
-                std::lock_guard<std::mutex> stats_lock(stats_mutex_);
-                total_queue_wait_us_ += static_cast<uint64_t>(std::max(0LL, queue_wait_us));
-                total_process_us_ += static_cast<uint64_t>(std::max(0LL, process_us));
-                total_messages_++;
+            stats_.recordMessage(
+                static_cast<uint64_t>(std::max(0LL, queue_wait_us)),
+                static_cast<uint64_t>(std::max(0LL, process_us)),
+                msgNode->node_->msgId_);
 
-                // 每 1 秒或每 10000 条打印一次聚合统计
-                auto now = std::chrono::steady_clock::now();
-                auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - last_report_time_).count();
-                if (elapsed >= 1 || total_messages_ % 10000 == 0) {
-                    double avg_queue = total_messages_ > 0 ? static_cast<double>(total_queue_wait_us_) / total_messages_ : 0;
-                    double avg_process = total_messages_ > 0 ? static_cast<double>(total_process_us_) / total_messages_ : 0;
-                    std::cout << "[perf] server total_msg=" << total_messages_
-                              << " avg_queue_wait=" << avg_queue << "us"
-                              << " avg_process=" << avg_process << "us"
-                              << " ratio(queue:process)="
-                              << (avg_process > 0 ? avg_queue / avg_process : 0) << ":1"
-                              << std::endl;
-                    last_report_time_ = now;
-                }
+            // 每 1 秒或每 10000 条打印一次聚合统计
+            auto now = std::chrono::steady_clock::now();
+            if (stats_.elapsedSinceReport(now) >= 1.0 || stats_.totalMessages() % 10000 == 0) {
+                stats_.printStats(now);
+                if (batch_writer_) batch_writer_->printMetrics();
             }
             continue;
         }
 
         // 慢速路径：队列空，worker 休眠等待（避免空转 CPU）
         {
-            std::unique_lock<std::mutex> lock(mutex_);
+            std::unique_lock<std::mutex> lock(shard.mutex);
             // 再次检查（防止 push 在 pop 和 wait 之间到达）
-            if (msgQueue_.pop(heapPtr)) {
+            if (shard.queue.pop(heapPtr)) {
                 lock.unlock();
                 // 取出 shared_ptr 并释放堆包装
                 std::shared_ptr<LogicNode> msgNode = *heapPtr;
@@ -233,27 +353,31 @@ void ChatLogicSystem::dealMsg() {
                     msgNode->handle_start_time - msgNode->recv_time).count();
                 auto process_us = std::chrono::duration_cast<std::chrono::microseconds>(
                     process_end - process_start).count();
-                {
-                    std::lock_guard<std::mutex> stats_lock(stats_mutex_);
-                    total_queue_wait_us_ += static_cast<uint64_t>(std::max(0LL, queue_wait_us));
-                    total_process_us_ += static_cast<uint64_t>(std::max(0LL, process_us));
-                    total_messages_++;
-                }
+                stats_.recordMessage(
+                    static_cast<uint64_t>(std::max(0LL, queue_wait_us)),
+                    static_cast<uint64_t>(std::max(0LL, process_us)),
+                    msgNode->node_->msgId_);
                 continue;
             }
             if (stop_.load()) {
-                // 关闭前处理剩余消息
-                while (msgQueue_.pop(heapPtr)) {
+                // 关闭前处理本 shard 剩余消息
+                while (shard.queue.pop(heapPtr)) {
                     std::shared_ptr<LogicNode> msgNode = *heapPtr;
                     delete heapPtr;
                     handleMsgNode(msgNode);
                 }
                 break;
             }
-            // 真正空闲，休眠等待唤醒
-            cond_.wait_for(lock, std::chrono::milliseconds(1), [this]() {
+            // 真正空闲，休眠等待唤醒（只等待本 shard 的 condvar）
+            // 记录开始等待的时间，用于统计 idle 时长
+            auto idle_start = std::chrono::steady_clock::now();
+            shard.cond.wait_for(lock, std::chrono::milliseconds(1), [this]() {
                 return stop_.load();
             });
+            auto idle_end = std::chrono::steady_clock::now();
+            auto idle_us = std::chrono::duration_cast<std::chrono::microseconds>(
+                idle_end - idle_start).count();
+            stats_.recordIdle(static_cast<uint64_t>(std::max(0LL, idle_us)));
         }
     }
 }
@@ -339,7 +463,7 @@ void ChatLogicSystem::loginHandle(const std::shared_ptr<Session> &session, const
 
 int ChatLogicSystem::getApplyFriendCount(const int uid) {
     int count = 0;
-    if (FriendCache::getFriendApplyCount(uid, count)) {
+    if (FriendCache::getInstance()->getFriendApplyCount(uid, count)) {
         return count;
     }
 
@@ -347,7 +471,7 @@ int ChatLogicSystem::getApplyFriendCount(const int uid) {
         return 0;
     }
 
-    if (!FriendCache::updateFriendApplyCount(uid, count)) {
+    if (!FriendCache::getInstance()->updateFriendApplyCount(uid, count)) {
         std::cout << "Friend apply count error" << std::endl;
     }
 
@@ -446,7 +570,7 @@ bool ChatLogicSystem::searchUserFullInfo(UserBaseInfo &baseInfo, UserProfile& pr
 }
 
 bool ChatLogicSystem::isFriend(const int uid, const int friendId) {
-    if (FriendCache::isFriend(uid, friendId)) {
+    if (FriendCache::getInstance()->isFriend(uid, friendId)) {
         return true;
     }
 
@@ -456,7 +580,7 @@ bool ChatLogicSystem::isFriend(const int uid, const int friendId) {
     }
 
     // 更新好友关系集合缓存
-    if (!FriendCache::updateFriendSet(uid, friendId)) {
+    if (!FriendCache::getInstance()->updateFriendSet(uid, friendId)) {
         std::cout << "update friend relation failed" << std::endl;
     }
 
@@ -600,42 +724,28 @@ void ChatLogicSystem::searchFriendApplyListHandle(const std::shared_ptr<Session>
 
 }
 
-bool ChatLogicSystem::checkFriendRelation(const int uid, const int friendId) {
-    if (FriendCache::isFriend(uid, friendId)) {
-        return true;
-    }
-
-    if (!MysqlMgr::getInstance()->isFriendExist(uid, friendId)) {
-        return false;
-    }
-
-    // 更新好友关系
-    FriendCache::updateFriendSet(uid, friendId);
-
-    return true;
-}
-
 bool ChatLogicSystem::checkFriendApplyInvalid(const int uid, const int friendId) {
     // 检查是否是好友
-    if (checkFriendRelation(uid, friendId)) {
+    if (FriendCache::getInstance()->isFriend(uid, friendId)) {
         return true;
     }
 
-    // 检查对方已经是好友，直接恢复好友关系，恢复失败走普通好友申请
-    if (checkFriendRelation(friendId, uid)) {
-        FriendInfo info;
-        info.friendId = friendId;
-        info.status = static_cast<int8_t>(FriendStatus::FRIEND_PRESENT);
-        if (!MysqlMgr::getInstance()->updateFriendRelation(uid, info)) {
-            return false;
-        }
-        return true;
-    }
-
-    // 检查是否已经存在提交记录
-    if (MysqlMgr::getInstance()->checkFriendApplyExist(uid, friendId)) {
-        return true;
-    }
+    // todo 逻辑检查应该放在 SQL 中，入库时查看是否已经有记录
+    // // 检查对方已经是好友，直接恢复好友关系，恢复失败走普通好友申请
+    // if (checkFriendRelation(friendId, uid)) {
+    //     FriendInfo info;
+    //     info.friendId = friendId;
+    //     info.status = static_cast<int8_t>(FriendStatus::FRIEND_PRESENT);
+    //     if (!MysqlMgr::getInstance()->updateFriendRelation(uid, info)) {
+    //         return false;
+    //     }
+    //     return true;
+    // }
+    //
+    // // 检查是否已经存在提交记录
+    // if (MysqlMgr::getInstance()->checkFriendApplyExist(uid, friendId)) {
+    //     return true;
+    // }
 
     return false;
 }
@@ -671,7 +781,7 @@ void ChatLogicSystem::friendApplyHandle(const std::shared_ptr<Session> &session,
         root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
         return;
     }
-    FriendCache::clearFriendApplyCount(to);
+    FriendCache::getInstance()->clearFriendApplyCount(to);
 
     // 通知在线用户
     notifyOnlineUserMsg(to, data, MessageID::ID_NOTIFY_FRIEND_APPLY,
@@ -717,7 +827,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
         // 已拒绝好友，直接更新数据库删除缓存
         MysqlMgr::getInstance()->updateFriendApply(applyInfo.uid, applyInfo.friendId,
             static_cast<int>(FriendApplyStatus::REJECT));
-        FriendCache::clearFriendApplyCount(applyInfo.friendId);
+        FriendCache::getInstance()->clearFriendApplyCount(applyInfo.friendId);
         return;
     }
 
@@ -727,7 +837,7 @@ void ChatLogicSystem::friendAuthHandle(const std::shared_ptr<Session> &session, 
         return;
     }
     // 清除被申请人的未读计数
-    FriendCache::clearFriendApplyCount(applyInfo.friendId);
+    FriendCache::getInstance()->clearFriendApplyCount(applyInfo.friendId);
 
     // 推送好友请求信息
     notifyOnlineUserMsg(applyInfo.uid, data, MessageID::ID_NOTIFY_FRIEND_AUTH,
@@ -765,7 +875,7 @@ void ChatLogicSystem::updateFriendHandle(const std::shared_ptr<Session> &session
 
     if (info.status == static_cast<int8_t>(FriendStatus::FRIEND_DELETED)) {
         // 单方面删除好友关系
-        FriendCache::deleteFriendSet(uid, info.friendId);
+        FriendCache::getInstance()->deleteFriendSet(uid, info.friendId);
     }
 }
 
@@ -937,41 +1047,42 @@ void ChatLogicSystem::conversationListFetchHandle(const std::shared_ptr<Session>
 void ChatLogicSystem::chatMsgHandle(const std::shared_ptr<Session> &session, uint16_t msgId, const std::string &data) {
     Json::Value root;
     Json::Value srcRoot;
-    Defer defer([&root, &srcRoot, session, this]() {
-        const std::string jsonStr = root.toStyledString();
-        session->asyncSend(jsonStr, static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
-    });
     if (Json::Reader reader; !reader.parse(data, srcRoot)) {
-        std::cout << "Failed to parse JSON data" << std::endl;
-        root["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        Json::Value err;
+        err["error"] = static_cast<int32_t>(ErrorCodes::ERROR_REQUEST_JSON);
+        session->asyncSend(err.toStyledString(), static_cast<uint16_t>(MessageID::ID_CHAT_MSG_RSP));
         return;
     }
-    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
-    root["conv_id"] = srcRoot["conv_id"];
+    Defer defer([&root, &session]() {
+        session->asyncSend(root.toStyledString(), static_cast<uint16_t>(MessageID::ID_CONV_LIST_RSP));
+    });
 
+    // 解析消息
     MessageInfo info;
     info.fromJson(srcRoot);
     info.status = static_cast<uint8_t>(MessageStatus::SENDING);
-    int serverId = -1;
-    if (!MysqlMgr::getInstance()->createMessage(info, serverId)) {
-        root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
-        return;
-    }
-    root["server_id"] = serverId;
 
+    // 推入批量写入队列
+    size_t shard_idx = std::hash<std::string>{}(session->getSessionId()) % shards_.size();
+    auto node = std::make_shared<ChatMsgNode>(info, session);
+    batch_writer_->bufferAt(shard_idx)->push(std::move(node));
+
+    // 立即返回成功确认 (不含 serverId)
+    root["error"] = static_cast<int32_t>(ErrorCodes::SUCCESS);
+    root["msg_id"] = info.msgId;
+    root["conv_id"] = info.convId.value_or("");
+
+    // 通知接收方 (不依赖 serverId)
     notifyOnlineUserMsg(info.toUid, data, MessageID::ID_NOTIFY_CHAT_MSG,
-            [serverId, &root, &info, &data](const std::string& serverName) {
-        ChatServiceReq request;
-        request.set_from_uid(info.fromUid);
-        request.set_to_uid(info.toUid);
-        request.set_json(data);
-        const auto reply = ChatGrpcClient::getInstance()->SendChatMsg(serverName, request);
-        if (reply.error() == static_cast<int32_t>(ErrorCodes::SUCCESS)
-            && !MysqlMgr::getInstance()->updateMessageStatus(serverId, MessageStatus::IS_SEND)) {
-            root["error"] = static_cast<int32_t>(ErrorCodes::MYSQL_ERROR);
-        }
-    });
+        [&info, data](const std::string& serverName) {
+            ChatServiceReq request;
+            request.set_from_uid(info.fromUid);
+            request.set_to_uid(info.toUid);
+            request.set_json(data);
+            ChatGrpcClient::getInstance()->SendChatMsg(serverName, request);
+        });
 }
+
 
 void ChatLogicSystem::historyChatMsgFetchHandle(const std::shared_ptr<Session> &session, uint16_t msgId,
     const std::string &data) {
@@ -1053,5 +1164,3 @@ void ChatLogicSystem::uploadFileHandle(const std::shared_ptr<Session> &session, 
     worker->init();
     workerPool_.addTask(worker);
 }
-
-

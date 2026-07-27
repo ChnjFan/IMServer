@@ -20,13 +20,13 @@ using namespace std::chrono_literals;
  * 策略:
  *   1. 固定连接数
  *   2. 阶梯增加每条连接的发送速率
- *   3. 每档稳定 20s 后采样
+ *   3. 每档稳定 60s 后采样
  *   4. RTT P99 超过 200ms 或错误率 > 5% 时停止
  */
 
 class MixedThroughputTest : public StressTestFixture {
 protected:
-    static constexpr int STABILIZE_SECONDS = 20;
+    static constexpr int STABILIZE_SECONDS = 60;        // 稳定期 (采样前等待)
     static constexpr int64_t RTT_P99_LIMIT_US = 200000;  // 200ms
     static constexpr double ERROR_THRESHOLD = 0.05;
     static constexpr float CHAT_RATIO = 0.7f;

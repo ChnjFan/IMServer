@@ -17,6 +17,8 @@ public:
 
     [[nodiscard]] bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo& userInfo) const;
 
+    int getUid(const std::string & email) const;
+
 private:
     std::unique_ptr<MysqlPool> pool_;
 };

@@ -164,8 +164,6 @@ void Session::asyncReadBody(std::uint16_t size) {
     auto self = shared_from_this();
     asyncReadFull(size, [self, this, size](const boost::system::error_code& ec, const uint16_t bytes_transfer) {
         if (ec || bytes_transfer < size) {
-            std::cout << "Read failed error: " << ec.what();
-            std::cout << " or read [" << bytes_transfer << " < " << size << "]" << std::endl;
             close();
             chatServer_->clearSession(sessionId_);
             return;
@@ -211,8 +209,6 @@ void Session::asyncSend() {
     boost::asio::async_write(socket_, boost::asio::buffer(node->buffer_, node->used_),
         [self, this](const boost::system::error_code& error, size_t bytes_transfer) {
             if (error) {
-                std::cout << "Session: " << sessionId_;
-                std::cout << " Handle write failed, error: " << error.what() << std::endl;
                 close();
                 chatServer_->clearSession(sessionId_);
                 return;

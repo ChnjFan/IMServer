@@ -14,6 +14,7 @@ public:
     FriendInfoDao();
     ~FriendInfoDao();
 
+    bool selectFriend(int uid, int friendId, FriendInfo& info) const;
     [[nodiscard]] std::vector<FriendInfo> selectFriendList(int uid, const std::string& sinceTime) const;
     bool selectFriendStatus(int uid, int friendId, int& status);
 

@@ -139,6 +139,8 @@ LogicSystem::LogicSystem() {
         }
         int uid = MysqlMgr::getInstance()->registerUser(user, email, passwd);
         if (uid == 0 || uid == -1) {
+            // TODO 临时测试用
+            root["uid"] = MysqlMgr::getInstance()->getUid(email);
             std::cout << "Register user email or name exist" << std::endl;
             root["error"] = static_cast<int32_t>(ErrorCodes::USER_EXISTS);
             const std::string jsonStr = root.toStyledString();

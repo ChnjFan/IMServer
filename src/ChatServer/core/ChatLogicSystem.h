@@ -10,6 +10,12 @@
 #include <functional>
 #include <string>
 #include <chrono>
+#include <unordered_map>
+#include <mutex>
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <algorithm>
 #include <boost/lockfree/queue.hpp>
 
 #include <json/json.h>
@@ -20,9 +26,84 @@
 #include "MysqlMgr.h"
 #include "ThreadPool.h"
 #include "common/model/UserBaseInfo.h"
+#include "core/ChatMsgNode.h"
+
+/**
+ * @brief ChatLogicSystem 的性能统计聚合。
+ *
+ * 所有方法线程安全，可由多个 worker 线程并发调用。
+ * 统计分为两类：
+ *   - 累计值（total_*）：从启动开始累加，永不重置，用于长期观测。
+ *   - 周期值（handler_* / total_idle_count_）：每次 printStats 后清零，
+ *     反映最近一个周期内的分布。
+ */
+class PerfStats {
+public:
+    void recordMessage(uint64_t queue_wait_us, uint64_t process_us, uint16_t msgId);
+
+    void recordIdle(uint64_t idle_us);
+
+    /// 打印汇总统计并重置周期值。返回从上次打印经过的秒数。
+    double printStats(const std::chrono::steady_clock::time_point& now);
+
+    uint64_t totalMessages() const;
+
+    /// 返回距上次打印经过的秒数（不修改状态）。
+    double elapsedSinceReport(const std::chrono::steady_clock::time_point& now) const;
+
+private:
+    mutable std::mutex mutex_;
+
+    // ── 累计值 ──────────────────────────────────────────────
+    uint64_t total_queue_wait_us_ = 0;   ///< 消息在队列中等待的总时间
+    uint64_t total_process_us_ = 0;      ///< 业务处理的总时间
+    uint64_t total_messages_ = 0;        ///< 处理的消息总数
+    uint64_t total_idle_us_ = 0;         ///< worker 线程空闲总时间（休眠等待）
+
+    // ── 周期值（每次 printStats 后清零）─────────────────────
+    std::unordered_map<uint16_t, uint64_t> handler_process_us_; ///< 每个 msgId 的处理总时间
+    std::unordered_map<uint16_t, uint64_t> handler_count_;      ///< 每个 msgId 的处理次数
+    uint64_t total_idle_count_ = 0;      ///< worker 进入空闲休眠的次数
+
+    std::chrono::steady_clock::time_point last_report_time_;     ///< 上次打印的时间点
+};
 
 typedef std::function<void(std::shared_ptr<Session> session, const uint16_t msgId, const std::string& data)> msgHandler;
+
+class BatchWriter;
 typedef std::function<void(const std::string& serviceName)> notifyOnlineUserCallback;
+
+/**
+ * @brief 单个 Worker 分片：独立队列 + 独立条件变量 + 独立 Worker 线程。
+ *
+ * 多队列分片的核心数据结构。每个 shard 的 worker 线程只操作自己的
+ * 队列和 condvar，消除多 worker 争用单一队列的 CAS 瓶颈。
+ */
+struct WorkerShard {
+    /// 无锁队列：IO 线程 push、对应 worker 线程 pop
+    /// 容量与单队列方案保持一致（2048），总容量 = 2048 × shard 数
+    boost::lockfree::queue<std::shared_ptr<LogicNode>*> queue;
+
+    /// mutex + cond 仅用于该 shard 的 worker 线程在无消息时休眠
+    std::mutex mutex;
+    std::condition_variable cond;
+
+    /// 单 shard 队列容量
+    static constexpr int SHARD_QUEUE_CAPACITY = 2048;
+
+    WorkerShard() : queue(SHARD_QUEUE_CAPACITY) {}
+    ~WorkerShard() {
+        // 清理队列中的未处理消息
+        std::shared_ptr<LogicNode>* nodePtr;
+        while (queue.pop(nodePtr)) {
+            delete nodePtr; // 释放指针
+        }
+    }
+
+    // 不可拷贝、不可移动（含 mutex 成员）
+    WorkerShard(const WorkerShard&) = delete;
+    WorkerShard& operator=(const WorkerShard&) = delete;
+};
 
 class ChatLogicSystem : public Singleton<ChatLogicSystem> {
 public:
@@ -40,11 +121,17 @@ private:
 
     // 初始化聊天服务逻辑
     ChatLogicSystem();
+
+    static int getIoWorkerNum();
+
     void initHandlers();
     void registerHandler(uint16_t msgId, const msgHandler& handler);
-    // 处理消息
-    void dealMsg();
+    // 处理消息（绑定到指定 shard）
+    void dealMsg(size_t shard_idx);
     void handleMsgNode(const std::shared_ptr<LogicNode>& node);
+
+    /// 根据 Session ID 哈希选择目标 shard
+    size_t getShardIndex(const std::shared_ptr<LogicNode>& msg) const;
 
     // 客户端踢人逻辑
     void kickOnlineUser(int uid) const;
@@ -73,7 +160,6 @@ private:
     // 获取好友申请列表
     void searchFriendApplyListHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     // 好友申请
-    static bool checkFriendRelation(int uid, int friendId);
     static bool checkFriendApplyInvalid(int uid, int friendId);
     void friendApplyHandle(const std::shared_ptr<Session>& session, uint16_t msgId, const std::string& data);
     // 认证好友
@@ -110,22 +196,15 @@ private:
 
     std::string selfServerName_;
 
-    // 无锁队列：IO 线程 push、worker 线程 pop 都不需要抢锁
-    // 存储堆分配的 shared_ptr 的原始指针（原始指针 trivially destructible）
-    // 堆分配的 shared_ptr 保证对象在队列中始终存活
-    boost::lockfree::queue<std::shared_ptr<LogicNode>*> msgQueue_;
-    // mutex + cond_ 仅用于 worker 线程在无消息时休眠（避免空转 CPU）
-    std::mutex mutex_;
-    std::condition_variable cond_;
+    // 多队列分片：每个 shard 拥有独立的 lockfree 队列和 condvar
+    std::vector<std::unique_ptr<WorkerShard>> shards_;
 
-    // 性能统计
-    mutable std::mutex stats_mutex_;
-    uint64_t total_queue_wait_us_ = 0;   // 消息在队列中等待的总时间
-    uint64_t total_process_us_ = 0;      // 业务处理的总时间
-    uint64_t total_messages_ = 0;        // 处理的消息总数
-    std::chrono::steady_clock::time_point last_report_time_;
+    PerfStats stats_;
 
     ThreadPool workerPool_;
+
+    // 批量异步写入
+    std::unique_ptr<BatchWriter> batch_writer_;
 
     std::unordered_map<uint16_t, msgHandler> handlers_;
 };
