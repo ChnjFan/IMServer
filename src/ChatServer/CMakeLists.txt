@@ -21,8 +21,10 @@ set(CHAT_SERVER_SOURCES
     core/LogicWorker.h
     core/UserMgr.cpp
     core/UserMgr.h
+    core/BatchWriter.cpp
+    core/BatchWriter.h
 
-        # db/mysql 目录 - 数据库访问层
+    # db/mysql 目录 - 数据库访问层
     db/mysql/MysqlMgr.cpp
     db/mysql/MysqlMgr.h
     db/mysql/dao/UserInfoDao.cpp
@@ -33,10 +35,10 @@ set(CHAT_SERVER_SOURCES
     db/mysql/dao/ConversationDao.h
 
     # db/redis 目录 - Redis 访问层
-    db/redis/UserInfoCache.cpp
-    db/redis/UserInfoCache.h
-    db/redis/FriendCache.cpp
-    db/redis/FriendCache.h
+    db/cache/UserInfoCache.cpp
+    db/cache/UserInfoCache.h
+    db/cache/FriendCache.cpp
+    db/cache/FriendCache.h
 
     # service 目录 - gRPC 服务实现
     service/ChatServiceImpl.cpp
