@@ -1,0 +1,82 @@
+# Prefer a system-installed gtest; fall back to FetchContent if not found.
+#   brew install gtest   -> uses system version (no download)
+#   otherwise            -> downloads via FetchContent
+find_package(GTest QUIET)
+
+if(NOT GTest_FOUND)
+    include(FetchContent)
+    FetchContent_Declare(
+        googletest
+        GIT_REPOSITORY https://github.com/google/googletest.git
+        GIT_TAG        v1.15.2
+    )
+    # For Windows: prevent overriding the parent project's compiler/linker settings
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+endif()
+
+enable_testing()
+
+# Normalize target names across find_package vs FetchContent sources.
+# find_package (cmake-config) may expose GTest::gtest; older FindGTest
+# exposes GTest::GTest / GTest::Main. FetchContent uses GTest::gtest(_main).
+if(NOT TARGET GTest::gtest)
+    add_library(GTest::gtest INTERFACE IMPORTED)
+    target_link_libraries(GTest::gtest INTERFACE GTest::GTest)
+endif()
+if(NOT TARGET GTest::gtest_main)
+    add_library(GTest::gtest_main INTERFACE IMPORTED)
+    target_link_libraries(GTest::gtest_main INTERFACE GTest::Main GTest::gtest)
+endif()
+
+# test_framework — shared test utilities (built once, linked by all tests)
+add_library(test_framework STATIC
+    framework/protocol.cpp
+    framework/account_manager.cpp
+    framework/http_test_client.cpp
+    framework/chat_test_client.cpp
+    framework/metrics.cpp
+    framework/report.cpp
+    framework/stability_runner.cpp
+    perf/perf_suite.cpp
+)
+target_include_directories(test_framework
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/framework
+)
+target_link_libraries(test_framework
+    PUBLIC proto
+    PUBLIC jsoncpp_deps
+)
+
+# IMTest — single executable hosting all gtest cases
+add_executable(IMTest
+    framework/protocol_test.cpp
+    gate/gate_integration_test.cpp
+    status/status_integration_test.cpp
+    integration/stability_test.cpp
+    perf/chat_perf_test.cpp
+    # stress tests
+    stress/stress_test_client.cpp
+    stress/stress_connection_pool.cpp
+    stress/stress_metrics.cpp
+    stress/stress_fixture.cpp
+    stress/scenario_burst.cpp
+    stress/scenario_ramp.cpp
+    stress/scenario_sustained.cpp
+    stress/scenario_mixed.cpp
+    stress/scenario_throughput.cpp
+    stress/scenario_mixed_throughput.cpp
+    stress/report_output.cpp
+)
+target_include_directories(IMTest PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/stress)
+target_link_libraries(IMTest
+    PRIVATE test_framework
+    PRIVATE GTest::gtest_main
+    PRIVATE GTest::gmock
+)
+
+# Note: gtest_discover_tests disabled — pre-existing libssl.3.dylib SIP linker
+# quirk causes the CMake test-discovery subprocess to abort on this machine.
+# Tests run via direct invocation (./bin/IMTest --gtest_filter=...), which works.
+# Re-enable if the environment resolves the runtime library path issue.

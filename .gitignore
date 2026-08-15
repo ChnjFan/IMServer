@@ -1,5 +1,5 @@
 build/
-cmake-build-debug/
+cmake-build-*
 bin/
 lib/
 *.o
@@ -9,11 +9,10 @@ lib/
 *.dylib
 *.log
 .DS_Store
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
+.*/*
 node_modules/
 package-lock.json
 

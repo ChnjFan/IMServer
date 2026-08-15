@@ -19,6 +19,8 @@ public:
 
     bool checkPasswd(const std::string& email, const std::string& passwd, UserInfo& userInfo);
 
+    int getUid(const std::string& email);
+
 private:
     friend class Singleton<MysqlMgr>;
 

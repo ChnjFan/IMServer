@@ -9,6 +9,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+#include <string>
+#include <unordered_set>
 #include <hiredis/hiredis.h>
 
 #include "const.h"
@@ -19,10 +21,11 @@
 #define USER_ONLINE_SERVER_NAME "server_name"
 #define USER_ONLINE_TOKEN "token"
 #define USER_SESSION_ID "session_id"
-// 用户信息
-#define IP_COUNT_PREFIX "ip_count_"
-#define USER_BASE_INFO_PREFIX "user_base_info_"
 #define LOGIN_COUNT "login_chat_server_count"
+// 用户状态
+#define USER_COUNTER_PREFIX "user_counter_"     // 用户状态计数
+// 好友申请
+#define FRIEND_APPLY_PREFIX "friend_apply_"
 
 // 聊天会话缓存
 #define CHAT_CONVER_PREFIX "chat_conver_"
@@ -30,8 +33,9 @@
 
 // 分布式锁
 #define DIST_LOCK_PREFIX "lock_"
-#define DIST_LOCK_TIMEOUT 10
-#define DIST_ACQUIRE_TIMEOUT 5
+#define DIST_LOCK_SERVER_COUNT "lock_server_count"
+#define DIST_LOCK_TIMEOUT 1000
+#define DIST_ACQUIRE_TIMEOUT 1000
 
 class RedisPool {
 public:
@@ -43,6 +47,8 @@ public:
 
 private:
     void createPool();
+    void recreatePool();
+    void checkConnection();
 
     std::atomic<bool> stop_;
     std::atomic<bool> start_;   // 启动标记，如果没有成功创建 Redis 连接，之后请求重新尝试连接
@@ -53,6 +59,7 @@ private:
     std::queue<redisContext*> connections_;
     std::mutex mutex_;
     std::condition_variable cond_;
+    std::thread thread_;
 };
 
 class RedisMgr : public Singleton<RedisMgr> {
@@ -66,13 +73,18 @@ public:
     bool rPush(const std::string& key, const std::string& value);
     bool rPop(const std::string& key, std::string& value);
     // 集合
+    bool sAdd(const std::string& key, const std::string& value);
+    bool sRem(const std::string& key, const std::string& value);
+    bool sIsMember(const std::string& key, const std::string& value);
+    std::unordered_set<std::string> sMembers(const std::string& key);
+    // 哈希
     bool hSet(const std::string& key, const std::string& hKey, const std::string& value);
     bool hSet(const std::string& key, const std::unordered_map<std::string, std::string>& values);
     // 处理二进制数据
     bool hSet(const char* key, const char* hKey, const char* hValue, size_t hSize);
     bool hDel(const std::string& key, const std::string & hKey);
     std::string hGet(const std::string& key, const std::string& hKey);
-    std::unordered_map<std::string, std::string> hGetAll(const std::string& key, const std::vector<std::string>& hkeys);
+    std::unordered_map<std::string, std::string> hGetAll(const std::string& key) const;
     // 有序集合
     bool zSet(const std::string& key, long long score, const std::string& value);
     bool zRevrange(const std::string& key, std::vector<std::string>& values, int start, int end);
@@ -80,6 +92,8 @@ public:
 
     bool del(const std::string& key) const;
     bool existsKey(const std::string& key) const;
+    bool setExpire(const std::string& key, int expire) const;
+    bool clearExpire(const std::string& key) const;
 
     std::string acquireLock(const std::string& name, int timeout, int acquireTimeout) const;
     bool releaseLock(const std::string& name, const std::string& identifier) const;

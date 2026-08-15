@@ -16,6 +16,10 @@ struct SectionInfo {
         this->section_data_ = other.section_data_;
     }
 
+    [[nodiscard]] bool hasValue(const std::string& key) const {
+        return section_data_.find(key) != section_data_.end();
+    }
+
     SectionInfo& operator=(const SectionInfo& other) {
         if (&other == this) {
             return *this;

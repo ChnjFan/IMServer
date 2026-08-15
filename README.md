@@ -117,3 +117,84 @@ make -j$(nproc)
 ./bin/StatusServer
 ```
 
+## 测试框架
+
+### 构建测试
+
+```bash
+cmake --build cmake-build-debug --target IMTest
+```
+
+### 运行测试
+
+```bash
+# 单元测试（快速，无需外部依赖）
+./cmake-build-debug/bin/IMTest --gtest_filter="ProtocolTest.*"
+
+# 或通过封装脚本运行（自动设置 libssl 运行时路径）
+./test/run_tests.sh unit        # 仅单元测试
+./test/run_tests.sh integration # 集成测试（需 Redis + MySQL + 各服务器在线）
+./test/run_tests.sh all         # 全部
+```
+
+需要在线服务的测试在 Redis 不可用时自动跳过，不会报错。
+
+### 生成测试报告
+
+稳定性 / 性能测试运行后生成 CSV 时序文件，用可视化脚本输出图表：
+
+```bash
+# 安装依赖
+pip3 install matplotlib --break-system-packages
+
+# 生成报告图（默认读 stability_report.csv，输出 PNG）
+python3 scripts/plot_report.py
+
+# 指定路径
+python3 scripts/plot_report.py cmake-build-debug/bin/stability_report.csv report.png
+```
+
+生成的 PNG 包含 4 个子图：
+
+1. **延迟时序**（P50/P99/Avg）— 判断系统是否稳定
+2. **吞吐量 QPS 时序** — 判断吞吐是否平稳
+3. **错误率时序** — 定位故障时间点
+4. **累计请求 & 累计错误**（双 Y 轴）— 整体趋势
+
+同时在终端输出摘要：测试时长、总请求数、错误率、延迟末值、平均 QPS。
+
+#### CSV 字段说明
+
+| 字段 | 含义 |
+| ---- | ---- |
+| `timestamp` | 采样时间戳（Unix 秒） |
+| `count` | 累计请求数 |
+| `p50_us` | P50 延迟（微秒），中位数 |
+| `p99_us` | P99 延迟（微秒），尾部延迟 |
+| `avg_us` | 平均延迟（微秒） |
+| `errors` | 累计错误数 |
+| `error_rate` | 错误率（errors / count） |
+
+### 测试目录结构
+
+```
+test/
+├── run_tests.sh               # 分层运行脚本
+├── framework/                 # 共享测试工具
+│   ├── protocol.h/cpp         # TCP 二进制协议编解码
+│   ├── chat_test_client.h/cpp # ChatServer TCP 客户端
+│   ├── http_test_client.h/cpp # GateServer HTTP 客户端
+│   ├── grpc_test_client.h     # gRPC 通用客户端
+│   ├── account_manager.h/cpp  # 测试账号管理（自动清理）
+│   ├── fixture_base.h         # 集成测试基类（Redis 探测 + 跳过）
+│   ├── metrics.h/cpp          # 延迟/吞吐/错误率统计
+│   ├── resource_monitor.h     # fd / RSS 泄漏检测
+│   ├── report.h/cpp           # 报告输出（摘要 + CSV）
+│   └── stability_runner.h/cpp # 长跑场景编排
+├── gate/                      # GateServer 测试
+├── status/                    # StatusServer 测试
+├── chat/                      # ChatServer 测试
+├── integration/               # 跨服务 / 稳定性测试
+└── perf/                      # 性能压测
+```
+

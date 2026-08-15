@@ -31,9 +31,9 @@ ChatGrpcClient::ChatGrpcClient() {
     }
 }
 
-AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string &serviceName, const AddFriendReq &request) {
+ChatServiceRsp ChatGrpcClient::NotifyAddFriend(const std::string &serviceName, const ChatServiceReq &request) {
     ClientContext context;
-    AddFriendRsp reply;
+    ChatServiceRsp reply;
 
     if (pools_.find(serviceName) == pools_.end()) {
         reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
@@ -59,9 +59,9 @@ AddFriendRsp ChatGrpcClient::NotifyAddFriend(std::string &serviceName, const Add
     return reply;
 }
 
-AuthFriendRsp ChatGrpcClient::NotifyAuthFriend(std::string &serviceName, const AuthFriendReq &request) {
+ChatServiceRsp ChatGrpcClient::NotifyAuthFriend(const std::string &serviceName, const ChatServiceReq &request) {
     ClientContext context;
-    AuthFriendRsp reply;
+    ChatServiceRsp reply;
 
     if (pools_.find(serviceName) == pools_.end()) {
         reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
@@ -87,9 +87,9 @@ AuthFriendRsp ChatGrpcClient::NotifyAuthFriend(std::string &serviceName, const A
     return reply;
 }
 
-SendChatMsgRsp ChatGrpcClient::SendChatMsg(std::string &serviceName, const SendChatMsgReq &request) {
+ChatServiceRsp ChatGrpcClient::SendChatMsg(const std::string &serviceName, const ChatServiceReq &request) {
     ClientContext context;
-    SendChatMsgRsp reply;
+    ChatServiceRsp reply;
 
     if (pools_.find(serviceName) == pools_.end()) {
         reply.set_error(static_cast<int32_t>(ErrorCodes::RPC_FAILED));
@@ -115,23 +115,27 @@ SendChatMsgRsp ChatGrpcClient::SendChatMsg(std::string &serviceName, const SendC
     return reply;
 }
 
-void ChatGrpcClient::NotifyOffline(const std::string &serviceName) {
+ErrorCodes ChatGrpcClient::NotifyOffline(const std::string &serviceName, const int uid) {
     ClientContext context;
-    const google::protobuf::Empty request;
-    google::protobuf::Empty response;
+    ChatServiceReq request;
+    ChatServiceRsp response;
 
     if (pools_.find(serviceName) == pools_.end()) {
-        return;
+        return ErrorCodes::RPC_FAILED;
     }
     auto stub = pools_[serviceName]->getConnection();
     if (nullptr == stub) {
         std::cout << "Error get rpc connection" << std::endl;
-        return;
+        return ErrorCodes::RPC_FAILED;
     }
 
     Defer defer([this, &stub, &serviceName] () {
         pools_[serviceName]->returnConnection(std::move(stub));
     });
 
+    request.set_from_uid(-1);
+    request.set_to_uid(uid);
     stub->NotifyOffline(&context, request, &response);
+    return static_cast<ErrorCodes>(response.error());
 }
+

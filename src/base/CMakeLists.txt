@@ -13,6 +13,10 @@ set(BASE_SOURCES
     ThreadPool.h
     DistLock.cpp
     DistLock.h
+    UrlParser.cpp
+    UrlParser.h
+    Md5.cpp
+    Md5.h
 )
 
 add_library(base STATIC ${BASE_SOURCES})
@@ -21,6 +25,7 @@ target_link_libraries(base
     jsoncpp_deps
     hiredis_deps
     mysqlcppconn_deps
+    crypto_deps
     Boost::filesystem
 )
 

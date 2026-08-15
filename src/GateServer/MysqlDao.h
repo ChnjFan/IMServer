@@ -2,6 +2,7 @@
 #define IMSERVER_MYSQLDAO_H
 
 #include "MysqlPool.h"
+#include "UserInfo.h"
 
 class MysqlDao {
 public:
@@ -15,6 +16,8 @@ public:
     [[nodiscard]] bool updatePasswd(const std::string & user, const std::string & passwd) const;
 
     [[nodiscard]] bool checkPasswd(const std::string & email, const std::string & passwd, UserInfo& userInfo) const;
+
+    int getUid(const std::string & email) const;
 
 private:
     std::unique_ptr<MysqlPool> pool_;

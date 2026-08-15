@@ -80,7 +80,6 @@ std::unique_ptr<typename ServiceType::Stub> ServiceConnPool<ServiceType>::getCon
     }
     auto conn = std::move(connections_.front());
     connections_.pop();
-    std::cout << "Get RPC connection success" << std::endl;
     return conn;
 }
 
@@ -91,7 +90,6 @@ void ServiceConnPool<ServiceType>::returnConnection(std::unique_ptr<typename Ser
         return;
     }
     connections_.push(std::move(stub));
-    std::cout << "Returning RPC connection success" << std::endl;
 }
 
 #endif //IMSERVER_SERVICECONNPOOL_H

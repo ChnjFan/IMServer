@@ -42,7 +42,6 @@ std::unique_ptr<VerifyService::Stub> RPCConnPool::getConnection() {
      }
     auto connection = std::move(connections_.front());
     connections_.pop();
-    std::cout << "Get RPC connection success" << std::endl;
     return connection;
 }
 
@@ -53,7 +52,6 @@ void RPCConnPool::returnConnection(std::unique_ptr<VerifyService::Stub> stub) {
         return;
     }
     connections_.push(std::move(stub));
-    std::cout << "Returning RPC connection success" << std::endl;
 }
 
 GetVerifyRsp VerifyGrpcClient::GetVerifyCode(std::string email) const {

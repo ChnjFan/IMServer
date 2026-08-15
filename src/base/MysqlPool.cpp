@@ -30,11 +30,20 @@ MysqlPool::MysqlPool(const std::string &url, const std::string &user,
 
         thread_ = std::thread([&]() {
             while (!stop_.load()) {
-                checkConnection();
-                std::this_thread::sleep_for(std::chrono::seconds(60));
+                try {
+                    std::unique_lock<std::mutex> lock(checkMtx_);
+                    checkCond_.wait_for(lock, std::chrono::seconds(60), [this]() {
+                        return stop_.load();
+                    });
+                    if (stop_.load()) {
+                        break;
+                    }
+                    checkConnection();
+                } catch (std::exception &e) {
+                    std::cout << e.what() << std::endl;
+                }
             }
         });
-        thread_.detach();
         std::cout << "OK" << std::endl;
     } catch (sql::SQLException &e) {
         std::cout << "SQLException: " << e.what() << std::endl;
@@ -42,6 +51,11 @@ MysqlPool::MysqlPool(const std::string &url, const std::string &user,
 }
 
 MysqlPool::~MysqlPool() {
+    stop_.store(true);
+    checkCond_.notify_all();  // 唤醒正在 wait 的健康检查线程
+    if (thread_.joinable()) {
+        thread_.join();
+    }
     std::lock_guard<std::mutex> lock(mutex_);
     while (!connections_.empty()) {
         connections_.pop();
@@ -76,14 +90,15 @@ void MysqlPool::returnConnect(std::unique_ptr<SqlConnection> conn) {
 void MysqlPool::close() {
     stop_.store(true);
     cond_.notify_all();
+    checkCond_.notify_all();  // 唤醒健康检查线程
 }
 
 void MysqlPool::checkConnection() {
     std::lock_guard<std::mutex> guard(mutex_);
-    auto poolSize = connections_.size();
+    const auto poolSize = connections_.size();
     const auto curTime = std::chrono::system_clock::now().time_since_epoch();
     const long long timeStamp = std::chrono::duration_cast<std::chrono::seconds>(curTime).count();
-    for (int i = 0; i < poolSize_; i++) {
+    for (int i = 0; i < poolSize; i++) {
         auto conn = std::move(connections_.front());
         connections_.pop();
         Defer defer([this, &conn]() {
@@ -95,7 +110,7 @@ void MysqlPool::checkConnection() {
         }
 
         try {
-            std::unique_ptr<sql::Statement> stmt(conn->conn_->createStatement());
+            const std::unique_ptr<sql::Statement> stmt(conn->conn_->createStatement());
             stmt->executeQuery("SELECT 1");
             conn->lastOptTime_ = timeStamp;
         } catch (sql::SQLException &e) {

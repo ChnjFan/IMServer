@@ -21,18 +21,18 @@ bool DistLock::unlock() const {
     return RedisMgr::getInstance()->releaseLock(name_, identifier_);
 }
 
-DistLockGuard::DistLockGuard(const std::string &name, const int timeout, const int acquireTimeout)
-    : lock_(name, timeout, acquireTimeout) {
-    if (!lock_.lock()) {
-        throw std::logic_error("lock failed");
-    }
-}
-
-DistLockGuard::~DistLockGuard() {
-    if (!lock_.unlock()) {
-        std::cerr << "Distribute unlock failed" << std::endl;
-    }
-}
+// DistLockGuard::DistLockGuard(const std::string &name, const int timeout, const int acquireTimeout)
+//     : name_(name) , lock_(name, timeout, acquireTimeout) {
+//     if (!lock_.lock()) {
+//         std::cerr << "Distribute lock " + name +" failed" << std::endl;
+//     }
+// }
+//
+// DistLockGuard::~DistLockGuard() {
+//     // if (!lock_.unlock()) {
+//     //     std::cerr << "Distribute unlock " + name_ +" failed" << std::endl;
+//     // }
+// }
 
 
 
