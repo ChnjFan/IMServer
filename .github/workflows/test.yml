@@ -19,7 +19,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev libjsoncpp-dev libgrpc-dev \
-            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build
+            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build \
+            libmysqlcppconn-dev
 
       - name: Configure
         run: cmake -B build -G Ninja -DBUILD_TEST=ON
@@ -73,7 +74,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev libjsoncpp-dev libgrpc-dev \
-            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build
+            libprotobuf-dev protobuf-compiler-grpc libhiredis-dev ninja-build \
+            libmysqlcppconn-dev
 
       - name: Configure & Build
         run: |
